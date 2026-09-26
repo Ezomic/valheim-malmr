@@ -39,6 +39,21 @@ namespace Malmr
     /// gets nothing. The tally is the character's and not the world's: a boss killed in any
     /// world counts, in every world.
     ///
+    /// Two holes in it, both found in review on 2026-09-26 and both left as they are, said in
+    /// the README instead:
+    ///
+    ///  - It only goes back to the Call to Arms update. LoadPlayerFromDisk reads the per-name
+    ///    record only from a character saved at Version.Player.CallToArms (42) or later, so a
+    ///    boss a veteran character beat before that is not in it and must be beaten again. The
+    ///    record that does go back further is m_uniques, which is ruled out above.
+    ///  - It does not care how the boss got there. IncrementStatEnemy writes index 0 whatever
+    ///    its cheated flag says - the flag only gates the achievement copies - so a boss spawned
+    ///    with devcommands in a local world counts once the character walks onto a server.
+    ///    Keeping a record of Malmr's own that skipped cheated kills would miss every kill made
+    ///    before Malmr was installed, which is a bigger hole than the one it closes, and a
+    ///    character that has run devcommands already carries the mark Dyrr reads at the door
+    ///    and could raise Pickaxes the same way.
+    ///
     /// The token comes off the creatures themselves: the world-load survey already walks every
     /// Character prefab for its defeat key, and the same walk records its m_name. A boss key
     /// therefore leads to the boss prefab, and the prefab to the name its kills are filed under.

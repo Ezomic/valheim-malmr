@@ -43,6 +43,8 @@ the boss beaten at one star, and without it the boss beaten once.
   you come back. A friend with vein mining on can finish it for you.
 - If somebody mines chunks off the same deposit by hand in the meantime, the total shrinks and
   the percentage goes up with it.
+- If a deposit grows back, which is what Dvala does to the veins in a dungeon it restocks, its
+  bar starts again from empty.
 - If your pickaxe is too weak for the rock, you get the game's own "too hard" and the bar does
   not move.
 - With vein mining on and a metal you have not opened yet, you mine the normal way. Once per
@@ -112,6 +114,11 @@ kills, the one it keeps on your character. Every player who landed a hit on the 
 kill, not only the one who struck last. Because it is kept on the character, a boss you killed in
 another world counts too.
 
+The game only started keeping that record with its Call to Arms update. A boss your character
+beat before then is not in it, and has to be beaten again for Malmr to see it. The record also
+does not care where the boss came from, so a boss spawned with devcommands counts the same as one
+you summoned.
+
 The unlock message, the top left message and the `malmr` command all say which of the two applies:
 "at one star through Vandi", or "beaten by you" without it.
 
@@ -145,7 +152,9 @@ No devcommands needed for any of these.
 - `malmr progress` shows the bar of the nearest deposit within 10 metres: the metal, whether it
   is open to you here, its biome, the percent, the damage stored against the total, and how
   many chunks are still standing. `malmr progress rock4_copper_frac` looks for the nearest one
-  of that name instead.
+  of that name instead, and a number on the end looks further, like
+  `malmr progress giant_brain_frac 20`. `stale=yes` means the deposit grew back and its old bar
+  was dropped.
 
 ## Installing
 

@@ -56,7 +56,7 @@
 # WHAT IT CANNOT SEE, so that a pass is not read as more than it is:
 #
 #   - The swing. Nothing here fills a bar or breaks a deposit. The `malmr vein` lines at the end
-#     only prove the switch and the progress verb answer.
+#     only prove the switch and the progress verb answer. malmr-bar.txt swings.
 #   - A real boss kill. The count is seeded, not earned. This proves Malmr reads the count Vandi
 #     keeps for the local player and gates on it; that Vandi writes that count when a boss dies
 #     is Vandi's own scenario's job.
@@ -230,7 +230,9 @@ skill Pickaxes back
 #      outside BepInEx), and start the testprofile again.
 #      Expect in LogOutput.log: "Vandi is not installed, so a metal's boss counts once this
 #      character has killed it".
-#   2. Load a world with a character that has never killed the Elder. Type `malmr`.
+#   2. Load a world with a character that has never killed the Elder. One that last killed it
+#      before the game's Call to Arms update reads the same, because the kill record starts
+#      there. Type `malmr`.
 #      Expect: bosscount=game, and "Copper unlock=30 ... boss=defeated_gdking kills=0/1".
 #   3. Put Pickaxes at 30: a two-line scenario of `skill Pickaxes 0` and `skill Pickaxes 30`
 #      does it without the cheat mark. Type `malmr` again.

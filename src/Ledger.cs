@@ -33,6 +33,22 @@ namespace Malmr
     /// The stored progress is Malmr's own float on the same ZDO. Only the owner writes it, from
     /// Owner, and it rides the ZDO everywhere the deposit goes: a logout, a friend finishing the
     /// job, a server restart.
+    ///
+    /// <b>Beside it, the total it was measured against</b>, and a bar whose deposit has grown
+    /// since reads empty. In play the total only ever shrinks - a bar blow takes nothing off a
+    /// chunk, and a blow by hand takes health off one - so a total above the one stored means
+    /// the chunks came back. That is Dvala restocking a vein it kept: its KeepVeins holds on to
+    /// a deposit emptied inside a crypt it manages, and thirty days later writes every chunk
+    /// back to full health and nothing else. The bar used to be cleared only by Collapse, when
+    /// Malmr's own break took the last chunk, so a vein finished by hand after some bar blows,
+    /// or a break cut off by the owner leaving, kept its old progress into the restock: the
+    /// fresh vein showed 80% before anyone touched it and broke whole on its first vein blow.
+    /// Found in review on 2026-09-26. A world level change raises an untouched chunk's health
+    /// the same way and empties the bar too, which is fair - the deposit got harder.
+    ///
+    /// Decided in Read rather than cleared in a write, because only the owner may write and the
+    /// owner may not be looking when the chunks come back. Every client reads the same two
+    /// floats and reaches the same answer, and the owner's next blow writes a fresh pair.
     /// </summary>
     internal static class Ledger
     {
@@ -43,30 +59,65 @@ namespace Malmr
         /// </summary>
         internal const string ProgressName = "malmr_vein_progress";
 
-        private static int _progressKey;
+        /// <summary>
+        /// The total the progress was last written against. Permanent for the same reason. A
+        /// progress with no total beside it was written by a build before this one - only a test
+        /// profile can hold one - and is trusted as it stands.
+        /// </summary>
+        internal const string TotalName = "malmr_vein_total";
+
+        /// <summary>
+        /// How far the total may rise before the bar counts as stale. Both sides are the same
+        /// float sum over the same ZDO floats in the same order, so an unchanged deposit reads
+        /// back exactly; this only absorbs rounding, and a regrown chunk is worth far more.
+        /// </summary>
+        private const float Regrown = 0.01f;
+
+        private static int _progressKey, _totalKey;
         private static bool _keyed;
 
         internal static int ProgressKey
         {
             get
             {
-                // Hashed on first use rather than in a static initialiser. It cannot throw, but
-                // the house rule is that nothing runs at type-init in a class the patches reach.
-                if (!_keyed)
-                {
-                    _progressKey = ProgressName.GetStableHashCode();
-                    _keyed = true;
-                }
-
+                Key();
                 return _progressKey;
             }
+        }
+
+        internal static int TotalKey
+        {
+            get
+            {
+                Key();
+                return _totalKey;
+            }
+        }
+
+        /// <summary>
+        /// Hashed on first use rather than in a static initialiser. It cannot throw, but the
+        /// house rule is that nothing runs at type-init in a class the patches reach.
+        /// </summary>
+        private static void Key()
+        {
+            if (_keyed) return;
+
+            _progressKey = ProgressName.GetStableHashCode();
+            _totalKey = TotalName.GetStableHashCode();
+            _keyed = true;
         }
 
         /// <summary>One look at a deposit.</summary>
         internal sealed class Reading
         {
-            /// <summary>Damage the bar holds.</summary>
+            /// <summary>Damage the bar holds. Zero when what was stored is stale - see the class comment.</summary>
             public float Progress;
+
+            /// <summary>
+            /// Whether progress was stored and thrown away because the deposit has grown since.
+            /// Only for the console: a scenario or a player asking why a bar went back to zero.
+            /// </summary>
+            public bool Stale;
 
             /// <summary>Summed current health of every chunk still standing, buried or not.</summary>
             public float Total;
@@ -103,7 +154,6 @@ namespace Malmr
 
             var reading = new Reading
             {
-                Progress = Mathf.Max(0f, zdo.GetFloat(ProgressKey, 0f)),
                 Health = health,
                 Chunks = health.Length,
             };
@@ -115,21 +165,32 @@ namespace Malmr
                 reading.Standing++;
             }
 
+            // The total first, because whether the stored progress still counts depends on it.
+            // There is deliberately no other way to read the progress: a second reader that
+            // skipped this check would bring the restock bug back through whichever caller used
+            // it, which is why the old bare Progress(nview) is gone.
+            float stored = Mathf.Max(0f, zdo.GetFloat(ProgressKey, 0f));
+            float against = zdo.GetFloat(TotalKey, -1f);
+
+            if (stored > 0f && against >= 0f && reading.Total > against + Regrown)
+                reading.Stale = true;
+            else
+                reading.Progress = stored;
+
             return reading;
         }
 
-        /// <summary>The damage the bar holds, as the owner is about to add to it.</summary>
-        internal static float Progress(ZNetView nview)
-        {
-            if (nview == null || !nview.IsValid()) return 0f;
-            return Mathf.Max(0f, nview.GetZDO().GetFloat(ProgressKey, 0f));
-        }
-
-        /// <summary>Owner only: see Owner for why nobody else ever writes this.</summary>
-        internal static void SetProgress(ZNetView nview, float value)
+        /// <summary>
+        /// Owner only: see Owner for why nobody else ever writes this. The total goes with it on
+        /// every write, so the next Read can tell whether the deposit has grown back since.
+        /// </summary>
+        internal static void SetProgress(ZNetView nview, float value, float total)
         {
             if (nview == null || !nview.IsValid() || !nview.IsOwner()) return;
-            nview.GetZDO().Set(ProgressKey, Mathf.Max(0f, value));
+
+            ZDO zdo = nview.GetZDO();
+            zdo.Set(ProgressKey, Mathf.Max(0f, value));
+            zdo.Set(TotalKey, Mathf.Max(0f, total));
         }
 
         /// <summary>Every chunk's health, in the order the deposit numbers its areas.</summary>

@@ -10,7 +10,7 @@ a deposit you have opened does not break that chunk. The damage it would have do
 bar on the deposit, a thin gold bar just under the crosshair with "Copper vein 45%" under it. At
 100% the whole deposit breaks, buried chunks included, and every chunk drops its ore. 100% is the
 current health of every chunk still standing, so chunks mined by hand in the meantime make the
-total smaller.
+total smaller. A deposit that grows back, like a vein Dvala restocks, starts with an empty bar.
 
 The damage counted is what vanilla would have dealt that chunk: the deposit's resistances and
 its tool tier apply, a pickaxe that is too weak gets the usual "too hard" and adds nothing, and
@@ -38,7 +38,9 @@ silver and obsidian, the Queen for the brains, Fader for flametal. Bloodgold is 
 pairing Vandi and Utangard use for the Deep North, until the Frozen King's key has been read from
 a world load. With Vandi installed the boss has to be beaten at one star, which is your second
 kill of a boss you summoned yourself. Without Vandi there are no stars, and one kill by your
-character is enough, read from the kill record the game keeps on every character. Vandi is a soft
+character is enough, read from the kill record the game keeps on every character. That record
+starts at the game's Call to Arms update, so a boss beaten before then has to be beaten again,
+and it counts a boss spawned with devcommands like any other. Vandi is a soft
 dependency, not in the manifest, and the README recommends it. `Bosses` and `BossKills` are in
 the config, and `BossKills` 0 turns the boss half off.
 
@@ -55,8 +57,9 @@ deposit and what it counted as, and every boss in the world with the key it sets
 The `malmr` console command prints your level, whether vein mining is on, which boss count
 applies, the Mistlands line, and for each metal its level, its boss, your kills of it, whether
 it is open and what is missing, followed by the deposit list. `malmr progress` shows the bar of
-the nearest deposit within 10 metres, or of the nearest one with a given name, with its biome and
-whether the Mistlands rule leaves it to the hand. No devcommands needed.
+the nearest deposit within 10 metres, or of the nearest one with a given name, or further when
+given a distance, with its biome and whether the Mistlands rule leaves it to the hand. No
+devcommands needed.
 
 The bar is kept on the deposit, and only whoever owns a deposit may change it, so a blow is sent
 to the owner the way a normal pickaxe hit is and the owner fills the bar and breaks the deposit.

@@ -1,10 +1,14 @@
 # Malmr: in the Mistlands only the giant brains vein mine. A copper deposit there is mined by
-# hand even with copper open to you, and the same copper deposit elsewhere is not.
+# hand even with copper open to you and vein mining on, and the same copper deposit elsewhere is
+# not.
 #
 # The rule is decided per deposit by the biome under it, and `malmr progress <prefab>` answers
 # the swing's own three questions for the nearest deposit of that name: is it a vein (metal=),
 # does its biome leave it to the hand (handonly=), and would the swing fill a bar (open=). The
-# bar and the swing ask the same Deposits.HandOnly, so this is the rule they act on.
+# bar and the swing ask the same Deposits.HandOnly, so this is the rule they act on. Then each
+# copper deposit takes one real swing with vein mining on, and `hurt` says whether the blow went
+# into the bar (no chunk hurt) or into the rock (a chunk hurt) - the rule acting, not only
+# answering.
 #
 # Runs against the DEFAULT config: Copper at 30 on defeated_gdking, Eitr (the brains) at 60 on
 # defeated_queen, and the Mistlands line at Eitr.
@@ -19,18 +23,30 @@
 # Devkit cannot switch them off again, so they stay on.
 #
 # It LEAVES BEHIND: a copper deposit where it stood in the Black Forest, and a copper deposit and
-# a giant brain where it stood in the Mistlands. `put` marks what it makes and takes its own
-# earlier copies down on the next run within 30m, so a rerun from the same spot tidies up after
-# the last one. Pickaxes is put back and vein mode is never switched on.
+# a giant brain where it stood in the Mistlands, each with one swing's worth of damage in it or
+# in its bar. `put` marks what it makes and takes its own earlier copies down on the next run
+# within 30m, so a rerun from the same spot tidies up after the last one. A black metal pickaxe is
+# added to the pack on every run. Pickaxes is put back and vein mode ends off.
 #
 # THE CONTROL: the Black Forest copper. Without it, open=no in the Mistlands could be a copper
-# gate that never opened at all. The same prefab, the same level, the same kills, reading
-# open=yes handonly=no one biome over, is what makes the Mistlands answer mean the biome.
+# gate that never opened at all, and a hurt chunk there could be vein mining that never worked
+# anywhere. The same prefab, the same level, the same kills and the same swing, reading open=yes
+# handonly=no and leaving every chunk whole one biome over, is what makes the Mistlands answer
+# mean the biome.
 #
 # What a broken build reads: a build without the rule reads the Mistlands copper as open=yes
-# handonly=no. A build that applied it to everything reads the brain as handonly=yes open=no.
-# A build that read the player's biome instead of the deposit's would still pass here - the two
-# stand in the same biome - which is the one thing this cannot tell apart.
+# handonly=no, and its swing leaves every chunk whole (`hurt 1+` fails). A build that applied it
+# to everything reads the brain as handonly=yes open=no. A build that read the player's biome
+# instead of the deposit's would still pass here - the two stand in the same biome - which is the
+# one thing this cannot tell apart.
+#
+# The brain is asked about within 20 metres rather than the usual 10. It stands 8 metres out, and
+# 10 is measured to its pivot with the height in it, so on a Mistlands slope a brain six metres
+# above or below would read progress=none for a reason that is the ground's, not Malmr's. The
+# cost: a brain the world made, nearer than this one and more than 8 metres from where this one
+# was put (closer and `put` refuses), would be the one read. Its answers are the same, because the
+# rule is about the prefab and the biome, so that is a pass on the right rule about a different
+# brain.
 #
 # If `put` refuses with an unmarked deposit within 8m, the world made one there: move on a little
 # and run it again. If the brain's `put` or its progress line fails with nothing found, check
@@ -51,6 +67,12 @@ wait 2
 keyis vandi_p_$player_defeated_gdking 2
 keyis vandi_p_$player_defeated_queen 2
 
+# A black metal pickaxe, whose tool tier is well above copper's, so the one swing on each
+# deposit below is never refused as too hard.
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
 # The metal half is open for both, everywhere, so what changes below is only the biome.
 
 console malmr
@@ -59,7 +81,11 @@ printed mistlands=Eitr yes
 printed Copper unlock=30 open=yes yes
 printed Eitr unlock=60 open=yes yes
 
-# ---- the control: copper in the Black Forest vein mines.
+console malmr vein on
+printed malmr vein=on yes
+
+# ---- the control: copper in the Black Forest vein mines. One swing lands and no chunk is hurt,
+# because the blow went into the bar.
 
 biome BlackForest
 put rock4_copper_frac 3
@@ -69,7 +95,11 @@ printed biome=BlackForest yes
 printed handonly=no yes
 printed open=yes yes
 
-# ---- the same copper in the Mistlands is mined by hand.
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+# ---- the same copper in the Mistlands is mined by hand. Vein mining is still on, and the same
+# swing hurts at least one chunk.
 
 biome Mistlands
 put rock4_copper_frac 3
@@ -79,18 +109,26 @@ printed biome=Mistlands yes
 printed handonly=yes yes
 printed open=no yes
 
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 1+
+
 # ---- and the brains there vein mine. Further out than the copper so the two do not overlap;
-# progress is asked by name, so which pivot is nearer does not matter.
+# progress is asked by name, so which pivot is nearer does not matter, and within 20 metres for
+# the reason in the header. The brain is not swung at: its tool tier is asset data nobody has
+# read yet, and a pickaxe too weak for it fails `swing` for a reason that is not the rule.
 
 put giant_brain_frac 8
-console malmr progress giant_brain_frac
+console malmr progress giant_brain_frac 20
 printed prefab=giant_brain_frac metal=Eitr yes
 printed biome=Mistlands yes
 printed handonly=no yes
 printed open=yes yes
+printed reach=20 yes
 
 # ---- put back what can be put back.
 
+console malmr vein off
+printed malmr vein=off yes
 unkey vandi_p_$player_defeated_gdking
 unkey vandi_p_$player_defeated_queen
 skill Pickaxes back

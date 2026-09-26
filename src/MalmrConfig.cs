@@ -189,6 +189,12 @@ namespace Malmr
             // since vanilla doesnt provide star". So the one number means two things depending
             // on what is installed, and the text says both, because the same cfg can sit on a
             // machine with Vandi and one without.
+            //
+            // The Call to Arms line is there because the per-name kill record only loads from a
+            // character saved at Version.Player.CallToArms (42) or later - LoadPlayerFromDisk
+            // skips it below that - so a veteran's old Elder kill reads as none, and "you have
+            // not beaten the Elder" would otherwise read as a bug to exactly the players with
+            // the oldest characters. Found in review on 2026-09-26.
             BossKills = cfg.Bind("Unlocks", "BossKills", 2,
                 "How many times you must have killed an entry's boss. With Vandi installed it is "
                 + "Vandi's count: kills of a boss you summoned yourself at its altar. 2 is the "
@@ -197,9 +203,11 @@ namespace Malmr
                 + "second is the boss at one star. Vandi counts kills, not stars, so with its "
                 + "HarderBosses off the second kill is a plain boss and still counts. Without "
                 + "Vandi there are no stars to ask for, and this number is not used: one kill of "
-                + "the boss by this character, as the game itself counts kills, opens it. On both, "
-                + "0 switches the boss half off and every entry opens on the Pickaxes level "
-                + "alone.");
+                + "the boss by this character, as the game itself counts kills, opens it. The "
+                + "game only started keeping that count per creature with its Call to Arms "
+                + "update, so a boss this character beat before then is not in it and has to be "
+                + "beaten again. On both, 0 switches the boss half off and every entry opens on "
+                + "the Pickaxes level alone.");
 
             // A KeyCode, so Core leaves it with the player whatever the host runs - keys are one
             // of the two types its sync exempts. It is still declared Local in the plugin, which

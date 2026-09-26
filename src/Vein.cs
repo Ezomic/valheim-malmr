@@ -126,15 +126,24 @@ namespace Malmr
 
             Focus.Struck(rock);
 
+            // Everything the log line needs, taken BEFORE the send. When this machine is the
+            // owner the send is handled on the spot, and if it fills the bar the deposit breaks
+            // inside it - its last chunk destroys it, which nulls the view's ZDO. Read after, the
+            // owner's id threw, the catch in Intercept called a counted blow a lost one, silenced
+            // every later warning for the session, and handed the swing to a vanilla Damage on a
+            // rock that no longer existed. Found in review on 2026-09-26; only with Verbose on.
+            string verbose = null;
+            if (MalmrConfig.Verbose.Value)
+                verbose = "Sent a vein mining blow on " + Utils.GetPrefabName(rock.gameObject)
+                    + " (" + kind.Metal + ") chunk " + area + " to "
+                    + (nview.IsOwner() ? "this machine" : "peer " + nview.GetZDO().GetOwner()) + ".";
+
             // To the owner, the road RPC_Damage takes. When this machine is the owner the call is
-            // handled on the spot, inside this swing, before Damage would have returned.
+            // handled on the spot, inside this swing, before Damage would have returned. Nothing
+            // below this line may touch the view.
             nview.InvokeRPC(Owner.Rpc, hit, area);
 
-            if (MalmrConfig.Verbose.Value)
-                MalmrPlugin.Log.LogInfo("Sent a vein mining blow on "
-                    + Utils.GetPrefabName(rock.gameObject) + " (" + kind.Metal + ") chunk " + area
-                    + " to " + (nview.IsOwner() ? "this machine" : "peer " + nview.GetZDO().GetOwner())
-                    + ".");
+            if (verbose != null) MalmrPlugin.Log.LogInfo(verbose);
 
             return true;
         }

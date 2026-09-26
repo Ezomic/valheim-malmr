@@ -27,9 +27,10 @@ namespace Malmr
     /// and says nothing; the deposit's resistances are applied; a pickaxe below the deposit's
     /// tool tier shows the game's own "too hard" and adds nothing; the damage number floats up
     /// where vanilla would put it; a blow of zero stops there; and then the deposit's own hit
-    /// effect, the noise that wakes things nearby, the ward flash for a deposit that has one, and
-    /// the mine-hit stat. The only difference is the last line - the number goes into the bar
-    /// instead of off the chunk.
+    /// effect, the noise that wakes things nearby, and the mine-hit stat. The ward flash for a
+    /// deposit that has one comes after all of that on every blow, landed or not, because
+    /// RPC_Damage flashes whatever DamageArea answered. The only difference is the last line -
+    /// the number goes into the bar instead of off the chunk.
     ///
     /// The wire version is in the name, the way Skra does it: a peer on another build has no
     /// handler for this hash and drops it, where a changed parameter list under an unchanged
@@ -104,9 +105,29 @@ namespace Malmr
                 return;
             }
 
+            HitData template;
+            bool full = Count(rock, nview, sender, hit, area, out template);
+
+            // After the count and before any break, in the order RPC_Damage has it: DamageArea,
+            // then the flash, whatever DamageArea answered.
+            Ward(rock, hit);
+
+            if (full) Collapse.Start(rock, nview, template);
+        }
+
+        /// <summary>
+        /// DamageArea's half of the mirror: everything from "which chunk" to the number going
+        /// into the bar. True when the bar is now full and the deposit should break, with the
+        /// blow as the swing built it for the break to reuse.
+        /// </summary>
+        private static bool Count(Component rock, ZNetView nview, long sender, HitData hit, int area,
+                                  out HitData template)
+        {
+            template = null;
+
             // Mid-break, the blow has nothing left to add to. A vanilla blow at a chunk that is
             // already falling is spent on nothing too.
-            if (Collapse.Busy(nview)) return;
+            if (Collapse.Busy(nview)) return false;
 
             Collider[] areas = Deposits.Areas(rock, true);
             if (area < 0 || area >= areas.Length)
@@ -114,18 +135,18 @@ namespace Malmr
                 // "Missing hit area" in vanilla, and logged there too.
                 MalmrPlugin.Log.LogWarning("A vein mining blow named chunk " + area + " of "
                     + Utils.GetPrefabName(rock.gameObject) + ", which has " + areas.Length + ".");
-                return;
+                return false;
             }
 
             Ledger.Reading before = Ledger.Read(rock, nview);
-            if (before == null) return;
+            if (before == null) return false;
 
             // "Already destroyed": no damage, no text, no effect.
-            if (before.Health[area] <= 0f) return;
+            if (before.Health[area] <= 0f) return false;
 
             // Kept before resistances touch it. The break reuses this blow as its template -
             // attacker, tool tier, direction - and needs it as the swing built it.
-            HitData template = hit.Clone();
+            template = hit.Clone();
 
             HitData.DamageModifier significant;
             hit.ApplyResistance(Ledger.Modifiers(rock), out significant);
@@ -137,29 +158,55 @@ namespace Malmr
             {
                 if (DamageText.instance != null)
                     DamageText.instance.ShowText(DamageText.TextType.TooHard, point, 0f);
-                return;
+                return false;
             }
 
             if (DamageText.instance != null)
                 DamageText.instance.ShowText(significant, point, damage);
 
-            if (damage <= 0f) return;
+            if (damage <= 0f) return false;
 
             Effects(rock, hit, point);
 
+            // Progress a restock made stale reads as zero here (see Ledger), so the first blow
+            // on a regrown vein starts its bar again rather than finishing the old one.
             float progress = before.Progress + damage;
             bool full = progress >= before.Total;
 
-            Ledger.SetProgress(nview, progress);
+            Ledger.SetProgress(nview, progress, before.Total);
 
             if (MalmrConfig.Verbose.Value)
                 MalmrPlugin.Log.LogInfo(Utils.GetPrefabName(rock.gameObject) + ": +"
                     + damage.ToString("0.0") + " from peer " + sender + ", "
                     + progress.ToString("0.0") + " of " + before.Total.ToString("0.0")
                     + " across " + before.Standing + " chunk(s)"
+                    + (before.Stale ? ", the old bar dropped because the deposit grew back" : "")
                     + (full ? " - full, breaking it" : ""));
 
-            if (full) Collapse.Start(rock, nview, template);
+            return full;
+        }
+
+        /// <summary>
+        /// RPC_Damage's ward flash, on EVERY blow that reaches the owner, with "destroyed" false:
+        /// a blow into the bar breaks nothing, and the break itself goes through RPC_Damage,
+        /// which flashes again for each chunk it takes.
+        ///
+        /// Every blow, not only the ones that count. Vanilla calls DamageArea and then flashes
+        /// whatever it answered - a chunk already gone, a pickaxe too weak, a blow of zero all
+        /// flash - and PrivateArea.OnObjectDamaged is also what counts blows toward a ward's
+        /// guards turning hostile (MonsterAI.OnPrivateAreaAttacked). The first version flashed
+        /// only once a blow had landed, so in vein mode a too-weak pickaxe on a warded deposit
+        /// raised nothing where the same swing by hand would. MineRock's RPC_Hit has no flash.
+        /// </summary>
+        private static void Ward(Component rock, HitData hit)
+        {
+            MineRock5 vein = rock as MineRock5;
+            if (vein == null || !vein.m_triggerPrivateArea) return;
+
+            Character attacker = hit.GetAttacker();
+            if (attacker == null) return;
+
+            PrivateArea.OnObjectDamaged(vein.transform.position, attacker, false);
         }
 
         /// <summary>
@@ -178,7 +225,8 @@ namespace Malmr
         /// Everything DamageArea and RPC_Hit do after a blow lands and before the chunk is
         /// checked for death. The stat matters more than it looks: vanilla counts mine hits for
         /// a player on the machine that owns the rock, and anything reading those counters would
-        /// otherwise see vein mining as no mining at all.
+        /// otherwise see vein mining as no mining at all. The ward flash is not here: it belongs
+        /// to every blow, landed or not - see Ward.
         /// </summary>
         private static void Effects(Component rock, HitData hit, Vector3 point)
         {
@@ -204,11 +252,6 @@ namespace Malmr
             // MineRock's per-hit callback. Nothing Malmr classes as ore is known to use it, but
             // it is the deposit's own reaction to being hit and a mirror keeps it.
             if (small != null && small.m_onHit != null) small.m_onHit();
-
-            // RPC_Damage's ward flash, with "destroyed" false: a blow into the bar breaks nothing.
-            // The break itself goes through RPC_Damage, which flashes for each chunk it takes.
-            if (vein != null && vein.m_triggerPrivateArea && attacker != null)
-                PrivateArea.OnObjectDamaged(vein.transform.position, attacker, false);
 
             Player player = attacker as Player;
             if (player == null || player != Player.m_localPlayer || Game.instance == null) return;

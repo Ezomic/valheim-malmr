@@ -1,0 +1,149 @@
+# Malmr: with vein mining on, a pickaxe blow on an open deposit fills the deposit's bar instead
+# of breaking the chunk it struck, and a full bar breaks the whole deposit. With vein mining off,
+# the same swing mines by hand.
+#
+# This is the one scenario that swings. The others only read what `malmr` prints, so a build
+# whose swing never reached the bar - the Damage prefix not applied, or a game update renaming
+# RPC_Damage, which Collapse sends by name - passed all of them. Written after review on
+# 2026-09-26 said so.
+#
+# Every swing is a real one: Devkit's `swing` calls Humanoid.StartAttack as the attack key does,
+# and a swing only counts once it has LANDED, meaning the deposit's ZDO was written. In vein mode
+# the only write is the bar's progress float, so a swing that lands while `hurt` still reads no
+# chunk below full health is a blow that went somewhere other than the chunks. `malmr progress`
+# then says where.
+#
+# NEEDS VANDI, like malmr-unlock-levels.txt. Copper's boss half is seeded through Vandi's own
+# kill record (vandi_p_<playerid>_defeated_gdking at 2, the one-star kill), and the key is removed
+# at the end. A character with real Vandi kills of the Elder in this world loses them. Without
+# Vandi the first `printed Copper ... open=yes` fails, because the Elder would need a real kill.
+#
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). Stand
+# anywhere: `biome Meadows` takes you to open ground outside the Mistlands, where copper is not
+# left to the hand. FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop
+# stamina use, and the long swing near the end is fifty swings in one step; a hungry character
+# can run dry and fail it on stamina, which the step's note names.
+#
+# It LEAVES BEHIND: a black metal pickaxe added to the pack on every run, god and ghost mode on
+# (Devkit cannot switch them off again), and the control deposit from the second block, which the
+# third block takes down with its own `put`. The deposit in the third block breaks. Pickaxes is
+# put back, the Vandi key is removed, and vein mode ends off.
+#
+# What a broken build reads, block by block:
+#   - into the bar: a build that lets the blow through to the chunk reads `hurt` 1 or more and
+#     damage=0.0. A build whose owner never counts the blow writes nothing, so `swing` fails
+#     with "none of them changed".
+#   - by hand: a build stuck in vein mode, or one that ignores the switch, reads `hurt` 0.
+#   - the whole deposit: a build whose full bar never breaks it, or breaks only part of it,
+#     still has the deposit standing after the swings, so `malmr progress` prints its line and
+#     progress=none fails. The note carries its percent and how many chunks are left.
+#
+# WHAT IT CANNOT SEE:
+#   - The bar and the gold Vein marker. They are IMGUI and no step reads them, so they are
+#     checked by eye against mockup A.
+#   - A pickaxe too weak for the rock. The bar then adds nothing and writes nothing, and `swing`
+#     cannot tell that from missing the rock, so it fails. That one is by hand.
+#   - Where the ore lands and how much of it there is. The drop table rolls, and the pickaxe
+#     picks some of it up on the way, so no count here would be honest.
+#   - Two players on one deposit. That needs two clients.
+#
+# If the fifty swings run out before the bar is full, the last assertion fails with the deposit
+# still standing and its percent in the note. That is a deposit bigger than fifty swings of a
+# black metal pickaxe at Pickaxes 100, not the rule failing - but no vanilla copper deposit is
+# expected to be that big, so read the percent before deciding which.
+#
+# The `logged` lines are a backstop, not the proof. Malmr says each of those warnings once per
+# session, so one already said before this run would not be said again.
+
+god
+ghost
+
+# ---- the fixture. Through zero first, for the reason malmr-unlock-levels.txt gives, then 100:
+# copper opens at 30, and every blow is as hard as the skill makes it, so the full bar takes the
+# fewest swings. A black metal pickaxe for the same reason, and its tool tier is well above
+# copper's, so no blow below is refused as too hard.
+
+skill Pickaxes 0
+skill Pickaxes 100
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+biome Meadows
+
+console malmr
+printed bosscount=vandi yes
+printed Copper unlock=30 open=yes yes
+
+# ---- into the bar. One swing with vein mining on. It lands, and not one chunk is below full
+# health: the damage went into the bar, which progress then shows above zero. owner=self says
+# this machine owns the deposit, so the blow took the on-the-spot road through the owner's
+# handler rather than the network.
+#
+# One swing and not more. A pickaxe strikes every chunk its arc reaches, and each of those is a
+# whole blow into the bar, so at Pickaxes 100 a few swings could fill a small deposit's bar and
+# break it before `hurt` looks. If `hurt` fails with the deposit gone, that is what happened.
+
+console malmr vein on
+printed malmr vein=on yes
+
+put rock4_copper_frac 3
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed handonly=no yes
+printed owner=self yes
+printed stale=no yes
+printed damage=0.0 no
+
+# ---- by hand, the control. The same prefab, the same pickaxe, vein mining off: one swing
+# damages at least one chunk and the bar stays empty. Without this, `hurt 0` above could be a
+# pickaxe that never hurts this rock at all. The `put` takes the first deposit down.
+
+console malmr vein off
+printed malmr vein=off yes
+
+put rock4_copper_frac 3
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 1+
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 yes
+
+# ---- the whole deposit. A fresh one, vein mining on, and up to fifty swings. `swing` stops
+# early and passes when the deposit is gone. Gone is then asked of `malmr progress`, which looks
+# as far as `swing` reached - ten metres from you to the deposit - and you have not moved, so
+# progress=none can only mean it broke.
+
+console malmr vein on
+printed malmr vein=on yes
+
+put rock4_copper_frac 3
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 50
+wait 1
+
+console malmr progress rock4_copper_frac
+printed progress=none yes
+
+logged did not break whole no
+logged could not finish breaking no
+logged could not be sent no
+logged could not be counted no
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_gdking
+skill Pickaxes back

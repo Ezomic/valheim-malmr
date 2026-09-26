@@ -32,8 +32,14 @@ namespace Malmr
     /// </summary>
     internal static class DevConsole
     {
-        /// <summary>How far `malmr progress` looks for a deposit.</summary>
+        /// <summary>How far `malmr progress` looks for a deposit unless told otherwise.</summary>
         private const float ProgressReach = 10f;
+
+        /// <summary>
+        /// The most it may be told. A scenario asking about something it put down a few metres
+        /// away needs a little more than ten on a slope, and nothing needs the whole scene.
+        /// </summary>
+        private const float ProgressReachMax = 50f;
 
         /// <summary>
         /// Process-wide, not per world. Terminal's command table is a private static that
@@ -50,9 +56,10 @@ namespace Malmr
                 _registered = true;
 
                 new Terminal.ConsoleCommand("malmr",
-                    "[vein on|off | progress [prefab]] - what your Pickaxes level and boss kills "
-                    + "open, and what every deposit counts as. vein switches vein mining like its "
-                    + "key; progress reads the bar of the nearest deposit, or the nearest of that name",
+                    "[vein on|off | progress [prefab] [metres]] - what your Pickaxes level and boss "
+                    + "kills open, and what every deposit counts as. vein switches vein mining like "
+                    + "its key; progress reads the bar of the nearest deposit within 10 metres, or "
+                    + "the nearest of that name, or within that many metres",
                     OnCommand, isCheat: false);
             }
         }
@@ -79,13 +86,13 @@ namespace Malmr
 
             if (verb == "progress")
             {
-                Progress(term, player, args.Length > 2 ? args[2] : null);
+                ProgressVerb(term, player, args);
                 return;
             }
 
             if (verb.Length > 0)
             {
-                term.AddString("malmr: unknown '" + args[1] + "'. Try malmr, malmr vein on|off or malmr progress [prefab].");
+                term.AddString("malmr: unknown '" + args[1] + "'. Try malmr, malmr vein on|off or malmr progress [prefab] [metres].");
                 return;
             }
 
@@ -117,19 +124,57 @@ namespace Malmr
         // ---------------------------------------------------------------- malmr progress
 
         /// <summary>
-        /// The nearest deposit within ProgressReach, or the nearest of one prefab name, read the
-        /// way the bar reads it. The whole scene is searched, which is fine for a command someone
-        /// types and would not be for something run every frame.
+        /// `malmr progress [prefab] [metres]`. A number where the name would go is the reach,
+        /// since no deposit prefab is called 20.
+        ///
+        /// The reach exists for malmr-mistlands.txt, which stands a giant brain eight metres out
+        /// and asks about it. Ten metres is measured from you to the deposit's pivot, height
+        /// included, so on a Mistlands slope the brain could stand six metres above or below and
+        /// read as "none" - a failure about the ground, not about Malmr. Found in review on
+        /// 2026-09-26.
+        /// </summary>
+        private static void ProgressVerb(Terminal term, Player player, Terminal.ConsoleEventArgs args)
+        {
+            string only = null;
+            float reach = ProgressReach;
+            int next = 2;
+
+            float number;
+            if (args.Length > next && !float.TryParse(args[next], NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+            {
+                only = args[next];
+                next++;
+            }
+
+            if (args.Length > next)
+            {
+                if (!float.TryParse(args[next], NumberStyles.Float, CultureInfo.InvariantCulture, out number)
+                    || number <= 0f)
+                {
+                    term.AddString("malmr progress: '" + args[next] + "' is not a number of metres");
+                    return;
+                }
+
+                reach = Mathf.Min(number, ProgressReachMax);
+            }
+
+            Progress(term, player, only, reach);
+        }
+
+        /// <summary>
+        /// The nearest deposit within reach, or the nearest of one prefab name, read the way the
+        /// bar reads it. The whole scene is searched, which is fine for a command someone types
+        /// and would not be for something run every frame.
         ///
         /// The name is for scenarios that stand two deposits near each other: "nearest" alone is
         /// a geometry tie waiting to happen, and would read whichever pivot was closer.
         /// </summary>
-        private static void Progress(Terminal term, Player player, string only)
+        private static void Progress(Terminal term, Player player, string only, float reachMetres)
         {
             Vector3 here = player.transform.position;
 
             Component nearest = null;
-            float best = ProgressReach;
+            float best = reachMetres;
 
             foreach (MineRock5 many in Object.FindObjectsByType<MineRock5>(FindObjectsSortMode.None))
                 Consider(many, here, only, ref nearest, ref best);
@@ -139,7 +184,7 @@ namespace Malmr
 
             // reach= is on every answer, found or not, so a scenario can prove the verb ran without
             // knowing whether a deposit stands nearby. The command's own echo cannot carry it.
-            string reach = " reach=" + ProgressReach.ToString("0", CultureInfo.InvariantCulture);
+            string reach = " reach=" + reachMetres.ToString("0.#", CultureInfo.InvariantCulture);
 
             if (nearest == null)
             {
@@ -174,6 +219,10 @@ namespace Malmr
                 + " percent=" + reading.Percent
                 + " damage=" + reading.Progress.ToString("0.0", CultureInfo.InvariantCulture)
                 + " total=" + reading.Total.ToString("0.0", CultureInfo.InvariantCulture)
+                // stale=yes: progress was stored, but the deposit has grown back since, so the
+                // bar reads empty - see Ledger. A player asking why a restocked vein starts at
+                // 0% gets the answer here rather than in the code.
+                + " stale=" + (reading.Stale ? "yes" : "no")
                 + " chunks=" + reading.Standing + "/" + reading.Chunks
                 + " owner=" + (nview.IsOwner() ? "self" : "other")
                 + " distance=" + best.ToString("0.0", CultureInfo.InvariantCulture)

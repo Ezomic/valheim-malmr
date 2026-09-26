@@ -45,7 +45,9 @@ namespace Malmr
     ///
     /// <b>If it is cut off</b> - the owner leaves, the deposit unloads - the job simply stops.
     /// The bar is not cleared until every chunk is gone, so what is left reads 100% on whoever
-    /// owns it next, and the next vein blow there breaks the rest.
+    /// owns it next, and the next vein blow there breaks the rest. The chunks already broken
+    /// only shrank the total, so the stored progress still counts - Ledger throws it away only
+    /// when the total has grown.
     /// </summary>
     internal static class Collapse
     {
@@ -244,7 +246,12 @@ namespace Malmr
             // restock, and the bar must start empty when the chunks come back. With chunks still
             // up - a cut-off job, or blows the deposit refused - the bar stays full, so the next
             // vein blow finishes the job rather than the player losing it.
-            if (left != null && left.Standing == 0) Ledger.SetProgress(job.View, 0f);
+            //
+            // Not the only thing that empties a restocked bar any more. A vein finished by hand
+            // never reaches this line, and Ledger.Read now throws away progress stored against
+            // a smaller total than the deposit has - see Ledger. This clear stays because it is
+            // the tidy answer where Malmr did the breaking, and costs one write.
+            if (left != null && left.Standing == 0) Ledger.SetProgress(job.View, 0f, left.Total);
 
             if (job.Refused > 0 || (left != null && left.Standing > 0 && job.View.IsOwner()))
             {

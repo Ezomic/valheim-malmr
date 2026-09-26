@@ -22,10 +22,12 @@ namespace Malmr
     /// Everything scales with the screen height against 1080, the text included, and the text
     /// never goes below 12: the suite's floor, the smallest that reads on Robbin's setup.
     ///
-    /// <b>One thing not in the mockup:</b> each line of text has a one-pixel black shadow under
-    /// it. Without one, white on a snowfield and gold on a lit sky are unreadable, and vanilla's
-    /// own hover text carries an outline for the same reason. If the mockup is to be matched
-    /// to the pixel, the shadow is the two lines in Text and nothing else changes.
+    /// <b>No text shadow</b>, because the mockup has none. The first build of this drew a
+    /// one-pixel black shadow under both lines, argued from white on a snowfield and gold on a
+    /// lit sky, and review took it out on 2026-09-26: the picked mockup is the spec, and an
+    /// element he did not pick is his call, not this file's. If he wants it after seeing the
+    /// text over snow, it is a second GUI.Label one pixel down and right, in black, before the
+    /// real one in Text.
     ///
     /// IMGUI, so the mod stays one DLL with no asset bundle. Kept to this one class: what
     /// decides when it shows and what it says is Focus, and where the numbers come from is
@@ -37,7 +39,6 @@ namespace Malmr
         private static readonly Color Border = new Color32(0x6b, 0x5a, 0x3a, 0xff);
         private static readonly Color Back = Color.black;
         private static readonly Color White = Color.white;
-        private static readonly Color Shadow = new Color(0f, 0f, 0f, 0.85f);
 
         // The mockup's numbers, at 1080p.
         private const float BarWidth = 120f;
@@ -55,7 +56,7 @@ namespace Malmr
         private const float TextGap = 3f;
 
         private static Texture2D _gold, _border, _back;
-        private static GUIStyle _marker, _label, _shadow;
+        private static GUIStyle _marker, _label;
         private static float _builtFor = -1f;
 
         /// <summary>
@@ -107,11 +108,9 @@ namespace Malmr
             Text(under, label, _label);
         }
 
-        /// <summary>A line of text with its one-pixel shadow - see the class comment.</summary>
+        /// <summary>A line of text, plain, as the mockup draws it - see the class comment.</summary>
         private static void Text(Rect area, string text, GUIStyle style)
         {
-            float offset = Mathf.Max(1f, Mathf.Round(_builtFor));
-            GUI.Label(new Rect(area.x + offset, area.y + offset, area.width, area.height), text, _shadow);
             GUI.Label(area, text, style);
         }
 
@@ -145,7 +144,6 @@ namespace Malmr
             };
 
             _label = new GUIStyle(_marker) { normal = { textColor = White } };
-            _shadow = new GUIStyle(_marker) { normal = { textColor = Shadow } };
         }
 
         private static Texture2D Solid(Color colour)
