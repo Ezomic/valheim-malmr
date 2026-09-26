@@ -1,65 +1,126 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 
 namespace Malmr
 {
     /// <summary>
-    /// The mod's Harmony patches. One class named in the plugin's PatchAll, so nothing goes
-    /// live by being written.
+    /// The swing bracket. Both attack shapes a pickaxe could use, because which one a given
+    /// pickaxe uses is asset data: every vanilla pickaxe swings as a melee attack, but a
+    /// pickaxe with an area attack would reach MineRock5 through DoAreaAttack instead, and a
+    /// mod could ship one.
     ///
-    /// Two rules that this file exists to hold in view.
-    ///
-    /// Ride vanilla systems rather than hand-rolling them. The suite's mods do their work by
-    /// reading the game's own tables - Smelter.m_conversion, the Hammer's piece table - and
-    /// by going through Player.PlacePiece so validity stays the game's problem. Keeping new
-    /// features on that seam is what makes them survive a game update; a custom subclass or
-    /// a patch on movement trades that away.
-    ///
-    /// Never guess an API. Read it, with
-    /// <c>ilspycmd -t &lt;Type&gt; -r "&lt;ManagedDir&gt;" "&lt;ManagedDir&gt;\assembly_valheim.dll"</c>,
-    /// or take the numbers off a devkit rip. A wrong method name is a Harmony patch that
-    /// throws once at load and then quietly never runs.
+    /// Returned as a list from a target method rather than stacked attributes. Core found out
+    /// the hard way that Harmony merges stacked [HarmonyPatch] attributes into ONE target, so
+    /// two of them patch one method and say nothing about the other. A missing method is
+    /// logged rather than thrown, so a rename in a game update costs the one shape it renamed.
     /// </summary>
-    internal static class MalmrPatches
+    [HarmonyPatch]
+    internal static class SwingPatch
     {
-        /// <summary>
-        /// A patch that does nothing, kept so the wiring is proved rather than assumed. It
-        /// is the first thing to check when a mod loads and appears to do nothing at all: if
-        /// this line is absent from the log, the problem is the patch not applying, not the
-        /// logic behind it.
-        /// </summary>
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
-        private static void OnSpawned(Player __instance)
+        [HarmonyTargetMethods]
+        private static IEnumerable<MethodBase> Targets()
         {
-            // Every player object in the scene runs this, not only yours. Anything meant for
-            // the person at the keyboard needs this line.
-            if (__instance != Player.m_localPlayer) return;
-            if (!MalmrConfig.Enabled.Value || !MalmrConfig.Verbose.Value) return;
+            var found = new List<MethodBase>();
 
-            MalmrPlugin.Log.LogInfo("Player spawned - patches are live.");
+            foreach (string name in new[] { "DoMeleeAttack", "DoAreaAttack" })
+            {
+                MethodInfo method = AccessTools.Method(typeof(Attack), name);
+                if (method != null) found.Add(method);
+                else MalmrPlugin.Log.LogWarning("Attack." + name + " is gone, so a pickaxe "
+                    + "swinging that way will not follow veins.");
+            }
+
+            return found;
         }
 
-        // Traps worth having in front of you while writing the real ones. All of these were
-        // paid for once already:
-        //
-        //   Character.OnDeath runs on the OWNING CLIENT ONLY. Its own !IsOwner() early
-        //   return is dead code, so the block above it looks like it runs everywhere and
-        //   does not. Anything per-player at a kill has to be done by the owner for
-        //   everybody, e.g. through Player.GetPlayersInRange.
-        //
-        //   SEMan.Internal_AddStatusEffect refreshes an already-running effect in place and
-        //   returns without reaching the public AddStatusEffect overload. Patching only the
-        //   public one misses every refresh.
-        //
-        //   Player.ConsumeItem removes the item whatever EatFood returned. Refuse food in
-        //   CanConsumeItem, which is the gate that path respects; refusing later destroys it.
-        //
-        //   The first ObjectDB.Awake of a session fires against a stub with no items. Gate
-        //   anything that reads the item database on m_items.Count > 0, and hook
-        //   ObjectDB.CopyOtherDB as well - that is the path a client takes on joining a
-        //   server.
-        //
-        //   Writing to a container or ZDO you do not own is silently discarded. Call
-        //   nview.ClaimOwnership() first, which is what vanilla's Take All does.
+        [HarmonyPrefix]
+        private static void Open(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon)
+        {
+            Vein.Open(___m_character, ___m_weapon);
+        }
+
+        [HarmonyPostfix]
+        private static void Close(Attack __instance, Humanoid ___m_character,
+                                  ItemDrop.ItemData ___m_weapon)
+        {
+            Vein.Close(__instance, ___m_character, ___m_weapon);
+        }
+
+        /// <summary>
+        /// Runs whether or not the attack threw. A swing that throws halfway never reaches the
+        /// postfix, and leaving the bracket open would make the next hit on a deposit by some
+        /// other path look like part of a swing.
+        /// </summary>
+        [HarmonyFinalizer]
+        private static Exception Reset(Exception __exception)
+        {
+            Vein.Reset();
+            return __exception;
+        }
+    }
+
+    /// <summary>
+    /// What each swing struck, read on the way in to the deposit's own Damage - the public
+    /// method Attack calls, and the one that turns a collider into an area index. Prefixes, so
+    /// the HitData is seen exactly as the swing built it.
+    /// </summary>
+    internal static class DamagePatches
+    {
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MineRock5), nameof(MineRock5.Damage))]
+        private static void Vein5(MineRock5 __instance, HitData hit)
+        {
+            Vein.Record(__instance, hit);
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MineRock), nameof(MineRock.Damage))]
+        private static void VeinSmall(MineRock __instance, HitData hit)
+        {
+            Vein.Record(__instance, hit);
+        }
+    }
+
+    /// <summary>
+    /// The unlock, said out loud.
+    ///
+    /// On Player.OnSkillLevelup, which Skills.RaiseSkill calls once for every level gained,
+    /// with the new level, right before it shows vanilla's own "skill improved" line - so this
+    /// lands beside the level-up it is about. Only the raw level is compared here: a buff that
+    /// lifts Pickaxes past an unlock opens the vein without a message, which is honest, because
+    /// the buff will wear off and the message would still be on the screen.
+    /// </summary>
+    internal static class Announce
+    {
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Player), nameof(Player.OnSkillLevelup))]
+        private static void LevelUp(Player __instance, Skills.SkillType skill, float level)
+        {
+            if (__instance == null || __instance != Player.m_localPlayer) return;
+            if (skill != Skills.SkillType.Pickaxes) return;
+            if (!MalmrConfig.Enabled.Value || !MalmrConfig.AnnounceUnlocks.Value) return;
+            if (MalmrConfig.MaxExtraChunks.Value <= 0) return;
+
+            int reached = (int)level;
+            var names = new List<string>();
+
+            foreach (KeyValuePair<string, int> entry in MalmrConfig.UnlockTable())
+            {
+                if (entry.Key == MalmrConfig.AnyMetal) continue;
+                if (entry.Value == reached) names.Add(Deposits.DisplayName(entry.Key));
+            }
+
+            if (names.Count == 0) return;
+
+            string metals = names.Count == 1
+                ? names[0]
+                : string.Join(", ", names.GetRange(0, names.Count - 1).ToArray())
+                  + " and " + names[names.Count - 1];
+
+            __instance.Message(MessageHud.MessageType.Center,
+                "Your pickaxe follows " + metals + " veins now");
+        }
     }
 }
