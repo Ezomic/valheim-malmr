@@ -11,7 +11,8 @@
 #      swing and off zero after it, and after each of two swings no chunk is hurt.
 #   3. The whole deposit. Pickaxes 100, which makes every blow as hard as it gets, and up to fifty
 #      swings. The first is checked on its own to have gone into the bar. After the rest the
-#      deposit is gone.
+#      deposit is gone, and copper ore came out of it: at least one, on the ground and in the pack
+#      counted together (see WHAT IT CANNOT SEE for why together).
 #
 # Blocks 1 and 2 stand exactly on copper's line, Pickaxes 30 with two kills, because that is the
 # least a player needs and the place an off-by-one would show.
@@ -52,10 +53,11 @@
 #     `hurt 0` after the first swing, since fifty hand swings at Pickaxes 100 could also empty it.
 #
 # WHAT IT CANNOT SEE:
-#   - How much ore came out. Devkit's `dropped` and `carrying` count exactly, the drop table rolls,
-#     and ore that lands within two metres of you flies into your pack, so no count here would be
-#     honest. "At least one" is not a thing any step can say. The ground and the pack are cleared of
-#     copper ore before block 3, so the look by eye at the bottom of this file means something.
+#   - How MUCH ore came out. The drop table rolls, so the check is at least one, not a number. And
+#     it is asked of the ground and the pack together with Devkit's `found`, because ore that lands
+#     within two metres of you flies into your pack: `dropped` alone would fail the day every piece
+#     landed in reach, `carrying` alone the day none did. The ground and the pack are cleared of
+#     copper ore before block 3, so whatever `found` counts came out of that deposit.
 #   - The bar and the gold Vein marker. They are IMGUI and no step reads them, so they are checked
 #     by eye against mockup A.
 #   - A pickaxe too weak for the rock. The bar then adds nothing and writes nothing, which `swing`
@@ -137,8 +139,8 @@ swing rock4_copper_frac 1
 hurt rock4_copper_frac 0
 
 # ---- 3. the whole deposit. Pickaxes 100, so the bar fills in the fewest swings. The ground and the
-# pack are cleared of copper ore first. Block 1 knocked some loose, and without this the look by eye
-# at the bottom could find that instead.
+# pack are cleared of copper ore first. Block 1 knocked some loose, and without this `found` could count
+# that instead.
 
 skill Pickaxes 100
 
@@ -167,6 +169,11 @@ wait 1
 console malmr progress rock4_copper_frac
 printed progress=none yes
 
+# The ore. A deposit that broke without dropping anything reads 0 here, however green the lines
+# above are - which is why this is the last word on block 3 rather than the eye check it used to be.
+
+found CopperOre 1+ 20
+
 logged did not break whole no
 logged could not finish breaking no
 logged could not be sent no
@@ -178,14 +185,3 @@ console malmr vein off
 printed malmr vein=off yes
 unkey vandi_p_$player_defeated_gdking
 skill Pickaxes back
-
-# ---- THE ORE, by eye, because no step can count it (see the header).
-#
-#   1. When the pane says the run is done, stay where you are and look at the ground 3 metres in
-#      front of you, where the third deposit stood.
-#      Want: copper ore lying there. The ground was swept just before that deposit went up, so any
-#      copper ore there came out of it. Ore that landed within two metres of you flew into the pack
-#      during the run and went when the run emptied it, so the ground holds only the rest.
-#   2. If you see none, walk over the spot and watch the top left of the screen.
-#      Want: a line saying copper ore went into your pack. If nothing comes, the deposit went without
-#      dropping anything, and that is a failure of block 3 however green its lines are.
