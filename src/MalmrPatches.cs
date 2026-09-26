@@ -84,45 +84,27 @@ namespace Malmr
     }
 
     /// <summary>
-    /// The unlock, said out loud.
+    /// The level-up half of the unlock message. The message itself, and the boss-kill half, are
+    /// Opened's - see there for why the message follows the metal's state rather than this event.
     ///
     /// On Player.OnSkillLevelup, which Skills.RaiseSkill calls once for every level gained,
-    /// with the new level, right before it shows vanilla's own "skill improved" line - so this
-    /// lands beside the level-up it is about. The level it is handed is the earned one, without
-    /// bonuses, and that is also the level the swing unlocks on (Vein.EarnedLevel), so the
-    /// message arrives on the swing where the vein starts and never before or after it. The
-    /// first version unlocked on the buffed level and announced on this one, which put the two
-    /// a standing bonus apart - two levels, for anyone with Rist's Quick study capstone.
+    /// after the level has moved and right before it shows vanilla's own "skill improved" line.
+    /// Calling Opened from here rather than waiting for its once-a-second look is what puts a
+    /// metal opened by the level beside the level-up it is about, on the swing that earned it.
+    /// The level Opened reads is the earned one, the same the swing reads (Vein.EarnedLevel):
+    /// the first version unlocked on the buffed level and announced on this one, which put the
+    /// two a standing bonus apart - two levels, for anyone with Rist's Quick study capstone.
     /// </summary>
     internal static class Announce
     {
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Player), nameof(Player.OnSkillLevelup))]
-        private static void LevelUp(Player __instance, Skills.SkillType skill, float level)
+        private static void LevelUp(Player __instance, Skills.SkillType skill)
         {
             if (__instance == null || __instance != Player.m_localPlayer) return;
             if (skill != Skills.SkillType.Pickaxes) return;
-            if (!MalmrConfig.Enabled.Value || !MalmrConfig.AnnounceUnlocks.Value) return;
-            if (MalmrConfig.MaxExtraChunks.Value <= 0) return;
 
-            int reached = (int)level;
-            var names = new List<string>();
-
-            foreach (KeyValuePair<string, int> entry in MalmrConfig.UnlockTable())
-            {
-                if (entry.Key == MalmrConfig.AnyMetal) continue;
-                if (entry.Value == reached) names.Add(Deposits.DisplayName(entry.Key));
-            }
-
-            if (names.Count == 0) return;
-
-            string metals = names.Count == 1
-                ? names[0]
-                : string.Join(", ", names.GetRange(0, names.Count - 1).ToArray())
-                  + " and " + names[names.Count - 1];
-
-            __instance.Message(MessageHud.MessageType.Center,
-                "Your pickaxe follows " + metals + " veins now");
+            Opened.Check();
         }
     }
 }

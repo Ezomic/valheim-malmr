@@ -4,18 +4,20 @@ using HarmonyLib;
 namespace Malmr
 {
     /// <summary>
-    /// `malmr` in the console: your Pickaxes level, what each metal needs and gives you at it,
-    /// and what every deposit in this world counts as.
+    /// `malmr` in the console: your Pickaxes level, what each metal needs - the level and the
+    /// boss - and gives you at it, which of the two is still missing, and what every deposit in
+    /// this world counts as.
     ///
     /// It exists for two readers. A player who wants to know how far off silver is, without
-    /// swinging at a silver vein to find out. And a Devkit scenario, which cannot swing a
-    /// pickaxe or put a deposit in the world, but can set the skill, run this and assert on
-    /// what it printed - so the unlock table, the level arithmetic and the drop-based
-    /// classification can be proved in game even though the swing itself cannot.
+    /// swinging at a silver vein to find out - and since the boss half, whether it is the level
+    /// or Moder they are still short of. And a Devkit scenario, which cannot swing a pickaxe or
+    /// put a deposit in the world, but can set the skill, seed Vandi's kill record, run this and
+    /// assert on what it printed - so the unlock table, the level arithmetic, the boss gate and
+    /// the drop-based classification can be proved in game even though the swing itself cannot.
     ///
     /// <b>isCheat: false, and that is honest rather than lax.</b> Every line only reads: the
-    /// config, the player's own skill, and prefab data every client already holds. Nothing
-    /// here changes a rule, a skill or the world. A cheat command would need devcommands typed
+    /// config, the player's own skill, Vandi's kill count, and prefab data every client already
+    /// holds. Nothing here changes a rule, a skill or the world. A cheat command would need devcommands typed
     /// first, and running any cheat marks the character as having cheated - which Dyrr reads
     /// at the dev server's door.
     ///
@@ -39,8 +41,9 @@ namespace Malmr
                 _registered = true;
 
                 new Terminal.ConsoleCommand("malmr",
-                    "what your Pickaxes level opens: each metal's unlock level, the extra chunks "
-                    + "a swing takes now, and what every deposit in this world counts as",
+                    "what your Pickaxes level and boss kills open: each metal's unlock level and "
+                    + "boss, which is still missing, the extra chunks a swing takes now, and what "
+                    + "every deposit in this world counts as",
                     OnCommand, isCheat: false);
             }
         }
@@ -67,19 +70,40 @@ namespace Malmr
                 + " pickaxes=" + (int)level
                 + " maxextra=" + MalmrConfig.MaxExtraChunks.Value
                 + " step=" + MalmrConfig.LevelsPerExtraChunk.Value
-                + " buried=" + (MalmrConfig.LeaveBuried.Value ? "left" : "taken"));
+                + " buried=" + (MalmrConfig.LeaveBuried.Value ? "left" : "taken")
+                + " bosskills=" + MalmrConfig.BossKills.Value);
 
             if ((int)buffed != (int)level)
                 term.AddString("Your gear and effects put Pickaxes at " + (int)buffed
                     + ". That makes each blow harder but does not open veins early.");
 
+            // One line per metal, both halves of its unlock and which is still missing. The
+            // same Gate the swing asks, with the same level, so this is the rule as the swing
+            // sees it and not a second copy of it. The tokens come first and carry no spaces,
+            // so a scenario can assert "Copper unlock=20 extra=1" as it always could, and
+            // "kills=1/2" or "missing=boss" on top; the words in brackets are for a person.
             foreach (KeyValuePair<string, int> entry in MalmrConfig.UnlockTable())
             {
-                int extra = MalmrConfig.Enabled.Value ? MalmrConfig.ExtraChunks(level, entry.Value) : 0;
+                Gate gate = Gate.For(entry.Key, level);
+                int extra = MalmrConfig.Enabled.Value ? gate.Extra : 0;
 
-                term.AddString(entry.Key + " unlock=" + entry.Value + " extra=" + extra
-                    + (entry.Key == MalmrConfig.AnyMetal ? "   (any other ore a station smelts)" : ""));
+                string boss = gate.Boss == null
+                    ? " boss=none"
+                    : " boss=" + gate.Boss + " kills="
+                      + (gate.Kills < 0 ? "?" : gate.Kills.ToString()) + "/" + gate.KillsNeeded;
+
+                term.AddString(entry.Key + " unlock=" + entry.Value + " extra=" + extra + boss
+                    + " missing=" + gate.Missing
+                    + "   (" + (entry.Key == MalmrConfig.AnyMetal ? "any other ore a station smelts, " : "")
+                    + gate.Why() + ")");
             }
+
+            // A boss Vandi does not count, or that nothing in this world sets, keeps its metals
+            // shut forever while looking exactly like a boss nobody has killed yet. Said here as
+            // well as in the log, because this is where a player asking "why is silver still
+            // shut" is looking.
+            foreach (string hole in Bosses.Holes())
+                term.AddString(hole);
 
             Deposits.Rebuild();
 

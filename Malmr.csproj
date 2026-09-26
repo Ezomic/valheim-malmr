@@ -18,7 +18,7 @@
     <Authors>Robbin Thijssen</Authors>
     <Company>Thijssen Software</Company>
     <Product>Malmr</Product>
-    <Description>Vein mining, unlocked metal by metal as your Pickaxes skill grows.</Description>
+    <Description>Vein mining that opens metal by metal, once your Pickaxes skill is high enough and you have beaten that biome's boss at one star.</Description>
     <Copyright>Copyright (c) 2026 Robbin Thijssen</Copyright>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -69,6 +69,13 @@
          to plugins\Core, and a second copy landing beside this one would be two assemblies
          sharing one BepInPlugin GUID, which is a plugin that silently does not load. -->
     <ProjectReference Include="..\core\Core.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <!-- Vandi keeps the boss kill count a metal waits for, read through its VandiApi. A hard
+         dependency (see MalmrPlugin), and Private=false for the same reason as Core: Vandi
+         deploys its own DLL to plugins\Vandi, and a second copy beside this one would be two
+         assemblies sharing one BepInPlugin GUID. -->
+    <ProjectReference Include="..\vandi\Vandi.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

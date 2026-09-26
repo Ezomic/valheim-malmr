@@ -1,7 +1,8 @@
 # Malmr
 
-Once your Pickaxes skill is high enough for a metal, a swing at that metal's deposit also takes
-a few of the chunks next to the one you hit. Each metal opens at its own level.
+Once your Pickaxes skill is high enough for a metal, and you have beaten that metal's boss at one
+star, a swing at that metal's deposit also takes a few of the chunks next to the one you hit. Each
+metal opens at its own level.
 
 *Malmr* is Old Norse for ore, and for metal. The mod is about both: you mine the ore, and it
 unlocks by the metal it smelts into.
@@ -18,10 +19,19 @@ earn it per metal on the Pickaxes skill you already have, so tin opens early and
 And the extra chunks cost the pickaxe what mining them by hand would have cost, so mining gets
 faster without getting cheaper.
 
+A metal also waits for the boss of the biome it comes from, beaten at one star through
+[Vandi](https://github.com/Ezomic/valheim-vandi). The level shows you have mined that metal by
+hand for a while. The boss asks you to go back to that biome's hardest fight once more before
+mining there gets easier. Vandi brings a boss back one star harder every time you kill it again,
+so the one-star fight is your second kill of that boss. Your first kill opens the next biome as
+it always did.
+
 ## What it does
 
 - A pickaxe swing at a deposit of an unlocked metal takes extra chunks beside the ones it hit,
   walking outward through chunks that touch, nearest first.
+- A metal is unlocked when your Pickaxes level has reached its level and you have killed its
+  boss twice through Vandi. Either one can come first.
 - One extra chunk at the unlock level, one more every 10 levels after it, and never more than
   4 extra chunks in one swing.
 - Each extra chunk takes one of the blows your swing landed on the chunks you hit. A chunk that
@@ -31,31 +41,54 @@ faster without getting cheaper.
 - A chunk that falls by itself because the one under it broke does not use up one of the four.
 - Chunks still under the ground are left alone. You dig down to a silver vein in vanilla and
   you still do.
-- When a level-up opens a metal, the game tells you in the middle of the screen.
+- When a metal opens, the game tells you in the middle of the screen, once. That happens on the
+  level-up or on the boss kill, whichever came last.
 - There is no key. It works on the pickaxe in your hand once the metal is unlocked.
 - No new items, prefabs or saved values. A world played with Malmr is an ordinary world.
 
 ## The unlock table
 
-| Metal | Pickaxes level |
-| --- | --- |
-| Tin | 10 |
-| Copper | 20 |
-| Iron | 30 |
-| Silver | 40 |
-| Flametal | 60 |
-| Bloodgold (`Gold` in the config) | 70 |
-| Any other ore a furnace takes | 50 |
+| Metal | Pickaxes level | Boss, killed twice |
+| --- | --- | --- |
+| Tin | 10 | The Elder |
+| Copper | 20 | The Elder |
+| Iron | 30 | Bonemass |
+| Silver | 40 | Moder |
+| Flametal | 60 | Fader |
+| Bloodgold (`Gold` in the config) | 70 | Fader |
+| Any other ore a furnace takes | 50 | none |
 
 The levels follow the biomes. By the time a metal opens you have mined it by hand for a while.
-Copper at 20 means one extra chunk at 20, two at 30, three at 40 and four from 50 on.
+Copper at 20 means one extra chunk at 20, two at 30, three at 40 and four from 50 on. The boss
+does not change that count. Beat the Elder a second time at Pickaxes 45 and copper opens with
+three extra chunks straight away.
 
 The level that counts is the one you earned, the big number on the skills page. A bonus on top
 of it from gear, food or another mod makes each blow harder, as it always does, but it does not
-open a metal early. The message arrives on the level-up that opens the metal, not before.
+open a metal early. The message arrives when the metal opens, not before.
 
 Iron covers anything whose drop smelts into iron, so muddy scrap piles count. Obsidian is not on
-the list because nothing smelts it, so obsidian rocks stay vanilla unless you add them.
+the list because nothing smelts it, so obsidian rocks stay vanilla unless you add them. If you
+do, it already has Moder as its boss.
+
+## The boss
+
+Only kills Vandi counts are counted here, which means a boss you summoned yourself at its altar.
+Helping a friend with their Bonemass does not count for you, the same as in Vandi. Your first
+kill is the boss as the game ships it and your second is the boss at one star. Malmr waits for
+that second kill. Vandi counts kills rather than stars, so if a server turns off Vandi's harder
+bosses the second kill still counts.
+
+Vandi keeps the count in the world, not on your character. A character that moves to a new
+world starts there without its boss kills, and its veins in that world wait for them again.
+
+Bloodgold waits for Fader, the same as flametal, because Vandi and Utangard both give the Deep
+North to Fader and a boss Vandi does not count can never be met. The Deep North does have a boss
+of its own in 1.0. Once its defeat key has been read in game it can go into Vandi's `BossBiomes`
+and into `Bosses` here. The log lists every boss in the world with its key when a world loads.
+
+If `Bosses` names a boss Vandi does not count, or one nothing in the world ever sets, its metals
+can never open. The log says so on world load and so does the `malmr` command.
 
 ## What it costs
 
@@ -88,13 +121,15 @@ When a world loads, the log gets one block listing every deposit in it, what it 
 why, and any metal in the table that nothing matched. If a deposit comes out wrong, name it in
 `Deposits` and that wins over the drops.
 
-In the console, `malmr` prints your Pickaxes level, what each metal gives you at it, and the
-same deposit list. No devcommands needed.
+In the console, `malmr` prints your Pickaxes level, what each metal gives you at it, its boss and
+your kills of it, which of the two you are still missing, and the same deposit list. No
+devcommands needed.
 
 ## Installing
 
-Needs BepInEx. Nothing else. Through a mod manager it is one install. By hand, put `Malmr.dll`
-in `BepInEx/plugins/Malmr/`.
+Needs BepInEx and Vandi. Through a mod manager it is one install, because Vandi comes along. By
+hand, put `Malmr.dll` in `BepInEx/plugins/Malmr/` and install Vandi as well. Without Vandi,
+BepInEx does not load Malmr at all and says why in its log.
 
 Then start the game once and quit. That first run writes the config file. It does not exist
 before the mod has loaded, which is the usual reason people think it is broken.
@@ -109,6 +144,10 @@ with the reasoning, so the file explains itself. The ones worth knowing about:
 - `MaxExtraChunks` and `LevelsPerExtraChunk` are the cap and how fast you grow into it.
 - `Deposits` overrides what a deposit counts as, by its prefab name.
 - `LeaveBuried` keeps the digging.
+- `Bosses` is the boss column of the table, as one line: `Copper:defeated_gdking, ...`. A metal
+  left out needs no boss.
+- `BossKills` is how many kills of that boss you need. 2 is the one-star kill. 0 turns the boss
+  half off and every metal opens on the level alone.
 - `DurabilityPerChunk`, `StaminaPerChunk` and `ExtraChunksTrainSkill` are the costs.
 
 Changing a default in a new version does nothing on a machine that has already run the mod.
@@ -124,9 +163,13 @@ message a swing sends. Whoever owns the deposit handles it the vanilla way and n
 A player without Malmr is let in and mines one chunk at a time.
 
 If [Core](https://github.com/Ezomic/valheim-core) is installed, Malmr registers with its version
-gate and the host's unlock table, cap and costs apply to everyone connected who has Malmr, in
-memory only. Your own config file comes back the moment you disconnect. Without Core the mod
-still runs, and each player plays by their own file.
+gate and the host's unlock table, bosses, cap and costs apply to everyone connected who has
+Malmr, in memory only. Your own config file comes back the moment you disconnect. Without Core
+the mod still runs, and each player plays by their own file.
+
+Vandi needs everyone to have it, because its star rolls and its boss credit happen on whichever
+player's machine owns that part of the world. So a player with Malmr also has Vandi, and can
+only join a server with Core if that server runs Vandi too.
 
 A player with Malmr can also join a server that does not have it, and will vein mine there on
 their own settings. The server has no way to tell those hits apart from normal ones.
@@ -135,7 +178,9 @@ their own settings. The server has no way to tell those hits apart from normal o
 
 None of it has run in game yet. The deposit list, whether the Ashlands flametal and the Deep
 North bloodgold deposits are recognised, how many chunks a swing takes in practice, and
-anything with a second player are all still to be seen.
+anything with a second player are all still to be seen. The boss half has not run either: the
+count read through Vandi, the message on the kill that opens a metal, and a kill recorded on
+somebody else's machine reaching yours.
 
 ## Bugs and ideas
 

@@ -272,10 +272,14 @@ namespace Malmr
                 used.Add(row.Kind.Entry);
 
                 int level = MalmrConfig.LevelFor(row.Kind.Entry);
+                string boss = MalmrConfig.BossFor(row.Kind.Entry);
 
                 text.Append("\n   ").Append(row.Prefab.PadRight(26)).Append(' ')
                     .Append(row.Kind.Metal).Append(", ")
-                    .Append(level < 0 ? "never" : "from Pickaxes " + level)
+                    .Append(level < 0
+                        ? "never"
+                        : "from Pickaxes " + level
+                          + (boss != null ? " and " + boss + " x" + MalmrConfig.BossKills.Value : ""))
                     .Append(", ").Append(row.Chunks).Append(" chunk(s) - ")
                     .Append(row.Kind.Why);
             }
@@ -297,6 +301,11 @@ namespace Malmr
             }
 
             text.Append("\n   ").Append(SmeltingLine);
+
+            // The boss half, in the same block and for the same reason: which metal waits for
+            // whom, any boss that can never be met, and every boss the world has with the key it
+            // sets. That last line is the offline-unreadable fact the Deep North's own boss needs.
+            Bosses.Describe(text);
 
             MalmrPlugin.Log.LogInfo(text.ToString());
         }

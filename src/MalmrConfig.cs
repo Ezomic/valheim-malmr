@@ -15,7 +15,7 @@ namespace Malmr
     /// change. When a config-driven change appears to do nothing in game, read the cfg
     /// before reading any code.
     ///
-    /// The two strings below are parsed on demand and re-parsed only when their text changes,
+    /// The three strings below are parsed on demand and re-parsed only when their text changes,
     /// because Core can rewrite them live when a host's values arrive, and so can a config
     /// manager. A parse cached once at load would keep the joining player on their own table
     /// for the whole evening while the log said the host's was in force.
@@ -29,6 +29,9 @@ namespace Malmr
         internal static ConfigEntry<int> MaxExtraChunks;
         internal static ConfigEntry<string> Deposits;
         internal static ConfigEntry<bool> LeaveBuried;
+
+        internal static ConfigEntry<string> Bosses;
+        internal static ConfigEntry<int> BossKills;
 
         internal static ConfigEntry<float> DurabilityPerChunk;
         internal static ConfigEntry<float> StaminaPerChunk;
@@ -112,6 +115,49 @@ namespace Malmr
                 + "and not the tip that counts because the game drops a chunk's ore at its "
                 + "middle, so a chunk judged by its tip would put its ore inside the hillside.");
 
+            // The second half of an unlock, Robbin's rule of 2026-09-26: the level says you have
+            // mined the metal by hand for a while, the boss says you have gone back to the fight
+            // that opened its biome and won it again at one star. Keyed by metal like Unlocks
+            // and matched the same way, so the two lines read side by side and a mod ore named
+            // in one can be named in the other. A separate string rather than a third field on
+            // each Unlocks pair: "Copper:20:defeated_gdking" would have turned a line people
+            // already edit into one they have to count colons in, and would have broken every
+            // cfg written before this.
+            //
+            // Defeat keys rather than creature names, spelled the way Vandi's BossBiomes spells
+            // them, because the count is Vandi's and Vandi files it under that key. Gold is on
+            // Fader, not on a Deep North boss of its own: Vandi and Utangard both pair
+            // defeated_fader with the Deep North, and a key Vandi does not count can never be
+            // met - a metal on it would stay shut forever and look exactly like one that was
+            // merely waiting.
+            Bosses = cfg.Bind("Unlocks", "Bosses",
+                "Copper:defeated_gdking, Tin:defeated_gdking, Iron:defeated_bonemass, "
+                + "Silver:defeated_dragon, Obsidian:defeated_dragon, Flametal:defeated_fader, "
+                + "Gold:defeated_fader",
+                "The boss each metal also waits for, as Metal:bosskey pairs, comma separated. A "
+                + "metal opens when BOTH hold: your Pickaxes level has reached its Unlocks level, "
+                + "and you have killed its boss at least BossKills times through Vandi. The boss "
+                + "is the one whose biome the metal comes from: the Elder for tin and copper, "
+                + "Bonemass for iron, Moder for silver and obsidian, Fader for flametal. Gold, the "
+                + "Deep North's bloodgold, is on Fader too, the same pairing Vandi and Utangard use "
+                + "for the Deep North. The key is the boss's defeat key, the one the game sets when "
+                + "it dies, spelled as in Vandi's BossBiomes. Names match Unlocks the same way, so "
+                + "Flametal covers both flametals. A metal not in this list needs no boss, only "
+                + "the level, and that includes every other ore under * unless you add a "
+                + "*:bosskey pair. Only a boss Vandi counts can ever be met: a key missing from "
+                + "Vandi's BossBiomes reads as no kills forever, and the log says so when a world "
+                + "loads.");
+
+            BossKills = cfg.Bind("Unlocks", "BossKills", 2,
+                "How many times you must have killed a metal's boss, as Vandi counts them: kills of "
+                + "a boss you summoned yourself at its altar. 2 is the one-star kill. Vandi brings "
+                + "a boss back one star harder for every repeat kill, so your first kill is the "
+                + "boss as the game ships it and your second is the boss at one star. That second "
+                + "fight is the price of the vein. 1 asks only that you have beaten it once. 0 "
+                + "switches the boss half off, and every metal opens on the Pickaxes level alone. "
+                + "Vandi counts kills, not stars, so with its HarderBosses off the second kill is a "
+                + "plain boss and still counts.");
+
             // The three costs below share one unit, and it is the blow, not the swing. A swing
             // pays once however many chunks it struck - a fractured deposit often shows two or
             // three damage numbers a swing - so what one chunk cost by hand is the swing's cost
@@ -145,9 +191,11 @@ namespace Malmr
                 + "done it.");
 
             AnnounceUnlocks = cfg.Bind("Display", "AnnounceUnlocks", true,
-                "Say so in the middle of the screen when a Pickaxes level-up opens a metal's "
-                + "veins. Without it the only way to find out is to notice that a swing took "
-                + "more than it should have.");
+                "Say so in the middle of the screen when a metal's veins open for you, whichever "
+                + "of the two came last: the Pickaxes level-up or the boss kill. Once per opening. "
+                + "A metal already open when you log in is not announced again. Without it the "
+                + "only way to find out is to notice that a swing took more than it should have, "
+                + "or to type malmr in the console.");
 
             // Not synced by intent - see the plugin. A diagnostic flag is personal, and a
             // host turning on someone else's logging is not a thing anybody asked for.
@@ -255,7 +303,10 @@ namespace Malmr
         private static string _depositsRaw;
         private static Dictionary<string, string> _deposits;
 
-        /// <summary>Bumped whenever either string changes, so cached classifications know.</summary>
+        /// <summary>
+        /// Bumped whenever any of the three strings changes, so cached classifications know, and
+        /// so the unlock message can tell a changed rule from a metal opening. See Opened.
+        /// </summary>
         internal static int Revision { get; private set; }
 
         /// <summary>The override for a deposit prefab, or null when it has none.</summary>
@@ -275,6 +326,65 @@ namespace Malmr
 
             string name;
             return _deposits.TryGetValue(prefab ?? "", out name) ? name : null;
+        }
+
+        // ---------------------------------------------------------------- Bosses
+
+        private static string _bossesRaw;
+        private static Dictionary<string, string> _bosses;
+
+        /// <summary>
+        /// The defeat key an Unlocks entry also waits for, lowercased, or null when it needs no
+        /// boss.
+        ///
+        /// Matched the way MatchEntry matches a metal: exact first, then with a trailing "New"
+        /// taken off both sides, so the two lines may spell a metal differently and still meet.
+        /// A "*" pair is only ever the "*" entry's, never a fallback for a named metal - a named
+        /// metal left out of Bosses needs no boss, which is what the cfg text promises.
+        ///
+        /// Null as well when BossKills is 0 or less, which is the switch for the whole boss half.
+        /// Answering that here rather than in every caller is what keeps the swing, the console
+        /// and the unlock message from disagreeing about whether a boss is needed.
+        /// </summary>
+        internal static string BossFor(string entry)
+        {
+            if (string.IsNullOrEmpty(entry) || BossKills.Value <= 0) return null;
+
+            Dictionary<string, string> table = BossTable();
+
+            string key;
+            if (table.TryGetValue(entry, out key)) return key;
+
+            if (entry == AnyMetal) return null;
+
+            string bare = WithoutNew(entry);
+            foreach (KeyValuePair<string, string> pair in table)
+            {
+                if (pair.Key == AnyMetal) continue;
+                if (string.Equals(WithoutNew(pair.Key), bare, StringComparison.OrdinalIgnoreCase))
+                    return pair.Value;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The parsed Bosses line, metal to defeat key. Lowercased keys, because Vandi files its
+        /// counts lowercased and so does the game every global key on its way in.
+        /// </summary>
+        internal static Dictionary<string, string> BossTable()
+        {
+            string raw = Bosses.Value ?? "";
+            if (_bosses != null && raw == _bossesRaw) return _bosses;
+
+            _bossesRaw = raw;
+            _bosses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var pair in Pairs(raw))
+                _bosses[pair.Key] = pair.Value.ToLowerInvariant();
+
+            Changed();
+            return _bosses;
         }
 
         private static void Changed()

@@ -1,31 +1,55 @@
-# Malmr: each metal opens at its own Pickaxes level, and the extra chunks grow with the skill
-# after that, up to the cap.
+# Malmr: each metal opens at its own Pickaxes level AND once its biome's boss has been beaten at
+# one star through Vandi, and the extra chunks grow with the skill after that, up to the cap.
 #
 # Runs against the DEFAULT config. Every number asserted below is the default Unlocks table
 # (Copper 20, Tin 10, Iron 30, Silver 40, Flametal 60, Gold 70, * 50), a step of 10 levels per
-# extra chunk and a cap of 4. A cfg that has been edited fails here honestly, so read the cfg
-# first if the first assertion is off by a clean amount.
+# extra chunk, a cap of 4, the default Bosses line (Copper and Tin on defeated_gdking, Iron on
+# defeated_bonemass, Silver on defeated_dragon, Flametal and Gold on defeated_fader) and BossKills
+# 2. A cfg that has been edited fails here honestly, so read the cfg first if the first assertion
+# is off by a clean amount.
 #
 # SINGLEPLAYER, or anywhere the host runs the defaults. On a server Core swaps the host's table
 # in, and `malmr` prints what is in force rather than what is in your own file.
+#
+# A TEST WORLD. The boss half is seeded by writing Vandi's own kill record for this character -
+# the four keys below, vandi_p_<playerid>_<bosskey> with the count as the value, lowercase, the
+# layout in Vandi's Kills.cs - and the scenario owns them for the length of the run. It removes
+# them at the end, because Devkit can set and remove a global key but cannot put back a value it
+# did not write. A character with real Vandi kills in this world loses them. Vandi's own
+# scenario does the same with its keys.
+#
+# Malmr never reads that key itself; it asks VandiApi. So if Vandi ever changes the layout, this
+# file is what goes stale, and it goes stale loudly: every metal reads kills=0/2, the keyis lines
+# still pass, and the first level block fails on extra=0.
 #
 # Any character. The level compared is the one earned, the big number on the skills page, so a
 # bonus on top - Rist's Quick study capstone, a set effect, a food - changes nothing here. If
 # the character has one, `malmr` says so on a line of its own, and every assertion still holds.
 #
-# What it reads: `malmr` prints "pickaxes=<earned level>" and "<Metal> unlock=<level>
-# extra=<n>" for every entry, where n is how many chunks beyond the struck ones a swing at that
-# metal takes right now. That is the same function the swing calls, with the same level, so
-# this is the level arithmetic as the swing sees it.
+# What it reads: `malmr` prints "pickaxes=<earned level>" and, for every entry,
+# "<Metal> unlock=<level> extra=<n> boss=<key> kills=<have>/<need> missing=<what>", where n is
+# how many chunks beyond the struck ones a swing at that metal takes right now and missing is
+# none, level, boss, both or off. A metal with no boss prints boss=none and no kills. That is the
+# same Gate the swing asks, with the same level and the same count, so this is the rule as the
+# swing sees it.
+#
+# The unlock message is checked with `centre`, which reads the centre of the screen and then
+# clears it, so each check answers only for what was shown since the one before. `skill` sets
+# the level through CheatRaiseSkill, which does not go through Player.OnSkillLevelup, but Malmr
+# also looks once a second for a metal that has just opened, and that look is what shows the
+# message after a boss kill - so it shows after `skill` too, within a second. Every `centre`
+# below is preceded by a wait of two for that reason.
 #
 # WHAT IT CANNOT SEE, so that a pass is not read as more than it is:
 #
 #   - The swing. Devkit has no step that swings a pickaxe and none that puts a deposit in the
 #     world, so nothing here proves a chunk comes off. The steps that would are written up in
 #     the mod's notes: put, swing, hurt and durability.
-#   - The unlock message. `skill` sets the level through CheatRaiseSkill, which does not go
-#     through Player.OnSkillLevelup, so the message never fires here. Level up by mining to
-#     see it.
+#   - A real boss kill. The count is seeded, not earned. This proves Malmr reads the count Vandi
+#     keeps for the local player and gates on it; that Vandi writes that count when a boss dies
+#     is Vandi's own scenario's job.
+#   - The message on a real level-up, through OnSkillLevelup. The once-a-second look is the one
+#     proved here.
 #
 # It moves Pickaxes and puts it back at the end with `skill Pickaxes back`.
 
@@ -36,19 +60,38 @@
 
 skill Pickaxes 0
 
-# ---- one below tin. Nothing is open.
+# ---- every boss at two kills, the one-star kill, so the level blocks below test the level alone,
+# as they did before the boss half existed. keyis proves each key holds what was written, so a
+# failure further down is Malmr's and not the fixture's.
+
+key vandi_p_$player_defeated_gdking 2
+key vandi_p_$player_defeated_bonemass 2
+key vandi_p_$player_defeated_dragon 2
+key vandi_p_$player_defeated_fader 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+keyis vandi_p_$player_defeated_bonemass 2
+keyis vandi_p_$player_defeated_dragon 2
+keyis vandi_p_$player_defeated_fader 2
+
+# Clears the centre and nothing else. No message says this text, so the step passes whatever is
+# there; what it buys is that a message found by a later `centre` was shown during this run.
+
+centre nothing malmr ever says no
+
+# ---- one below tin. Nothing is open, and it is the level that is missing, not the boss.
 
 skill Pickaxes 9
 console malmr
 printed pickaxes=9 yes
-printed Tin unlock=10 extra=0 yes
+printed Tin unlock=10 extra=0 boss=defeated_gdking kills=2/2 missing=level yes
 printed Copper unlock=20 extra=0 yes
 
 # ---- tin opens, copper does not.
 
 skill Pickaxes 10
 console malmr
-printed Tin unlock=10 extra=1 yes
+printed Tin unlock=10 extra=1 boss=defeated_gdking kills=2/2 missing=none yes
 printed Copper unlock=20 extra=0 yes
 
 # ---- copper opens with one, and tin has grown to two ten levels on.
@@ -66,24 +109,77 @@ console malmr
 printed Copper unlock=20 extra=1 yes
 printed Tin unlock=10 extra=2 yes
 
-# ---- the cap. Tin would be 5 at 50 without it, and copper exactly reaches it.
+# ---- the cap. Tin would be 5 at 50 without it, and copper exactly reaches it. The * entry has
+# no boss, so it opens on the level alone.
 
 skill Pickaxes 50
 console malmr
 printed Tin unlock=10 extra=4 yes
 printed Copper unlock=20 extra=4 yes
-printed Iron unlock=30 extra=3 yes
-printed Silver unlock=40 extra=2 yes
-printed * unlock=50 extra=1 yes
+printed Iron unlock=30 extra=3 boss=defeated_bonemass kills=2/2 yes
+printed Silver unlock=40 extra=2 boss=defeated_dragon kills=2/2 yes
+printed * unlock=50 extra=1 boss=none missing=none yes
 printed Flametal unlock=60 extra=0 yes
 printed Gold unlock=70 extra=0 yes
 
-# ---- the top of the skill. Everything is open, and nothing is past the cap.
+# Tin, copper, iron and silver all opened since the clear, so a message came, and this read
+# clears it again for the next check.
+
+wait 2
+centre Your pickaxe follows yes
+
+# ---- the top of the skill. Everything is open, and nothing is past the cap. Flametal and gold
+# open here, and the only thing that moved since the clear above is the level, so the message
+# below is the level half's.
 
 skill Pickaxes 100
 console malmr
-printed Flametal unlock=60 extra=4 yes
-printed Gold unlock=70 extra=4 yes
+printed Flametal unlock=60 extra=4 boss=defeated_fader kills=2/2 yes
+printed Gold unlock=70 extra=4 boss=defeated_fader kills=2/2 yes
 printed Tin unlock=10 extra=4 yes
+wait 2
+centre Your pickaxe follows yes
 
+# ---- the boss half, at copper's own level. One kill is the boss as the game ships it; Malmr
+# waits for the second, the one-star kill. Only the Elder's metals shut: iron is on Bonemass,
+# which still has its two.
+
+skill Pickaxes 20
+key vandi_p_$player_defeated_gdking 1
+wait 2
+keyis vandi_p_$player_defeated_gdking 1
+console malmr
+printed Copper unlock=20 extra=0 boss=defeated_gdking kills=1/2 missing=boss yes
+printed Tin unlock=10 extra=0 boss=defeated_gdking kills=1/2 missing=boss yes
+
+# Shutting is silent: neither the level going down from 100 nor the kill going back to one may
+# say anything.
+
+centre Your pickaxe follows no
+
+# ---- the second kill lands. Copper and tin open, each with the chunks its level has already
+# earned, and the message comes on the kill, because the kill was the half that landed last.
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+console malmr
+printed Copper unlock=20 extra=1 boss=defeated_gdking kills=2/2 missing=none yes
+printed Tin unlock=10 extra=2 boss=defeated_gdking kills=2/2 missing=none yes
+centre Your pickaxe follows yes
+
+# ---- neither half. Below tin's level with one kill, the console says both are missing.
+
+skill Pickaxes 9
+key vandi_p_$player_defeated_gdking 1
+wait 2
+console malmr
+printed Tin unlock=10 extra=0 boss=defeated_gdking kills=1/2 missing=both yes
+printed * unlock=50 extra=0 boss=none missing=level yes
+
+# ---- put everything back. The keys go entirely, see the note at the top.
+
+unkey vandi_p_$player_defeated_gdking
+unkey vandi_p_$player_defeated_bonemass
+unkey vandi_p_$player_defeated_dragon
+unkey vandi_p_$player_defeated_fader
 skill Pickaxes back

@@ -300,17 +300,22 @@ namespace Malmr
                 return 0;
             }
 
-            int unlock = MalmrConfig.LevelFor(kind.Entry);
-
             // The earned level, not the buffed one the blow was rolled with - see EarnedLevel.
             // A bonus still makes each blow harder, as it does in vanilla; it does not open a
             // metal early.
             float level = EarnedLevel(player);
 
-            int allowed = MalmrConfig.ExtraChunks(level, unlock);
+            // Both halves of the unlock, the level and the boss, asked of the one place the
+            // console and the unlock message also ask - see Gate. Read here, on the swinging
+            // machine, for the same reason the level is: the kill count Vandi keeps is readable
+            // everywhere, but the swing is only ever decided on the machine that swings.
+            Gate gate = Gate.For(kind.Entry, level);
+            int unlock = gate.Unlock;
+
+            int allowed = gate.Extra;
             if (allowed <= 0)
             {
-                Quiet(rock, kind.Metal + " opens at Pickaxes " + unlock + ", you are at " + level);
+                Quiet(rock, kind.Metal + " is shut: " + gate.Why());
                 return 0;
             }
 
@@ -427,7 +432,11 @@ namespace Malmr
             if (MalmrConfig.Verbose.Value)
             {
                 MalmrPlugin.Log.LogInfo(Utils.GetPrefabName(rock.gameObject) + " (" + kind.Metal
-                    + ", Pickaxes " + level + " against " + unlock + "): " + done + " of "
+                    + ", Pickaxes " + level + " against " + unlock
+                    + (gate.Boss != null
+                        ? ", " + gate.Boss + " " + gate.Kills + " of " + gate.KillsNeeded
+                        : "")
+                    + "): " + done + " of "
                     + allowed + " extra chunk(s) at " + cost.Share.ToString("0.##")
                     + " of a swing each, " + live.Count + " live beside the "
                     + struck.Colliders.Count + " struck"

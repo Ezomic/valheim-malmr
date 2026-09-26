@@ -14,6 +14,10 @@ namespace Malmr
     /// at its own level, climbing with the biomes, and the number of extra chunks grows with
     /// the skill after that.
     ///
+    /// Since 2026-09-26 a metal also waits for its biome's boss: the Elder for tin and copper,
+    /// Bonemass for iron, Moder for silver, Fader for flametal and bloodgold, beaten at one star
+    /// through Vandi. See Gate for the rule and Bosses for why only Vandi can answer it.
+    ///
     /// Vein mining already exists and it is popular, and the reason is the same one Skaft
     /// answers for repair: a copper deposit is dozens of chunks and taking them one at a time
     /// is tedium, not difficulty. The popular version takes the whole deposit while you hold a
@@ -42,7 +46,9 @@ namespace Malmr
     /// the player profile, not on any ZDO. What leaves the machine is the RPC a vanilla swing
     /// sends, once per extra chunk; the deposit's owner applies it the vanilla way and needs no
     /// mod. So a player without Malmr sees an identical world, only with other people mining
-    /// faster - see RegisterWithCore for what that means for the gate.
+    /// faster - see RegisterWithCore for what that means for the gate. The one thing read from
+    /// outside the machine is Vandi's kill count, which lives in the world's global keys and so
+    /// is already on every client.
     ///
     /// There is deliberately no BepInProcess attribute. A dedicated server runs
     /// valheim_server.exe, and Core's gate only refuses on the server side of RPC_PeerInfo -
@@ -50,10 +56,20 @@ namespace Malmr
     /// </summary>
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     // Soft, not hard. A hard dependency that is absent does not degrade - the plugin never
-    // loads at all - and every mod here has to be installable on its own, because a stranger
-    // should not need two installs to get one mod. Soft still buys the load-order guarantee
-    // when Core is present, which is all that registering with the gate needs.
+    // loads at all - and a mod should not need a second install for something it can do
+    // without. Core is exactly that: what Malmr loses without it is the host's say, not the
+    // mod. Soft still buys the load-order guarantee when Core is present, which is all that
+    // registering with the gate needs.
     [BepInDependency(CoreGuid, BepInDependency.DependencyFlags.SoftDependency)]
+    // Hard, and the opposite argument. Vandi is not something Malmr can do without: the rule is
+    // that a metal opens once its biome's boss has been beaten at one star, and the only record
+    // of who beat what at how many stars is Vandi's. Soft would have left two bad choices when
+    // it is missing - every metal with a boss shut forever, which is a mod that loads and does
+    // nothing while its log says it is ready, or the boss half waved through, which is the
+    // generous version this mod exists not to be. A plugin BepInEx refuses to load, with a line
+    // naming the missing dependency, is the honest one of the three. Through a mod manager it
+    // is still one install: the manifest lists Vandi, so it comes along.
+    [BepInDependency(VandiGuid, BepInDependency.DependencyFlags.HardDependency)]
     public class MalmrPlugin : BaseUnityPlugin
     {
         public const string PluginGuid = "ezomic.valheim.malmr";
@@ -63,6 +79,9 @@ namespace Malmr
 
         /// <summary>Core's plugin GUID. Optional - see TryRegisterWithCore.</summary>
         private const string CoreGuid = "ezomic.valheim.core";
+
+        /// <summary>Vandi's plugin GUID. Required - see the attribute above and Bosses.</summary>
+        private const string VandiGuid = "ezomic.valheim.vandi";
 
         internal static ManualLogSource Log;
 
@@ -103,12 +122,15 @@ namespace Malmr
         }
 
         /// <summary>
-        /// Once per world, the table of every deposit and what it counts as. Cheap every other
-        /// frame - two reference compares and a return.
+        /// Once per world, the table of every deposit and what it counts as. Once a second, a
+        /// look at which metals have just opened, for the message - see Opened for why a boss
+        /// kill has to be looked for rather than heard. Cheap every other frame: a few compares
+        /// and a return.
         /// </summary>
         private void Update()
         {
             Deposits.SurveyTick();
+            Opened.Tick();
         }
 
         private void Apply(string what, Type patches)
@@ -178,6 +200,13 @@ namespace Malmr
             // Dyrr's job, not the gate's. What HostOnly does keep is the half that matters on a
             // server that has chosen it: a client that has Malmr is checked against the host
             // and gets the host's unlock table, cap and costs.
+            //
+            // The boss half does not change this argument, but it does change what HostOnly
+            // means in practice. Vandi comes with Malmr, and Vandi registers Everyone - its star
+            // roll and its boss credit run on whichever client owns a zone or a boss - so a
+            // player carrying Malmr can only join a Core server that runs the same Vandi. That
+            // is Vandi's requirement, stated by Vandi, and it is right: the kill count this mod
+            // reads is only kept by a world where everybody runs the mod that keeps it.
             Suite.Register(PluginGuid, PluginName, PluginVersion, Config, Requirement.HostOnly);
 
             // Registering already absorbs the whole config file, so naming these is a formality.
@@ -185,6 +214,7 @@ namespace Malmr
             // the host owns them is the point of putting Malmr on a server.
             Suite.Sync(MalmrConfig.Enabled, MalmrConfig.Unlocks, MalmrConfig.LevelsPerExtraChunk,
                        MalmrConfig.MaxExtraChunks, MalmrConfig.Deposits, MalmrConfig.LeaveBuried,
+                       MalmrConfig.Bosses, MalmrConfig.BossKills,
                        MalmrConfig.DurabilityPerChunk, MalmrConfig.StaminaPerChunk,
                        MalmrConfig.ExtraChunksTrainSkill);
 
