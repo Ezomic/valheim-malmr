@@ -9,7 +9,7 @@ namespace Malmr
     ///
     /// <b>Why this is not simply the level-up any more.</b> The first version announced on
     /// Player.OnSkillLevelup, when the level reached matched a metal's. With the boss half that
-    /// is only right when the boss came first. A player who reaches Pickaxes 20 before beating
+    /// is only right when the boss came first. A player who reaches Pickaxes 50 before beating
     /// the Elder at one star would be told copper was open when it was not, and then told
     /// nothing on the kill that actually opened it. So the message follows the metal's state,
     /// not either event: it fires when the whole Gate goes from shut to open.
@@ -27,9 +27,13 @@ namespace Malmr
     /// changing character or world, or after the rule itself changed takes the picture in
     /// silence: a metal already open when you arrive is not news, and neither is a host's table
     /// replacing your own when you join, which would otherwise open or shut half the list at
-    /// once. Shutting is always silent. Nothing is saved, so the mod still writes nothing to the
-    /// character or the world, and the one repeat that can happen is honest: the skill a death
-    /// takes can drop a metal back below its level, and earning that level again opens it again.
+    /// once. Shutting is always silent. Nothing is saved - this picture is the one thing about an
+    /// unlock the mod keeps, and it lives in memory - and the one repeat that can happen is
+    /// honest: the skill a death takes can drop a metal back below its level, and earning that
+    /// level again opens it again.
+    ///
+    /// The message names the vein mode key. An open metal does nothing until vein mode is on,
+    /// so the unlock is the one moment the player is sure to be told how to use it.
     ///
     /// The rebroadcast of the whole key list that every SetGlobalKey causes does not look like a
     /// change here, because a whole RPC runs inside one frame and this never looks mid-frame.
@@ -51,7 +55,6 @@ namespace Malmr
         /// </summary>
         private static int _revision = -1;
         private static int _bossKills = -1;
-        private static bool _capped;
 
         private static readonly Dictionary<string, bool> Was =
             new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -117,13 +120,10 @@ namespace Malmr
 
             // Read after the gates, because asking them is what parses a changed rule and moves
             // the revision.
-            bool capped = MalmrConfig.MaxExtraChunks.Value > 0;
-
             bool fresh = id != _player
                          || ZNetScene.instance != _scene
                          || MalmrConfig.Revision != _revision
-                         || MalmrConfig.BossKills.Value != _bossKills
-                         || capped != _capped;
+                         || MalmrConfig.BossKills.Value != _bossKills;
 
             var opened = new List<Gate>();
 
@@ -141,12 +141,11 @@ namespace Malmr
             _scene = ZNetScene.instance;
             _revision = MalmrConfig.Revision;
             _bossKills = MalmrConfig.BossKills.Value;
-            _capped = capped;
 
             if (opened.Count == 0) return;
 
             // Always logged, whatever Verbose says: it happens once per metal, and it is the line
-            // that answers "why did my pickaxe start doing that".
+            // that answers "why does vein mode fill a bar on this rock and not on that one".
             foreach (Gate gate in opened)
                 MalmrPlugin.Log.LogInfo(gate.Entry + " veins open: Pickaxes " + (int)gate.Level
                     + " of " + gate.Unlock
@@ -165,7 +164,28 @@ namespace Malmr
                 : string.Join(", ", names.GetRange(0, names.Count - 1).ToArray())
                   + " and " + names[names.Count - 1];
 
-            player.Message(MessageHud.MessageType.Center, "Your pickaxe follows " + metals + " veins now");
+            // The key is named, because the message is the one moment a player learns this mod
+            // exists: an open metal does nothing at all until vein mode is switched on.
+            player.Message(MessageHud.MessageType.Center, metals + " veins open to you now. Tap "
+                + KeyName(MalmrConfig.VeinToggleKey.Value) + " with a pickaxe out to mine a whole deposit");
+        }
+
+        /// <summary>
+        /// A KeyCode as a person reads it: LeftAlt as Left Alt. Only the word breaks; the name is
+        /// Unity's own, which is also what the player typed into the cfg.
+        /// </summary>
+        internal static string KeyName(KeyCode key)
+        {
+            string raw = key.ToString();
+            var text = new System.Text.StringBuilder(raw.Length + 4);
+
+            for (int i = 0; i < raw.Length; i++)
+            {
+                if (i > 0 && char.IsUpper(raw[i]) && !char.IsUpper(raw[i - 1])) text.Append(' ');
+                text.Append(raw[i]);
+            }
+
+            return text.ToString();
         }
     }
 }

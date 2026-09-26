@@ -12,15 +12,20 @@ namespace Malmr
     /// metal by hand for a while. The boss says you have gone back to the fight that opened its
     /// biome and won it again, harder.
     ///
-    /// <b>One answer, three askers.</b> The swing, the console and the unlock message all come
-    /// here, so they cannot disagree. The first version of this mod computed "is it open" in
-    /// the swing and again in the level-up message, and the two drifted apart by a standing
-    /// skill bonus before anybody noticed - see Vein.EarnedLevel. A second half to the rule is a
-    /// second chance for that, so the rule lives in one place.
+    /// <b>One answer, four askers.</b> The swing, the bar, the console and the unlock message
+    /// all come here, so they cannot disagree. The first version of this mod computed "is it
+    /// open" in the swing and again in the level-up message, and the two drifted apart by a
+    /// standing skill bonus before anybody noticed - see Vein.EarnedLevel. A second half to the
+    /// rule is a second chance for that, so the rule lives in one place.
+    ///
+    /// <b>Open or shut, nothing in between.</b> Until 2026-09-26 an open metal also carried a
+    /// count - how many extra chunks a swing took, growing every ten levels up to a cap. The bar
+    /// replaced that mechanic, and there is nothing left to grow into: a metal is either yours to
+    /// vein mine or it is not.
     ///
     /// <b>The local player only.</b> The kill count is read through Vandi for the player at this
-    /// keyboard, which is the only player a swing is ever decided for - Vein.Open refuses any
-    /// other attacker - and the only one the console and the message speak to.
+    /// keyboard, which is the only player a swing is ever decided for - Vein refuses any other
+    /// attacker - and the only one the console and the message speak to.
     ///
     /// A snapshot, built fresh each time it is asked for. Nothing here is cached, because both
     /// halves move while the game runs: the skill on every level-up, the count whenever Vandi
@@ -69,10 +74,10 @@ namespace Malmr
             return gate;
         }
 
-        /// <summary>Switched off in Unlocks, or the cap is 0 - no amount of play opens it.</summary>
+        /// <summary>Switched off in Unlocks - no amount of play opens it.</summary>
         public bool Off
         {
-            get { return Unlock < 0 || MalmrConfig.MaxExtraChunks.Value <= 0; }
+            get { return Unlock < 0; }
         }
 
         public bool LevelMet
@@ -86,19 +91,12 @@ namespace Malmr
         }
 
         /// <summary>
-        /// The chunks a swing at this metal takes beyond the struck ones, right now. The boss is
-        /// a gate and nothing more: once it is met, the count is the level arithmetic it always
-        /// was, so a player who beats the Elder at Pickaxes 45 gets copper's three chunks at
-        /// once, not one to grow from.
+        /// Whether this player may vein mine the metal right now. The boss is a gate and nothing
+        /// more, the level likewise: both met, it is open, whichever landed first.
         /// </summary>
-        public int Extra
-        {
-            get { return BossMet ? MalmrConfig.ExtraChunks(Level, Unlock) : 0; }
-        }
-
         public bool Open
         {
-            get { return Extra > 0; }
+            get { return !Off && LevelMet && BossMet; }
         }
 
         /// <summary>
@@ -119,8 +117,7 @@ namespace Malmr
         /// <summary>The same thing in words, for the console's tail and the Verbose log.</summary>
         public string Why()
         {
-            if (Unlock < 0) return "switched off in Unlocks";
-            if (MalmrConfig.MaxExtraChunks.Value <= 0) return "MaxExtraChunks is 0";
+            if (Off) return "switched off in Unlocks";
             if (Open) return "open";
 
             var wants = new List<string>();
@@ -134,6 +131,36 @@ namespace Malmr
                           + (Kills < 0 ? "a count Vandi would not give" : Kills.ToString()));
 
             return "needs " + string.Join(" and ", wants.ToArray());
+        }
+
+        /// <summary>
+        /// What is missing, as the player reads it on screen when a swing in vein mode meets a
+        /// shut metal: "Pickaxes 60 and Bonemass beaten at one star". Only the missing halves,
+        /// so a player who has the level is not told about it again.
+        ///
+        /// The boss half is said in stars, not kills, because stars are what the player sees on
+        /// the boss: Vandi brings a boss back one star harder per repeat kill, so kill number N
+        /// is the boss at N-1 stars. That is only a translation of BossKills, never a second
+        /// rule - a host who sets BossKills 3 is asking for the two-star kill, and that is what
+        /// the line says.
+        /// </summary>
+        public string Needs()
+        {
+            var wants = new List<string>();
+
+            if (!LevelMet) wants.Add("Pickaxes " + Unlock);
+
+            if (!BossMet)
+            {
+                string boss = Bosses.DisplayName(Boss);
+                int stars = KillsNeeded - 1;
+
+                wants.Add(stars <= 0
+                    ? boss + " beaten"
+                    : boss + " beaten at " + (stars == 1 ? "one star" : stars + " stars"));
+            }
+
+            return string.Join(" and ", wants.ToArray());
         }
     }
 }

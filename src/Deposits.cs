@@ -410,7 +410,7 @@ namespace Malmr
         /// took and argued it was harmless because nothing a rock drops goes into a kiln or a
         /// refinery - which is an assumption about asset data, and the likeliest place it fails
         /// is the Mistlands: a giant's brain is mined with a pickaxe and what it drops goes into
-        /// the eitr refinery. It would have become an "Eitr vein" at Pickaxes 50, with no
+        /// the eitr refinery. It would have become an "Eitr vein" at the * level, with no
         /// message, in a mod that opens metal by metal. A deposit that dropped wood would
         /// likewise have been a coal vein through the charcoal kiln.
         ///

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -9,57 +10,55 @@ using HarmonyLib;
 namespace Malmr
 {
     /// <summary>
-    /// Malmr. Once your Pickaxes skill is high enough for a metal, a swing at that metal's
-    /// deposit takes a few more chunks along the vein than the ones you hit. Each metal opens
-    /// at its own level, climbing with the biomes, and the number of extra chunks grows with
-    /// the skill after that.
+    /// Malmr. Tap Left Alt with a pickaxe out and vein mining is on: your blows on a deposit
+    /// fill a bar instead of breaking chunks, and when the bar reaches the whole deposit's
+    /// health, every chunk breaks at once, buried ones too. Each metal opens at its own Pickaxes
+    /// level, late, and once its biome's boss has been beaten at one star through Vandi.
     ///
-    /// Since 2026-09-26 a metal also waits for its biome's boss: the Elder for tin and copper,
-    /// Bonemass for iron, Moder for silver, Fader for flametal and bloodgold, beaten at one star
-    /// through Vandi. See Gate for the rule and Bosses for why only Vandi can answer it.
+    /// That is Robbin's design of 2026-09-26, in his words: "you enable it by pressing alt, and
+    /// u keep mining a piece and a progress bar will show up that goes up to 100 till u have done
+    /// enough damage to account for the whole ore deposit and then it breaks all at once". It
+    /// replaced the first mechanic, which took up to four extra chunks beside the struck one on
+    /// every swing, always on, and charged each a share of the swing's wear.
     ///
     /// Vein mining already exists and it is popular, and the reason is the same one Skaft
-    /// answers for repair: a copper deposit is dozens of chunks and taking them one at a time
-    /// is tedium, not difficulty. The popular version takes the whole deposit while you hold a
-    /// key. That deletes the deposit as a job - one click and it is ore on the ground - and
-    /// the key makes it a setting rather than something the character has learned. This one
-    /// is narrower on every axis, and each narrowing is paid for somewhere:
+    /// answers for repair: a copper deposit is dozens of chunks and taking them one at a time is
+    /// tedium, not difficulty. The popular version breaks the whole deposit on one blow while you
+    /// hold a key. That deletes the deposit as a job, and the key makes it a setting rather than
+    /// something the character has learned. This one keeps the job and takes away the fiddle:
     ///
-    ///  - A few chunks a swing, never the deposit. Four at most by default, so a copper
-    ///    deposit is still minutes of work, only fewer of them.
-    ///  - Each extra chunk takes one of the blows the swing landed. A chunk that needs three
-    ///    hits still needs three, so the swing count per deposit drops by the cap and no more.
-    ///  - Each extra chunk wears the pickaxe what that blow cost by hand - the swing's wear
-    ///    shared across the chunks it struck. The deposit costs the same pickaxe either way;
-    ///    what vein mining buys is time.
-    ///  - Metal by metal, on the skill you have earned. Tin opens first, gold last, and the
-    ///    swings that level the skill are vanilla's own. A bonus from gear or an effect does not
-    ///    open a metal early. The extra chunks do not train it by default, so a deposit mined
-    ///    along the vein teaches less than one mined chunk by chunk.
-    ///  - Buried chunks stay buried. Silver in particular is dug for, and a vein that reached
-    ///    through the hillside would have deleted the digging.
-    ///  - No key. It is on for a metal once you have earned it, on the pickaxe in your hand,
-    ///    and there is nothing to hold.
+    ///  - The deposit costs the swings it would by hand, roughly. A blow puts into the bar
+    ///    exactly what it would have dealt the chunk it struck - the deposit's resistances, its
+    ///    tool tier, the game's own damage number - and the bar is full only at the summed
+    ///    health of every chunk. Stamina, pickaxe wear and the skill are charged by the swing
+    ///    itself, as vanilla charges them. What it saves is the walking between chunks and the
+    ///    digging after buried ones.
+    ///  - Metal by metal, late. Tin at Pickaxes 40 up to bloodgold at 90, so every metal has been
+    ///    mined by hand for a long while first. The level is the one you earned; a bonus from
+    ///    gear or an effect does not open a metal early.
+    ///  - And the boss of the metal's biome, beaten at one star, which is Vandi's count of your
+    ///    kills reaching two. See Gate for the rule and Bosses for why only Vandi can answer it.
+    ///  - A switch you choose to flip. It stays on until tapped again, a marker says it is on,
+    ///    and with it off every blow is vanilla - for the times you want one chunk by hand.
     ///
-    /// <b>Client-side, in the honest sense.</b> Every decision is made on the machine that
-    /// swings, because that is the only machine that knows the swinger's skill - skills live in
-    /// the player profile, not on any ZDO. What leaves the machine is the RPC a vanilla swing
-    /// sends, once per extra chunk; the deposit's owner applies it the vanilla way and needs no
-    /// mod. So a player without Malmr sees an identical world, only with other people mining
-    /// faster - see RegisterWithCore for what that means for the gate. The one thing read from
-    /// outside the machine is Vandi's kill count, which lives in the world's global keys and so
-    /// is already on every client.
+    /// <b>Where each part runs.</b> The swing is decided on the machine that swings, because
+    /// only that machine knows the swinger's skill - skills live in the player profile, not on
+    /// any ZDO. The bar is kept on the deposit, because it must survive a logout and a friend
+    /// must be able to finish it - and only the deposit's owner may write that, so the blow
+    /// travels there as a message, the road a vanilla blow takes (Vein, then Owner). The owner
+    /// counts it and, at 100%, breaks the deposit through the deposit's own damage path
+    /// (Collapse). The one thing read from outside either machine is Vandi's kill count, which
+    /// lives in the world's global keys and so is already on every client.
     ///
     /// There is deliberately no BepInProcess attribute. A dedicated server runs
-    /// valheim_server.exe, and Core's gate only refuses on the server side of RPC_PeerInfo -
-    /// so a mod whose settings a host imposes has to be allowed to load there.
+    /// valheim_server.exe, and it can own deposits: it has to load this to fill their bars.
     /// </summary>
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     // Soft, not hard. A hard dependency that is absent does not degrade - the plugin never
     // loads at all - and a mod should not need a second install for something it can do
-    // without. Core is exactly that: what Malmr loses without it is the host's say, not the
-    // mod. Soft still buys the load-order guarantee when Core is present, which is all that
-    // registering with the gate needs.
+    // without. Core is exactly that: what Malmr loses without it is the host's say and the
+    // check that everybody connected has Malmr, not the mod. Soft still buys the load-order
+    // guarantee when Core is present, which is all that registering with the gate needs.
     [BepInDependency(CoreGuid, BepInDependency.DependencyFlags.SoftDependency)]
     // Hard, and the opposite argument. Vandi is not something Malmr can do without: the rule is
     // that a metal opens once its biome's boss has been beaten at one star, and the only record
@@ -111,8 +110,8 @@ namespace Malmr
             // PatchAll(Type) patches exactly the type it is handed and does not recurse into
             // nested ones, which is why the console hook is named on its own.
             _harmony = new Harmony(PluginGuid);
-            Apply("swing", typeof(SwingPatch));
             Apply("deposit hit", typeof(DamagePatches));
+            Apply("deposit message", typeof(ListenPatches));
             Apply("unlock message", typeof(Announce));
             Apply("console command", typeof(DevConsole.Hook));
 
@@ -124,13 +123,42 @@ namespace Malmr
         /// <summary>
         /// Once per world, the table of every deposit and what it counts as. Once a second, a
         /// look at which metals have just opened, for the message - see Opened for why a boss
-        /// kill has to be looked for rather than heard. Cheap every other frame: a few compares
-        /// and a return.
+        /// kill has to be looked for rather than heard. Every frame, the vein mode key, the next
+        /// few chunks of any deposit this machine is breaking, and what the bar should say. Each
+        /// is a few compares and a return when there is nothing to do.
+        ///
+        /// Each on its own try, so one throwing every frame costs its own feature and neither
+        /// floods the log for the others nor stops them.
         /// </summary>
         private void Update()
         {
-            Deposits.SurveyTick();
-            Opened.Tick();
+            Step("deposit survey", Deposits.SurveyTick);
+            Step("unlock message", Opened.Tick);
+            Step("vein mode key", VeinMode.Tick);
+            Step("deposit break", Collapse.Tick);
+            Step("vein bar", Focus.Tick);
+        }
+
+        /// <summary>The bar and the marker. IMGUI, so this is the only place they can be drawn.</summary>
+        private void OnGUI()
+        {
+            Step("vein bar drawing", Focus.Draw);
+        }
+
+        private static readonly HashSet<string> Failed = new HashSet<string>();
+
+        private static void Step(string what, Action step)
+        {
+            try
+            {
+                step();
+            }
+            catch (Exception error)
+            {
+                if (!Failed.Add(what)) return;
+                Log.LogWarning("The " + what + " failed and will keep failing quietly for the rest "
+                    + "of this session. Said once: " + error);
+            }
         }
 
         private void Apply(string what, Type patches)
@@ -149,12 +177,12 @@ namespace Malmr
         /// <summary>
         /// Joins Core's version gate when Core is installed, and does nothing when it is not.
         ///
-        /// Standing alone costs the host's say, not the mod. Without Core nothing swaps a host's
-        /// unlock table into a joining client, so on a shared server the levels and the cap are
-        /// whatever each player wrote in their own file - anyone can set every metal to 0 and
-        /// the cap to 50 and have exactly the mod this one was written not to be. That is a
-        /// real loss and it is the server owner's choice to accept, which is why this logs
-        /// rather than refusing to run.
+        /// Standing alone costs more since the bar than it did before it. Without Core nothing
+        /// swaps a host's unlock table into a joining client, so on a shared server the levels
+        /// are whatever each player wrote in their own file. And nothing refuses a player who
+        /// does not have Malmr at all - whose machine, when it happens to own a deposit, drops
+        /// every vein mining blow sent to it (see RegisterWithCore). Both are the server owner's
+        /// choice to accept, which is why this logs rather than refusing to run.
         /// </summary>
         private void TryRegisterWithCore()
         {
@@ -162,7 +190,9 @@ namespace Malmr
 
             if (!CorePresent)
             {
-                Log.LogInfo("Core not installed - running standalone, without the version gate.");
+                Log.LogInfo("Core not installed - running standalone, without the version gate. "
+                    + "In multiplayer every player and the server need Malmr, or vein mining blows "
+                    + "on a deposit owned by a machine without it are lost.");
                 return;
             }
 
@@ -180,47 +210,39 @@ namespace Malmr
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void RegisterWithCore()
         {
-            // HostOnly, argued from the template's rule rather than picked by habit. Everyone is
-            // for anything that registers a prefab or changes item data, because a client that
-            // cannot resolve a prefab hash loses ZDOs silently. Malmr does neither: no prefab, no
-            // item data, no ZDO key of its own, and no RPC vanilla does not already send. The
-            // extra chunks travel as ordinary MineRock5/MineRock damage RPCs, applied by the
-            // deposit's owner the vanilla way, so a client without the mod is genuinely
-            // unaffected - it mines one chunk at a time and sees everyone else's ore land where
-            // it always would. Everyone would refuse those players for nothing.
+            // Everyone, since the bar - it was HostOnly before it, and the reason it changed is
+            // the owner. The bar lives on the deposit's ZDO, and only the deposit's owner may
+            // write that, so a vein mining blow is a message to the owner (Malmr_Vein1) and the
+            // owner does the counting and the breaking. The owner is whoever the game picked -
+            // any player near the rock, or the server - so every one of them must have the
+            // handler. A machine without it logs "Failed to find rpc method" and the blow is
+            // gone: the swinger paid the stamina and the wear, and neither the chunk nor the bar
+            // moved. HostOnly would let exactly those players in.
             //
-            // The durability it writes is on the local player's own pickaxe, the field Attack
-            // itself writes on every swing, and it never leaves that player's save.
+            // The first mechanic could be HostOnly because it sent nothing vanilla did not
+            // already send. A claim of ownership would have kept that - the swinger takes the
+            // rock and writes the bar itself - but a claim is not a lock: two players at one rock
+            // would each claim, each add to the number they last saw and each write it back, and
+            // one of every such pair of blows would vanish. The message is the owner doing its
+            // own write, which cannot race.
             //
-            // What HostOnly costs, said plainly: Core lets a HostOnly mod through in BOTH
-            // directions, so a player carrying Malmr can join a Core server that does not have
-            // it and vein-mine there on their own settings. It could not be stopped server-side
-            // even if that were wanted - MineRock5.RPC_Damage has no sender check, so any
-            // client can already send any hit to any chunk - and policing what a client runs is
-            // Dyrr's job, not the gate's. What HostOnly does keep is the half that matters on a
-            // server that has chosen it: a client that has Malmr is checked against the host
-            // and gets the host's unlock table, cap and costs.
-            //
-            // The boss half does not change this argument, but it does change what HostOnly
-            // means in practice. Vandi comes with Malmr, and Vandi registers Everyone - its star
-            // roll and its boss credit run on whichever client owns a zone or a boss - so a
-            // player carrying Malmr can only join a Core server that runs the same Vandi. That
-            // is Vandi's requirement, stated by Vandi, and it is right: the kill count this mod
-            // reads is only kept by a world where everybody runs the mod that keeps it.
-            Suite.Register(PluginGuid, PluginName, PluginVersion, Config, Requirement.HostOnly);
+            // It costs what Everyone always costs: a player without Malmr is refused at a Core
+            // server that runs it, and the server needs it too. Vandi already asks the same of
+            // everybody, and Malmr brings Vandi, so on a server that runs both nothing new is
+            // asked of anyone.
+            Suite.Register(PluginGuid, PluginName, PluginVersion, Config, Requirement.Everyone);
 
             // Registering already absorbs the whole config file, so naming these is a formality.
             // It is worth writing anyway: these are the mod's balance, and saying out loud that
             // the host owns them is the point of putting Malmr on a server.
-            Suite.Sync(MalmrConfig.Enabled, MalmrConfig.Unlocks, MalmrConfig.LevelsPerExtraChunk,
-                       MalmrConfig.MaxExtraChunks, MalmrConfig.Deposits, MalmrConfig.LeaveBuried,
-                       MalmrConfig.Bosses, MalmrConfig.BossKills,
-                       MalmrConfig.DurabilityPerChunk, MalmrConfig.StaminaPerChunk,
-                       MalmrConfig.ExtraChunksTrainSkill);
+            Suite.Sync(MalmrConfig.Enabled, MalmrConfig.Unlocks, MalmrConfig.Deposits,
+                       MalmrConfig.Bosses, MalmrConfig.BossKills);
 
-            // The message and the logging are the player's own. A host reaching across to turn
-            // either on or off for somebody else's evening is not a thing anybody asked for.
-            Suite.Local(MalmrConfig.AnnounceUnlocks, MalmrConfig.Verbose);
+            // The key, the message and the logging are the player's own. A KeyCode is exempt
+            // from Core's sync anyway; saying so here keeps the three personal settings in one
+            // line. A host reaching across to rebind somebody's key or turn their logging on is
+            // not a thing anybody asked for.
+            Suite.Local(MalmrConfig.VeinToggleKey, MalmrConfig.AnnounceUnlocks, MalmrConfig.Verbose);
         }
 
         private void OnDestroy()

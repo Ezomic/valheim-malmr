@@ -1,85 +1,74 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using HarmonyLib;
+using UnityEngine;
 
 namespace Malmr
 {
     /// <summary>
-    /// The swing bracket. Both attack shapes a pickaxe could use, because which one a given
-    /// pickaxe uses is asset data: every vanilla pickaxe swings as a melee attack, but a
-    /// pickaxe with an area attack would reach MineRock5 through DoAreaAttack instead, and a
-    /// mod could ship one.
+    /// Where a blow meets a deposit: the public Damage each deposit shape offers, which Attack
+    /// calls once per chunk a swing struck and which turns the chunk into an area index and a
+    /// message to the owner. Prefixes, so the HitData is seen exactly as the swing built it and
+    /// the blow can go into the bar instead - see Vein.
     ///
-    /// Returned as a list from a target method rather than stacked attributes. Core found out
-    /// the hard way that Harmony merges stacked [HarmonyPatch] attributes into ONE target, so
-    /// two of them patch one method and say nothing about the other. A missing method is
-    /// logged rather than thrown, so a rename in a game update costs the one shape it renamed.
-    /// </summary>
-    [HarmonyPatch]
-    internal static class SwingPatch
-    {
-        [HarmonyTargetMethods]
-        private static IEnumerable<MethodBase> Targets()
-        {
-            var found = new List<MethodBase>();
-
-            foreach (string name in new[] { "DoMeleeAttack", "DoAreaAttack" })
-            {
-                MethodInfo method = AccessTools.Method(typeof(Attack), name);
-                if (method != null) found.Add(method);
-                else MalmrPlugin.Log.LogWarning("Attack." + name + " is gone, so a pickaxe "
-                    + "swinging that way will not follow veins.");
-            }
-
-            return found;
-        }
-
-        [HarmonyPrefix]
-        private static void Open(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon)
-        {
-            Vein.Open(___m_character, ___m_weapon);
-        }
-
-        [HarmonyPostfix]
-        private static void Close(Attack __instance, Humanoid ___m_character,
-                                  ItemDrop.ItemData ___m_weapon)
-        {
-            Vein.Close(__instance, ___m_character, ___m_weapon);
-        }
-
-        /// <summary>
-        /// Runs whether or not the attack threw. A swing that throws halfway never reaches the
-        /// postfix, and leaving the bracket open would make the next hit on a deposit by some
-        /// other path look like part of a swing.
-        /// </summary>
-        [HarmonyFinalizer]
-        private static Exception Reset(Exception __exception)
-        {
-            Vein.Reset();
-            return __exception;
-        }
-    }
-
-    /// <summary>
-    /// What each swing struck, read on the way in to the deposit's own Damage - the public
-    /// method Attack calls, and the one that turns a collider into an area index. Prefixes, so
-    /// the HitData is seen exactly as the swing built it.
+    /// Until 2026-09-26 these only recorded what a swing struck, and a bracket around Attack took
+    /// the extra chunks once the swing was over. The bar needs no bracket. Every fact it needs is
+    /// on the blow, and the swing's own costs are charged by Attack whether or not the deposit's
+    /// Damage runs.
     /// </summary>
     internal static class DamagePatches
     {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(MineRock5), nameof(MineRock5.Damage))]
-        private static void Vein5(MineRock5 __instance, HitData hit)
+        private static bool Vein5(MineRock5 __instance, HitData hit)
         {
-            Vein.Record(__instance, hit);
+            return Vein.Intercept(__instance, hit);
         }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(MineRock), nameof(MineRock.Damage))]
-        private static void VeinSmall(MineRock __instance, HitData hit)
+        private static bool VeinSmall(MineRock __instance, HitData hit)
         {
-            Vein.Record(__instance, hit);
+            return Vein.Intercept(__instance, hit);
+        }
+    }
+
+    /// <summary>
+    /// Every deposit learns Malmr_Vein1 where it learns its own messages: MineRock5 in Awake,
+    /// MineRock in Start. Postfixes, so the deposit's own registration has run and a failure of
+    /// Malmr's can only cost the bar. See Owner.Listen.
+    /// </summary>
+    internal static class ListenPatches
+    {
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(MineRock5), "Awake")]
+        private static void Vein5(MineRock5 __instance)
+        {
+            Guard("MineRock5.Awake", __instance);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(MineRock), "Start")]
+        private static void VeinSmall(MineRock __instance)
+        {
+            Guard("MineRock.Start", __instance);
+        }
+
+        private static bool _warned;
+
+        private static void Guard(string where, Component rock)
+        {
+            try
+            {
+                Owner.Listen(rock);
+            }
+            catch (Exception error)
+            {
+                if (_warned) return;
+                _warned = true;
+                MalmrPlugin.Log.LogWarning("Could not register vein mining on a deposit in " + where
+                    + ", so this machine cannot fill the bar of a deposit it owns. Said once per "
+                    + "session: " + error);
+            }
         }
     }
 

@@ -18,7 +18,7 @@
     <Authors>Robbin Thijssen</Authors>
     <Company>Thijssen Software</Company>
     <Product>Malmr</Product>
-    <Description>Vein mining that opens metal by metal, once your Pickaxes skill is high enough and you have beaten that biome's boss at one star.</Description>
+    <Description>Tap Alt with a pickaxe and your blows fill a bar until the whole ore deposit breaks at once. Opens metal by metal, on your Pickaxes skill and the biome's boss beaten at one star.</Description>
     <Copyright>Copyright (c) 2026 Robbin Thijssen</Copyright>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -55,9 +55,13 @@
     <Reference Include="assembly_utils"><HintPath>$(ManagedDir)\assembly_utils.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(ManagedDir)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
-    <!-- Collider and its bounds live here, not in CoreModule. A vein is walked chunk by chunk
-         through the colliders MineRock5 and MineRock already keep as their hit areas. -->
+    <!-- Collider and its bounds live here, not in CoreModule. A deposit's chunks are the
+         colliders MineRock5 and MineRock keep as their hit areas, and a blow names one. -->
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(ManagedDir)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- GUI and GUIStyle, for the vein bar and its marker. IMGUI keeps the mod one DLL. -->
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(ManagedDir)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- FontStyle, which the bar's label is set in, lives here rather than in IMGUIModule. -->
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(ManagedDir)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
     <!-- Localization, for naming a metal in the unlock message in the player's own language. -->
     <Reference Include="assembly_guiutils"><HintPath>$(ManagedDir)\assembly_guiutils.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx"><HintPath>$(BepInExCore)\BepInEx.dll</HintPath><Private>false</Private></Reference>

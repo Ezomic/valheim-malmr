@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
+using UnityEngine;
 
 namespace Malmr
 {
@@ -19,23 +20,24 @@ namespace Malmr
     /// because Core can rewrite them live when a host's values arrive, and so can a config
     /// manager. A parse cached once at load would keep the joining player on their own table
     /// for the whole evening while the log said the host's was in force.
+    ///
+    /// <b>What went on 2026-09-26.</b> The first mechanic took a few extra chunks a swing, and
+    /// six settings belonged to it: the cap, the growth per ten levels, the buried-chunk rule and
+    /// three per-chunk costs. Robbin replaced the mechanic with the bar that fills until the whole
+    /// deposit breaks, and all six went with it rather than staying as keys nothing reads. No
+    /// Malmr cfg existed on any machine yet, so nobody carries a stale one.
     /// </summary>
     internal static class MalmrConfig
     {
         internal static ConfigEntry<bool> Enabled;
 
         internal static ConfigEntry<string> Unlocks;
-        internal static ConfigEntry<int> LevelsPerExtraChunk;
-        internal static ConfigEntry<int> MaxExtraChunks;
         internal static ConfigEntry<string> Deposits;
-        internal static ConfigEntry<bool> LeaveBuried;
 
         internal static ConfigEntry<string> Bosses;
         internal static ConfigEntry<int> BossKills;
 
-        internal static ConfigEntry<float> DurabilityPerChunk;
-        internal static ConfigEntry<float> StaminaPerChunk;
-        internal static ConfigEntry<bool> ExtraChunksTrainSkill;
+        internal static ConfigEntry<KeyCode> VeinToggleKey;
 
         internal static ConfigEntry<bool> AnnounceUnlocks;
         internal static ConfigEntry<bool> Verbose;
@@ -49,51 +51,46 @@ namespace Malmr
             // patched, and deciding nothing. Not "unloaded" - a plugin cannot unload itself,
             // and a switch that pretends otherwise is a lie somebody will debug.
             Enabled = cfg.Bind("Malmr", "Enabled", true,
-                "Off leaves the plugin loaded and changing nothing. Every swing is vanilla again.");
+                "Off leaves the plugin loaded and changing nothing. Every swing is vanilla again, "
+                + "and a deposit's stored progress stays where it was until the mod is back on.");
 
             // One string rather than one line per metal. A line per metal can only name the
             // metals this file knew about when it was written, and the whole point of deriving
             // the metal from the drops is that a mod-added ore turns up without a new build.
             // A string can carry that ore's name the moment someone wants to give it a level.
+            //
+            // The levels are Robbin's, 2026-09-26: tin 40 and ten more per metal up to bloodgold
+            // at 90. They are late on purpose. Taking a whole deposit in one go is a big thing
+            // to hand out, so each metal has been mined by hand for a long while first.
+            //
+            // * sits at 90 with bloodgold, the top of the table. An ore nobody named has no
+            // biome this file knows, so there is nothing to place it by, and the one placement
+            // that can never open a mod's ore ahead of the vanilla metals is the last one. The
+            // cost lands on a mod ore that belongs early - it waits until 90 - and the fix for
+            // that is one pair naming it, which is what the table is for.
             Unlocks = cfg.Bind("Unlocks", "Unlocks",
-                "Copper:20, Tin:10, Iron:30, Silver:40, Flametal:60, Gold:70, *:50",
-                "The Pickaxes level at which each metal's deposits start giving way along the "
-                + "vein. Comma separated Name:Level pairs. The name is the smelted metal, the one "
-                + "that comes OUT of the smelter, so Iron covers muddy scrap piles and anything "
-                + "else whose drop smelts into iron. A trailing \"New\" is ignored when names are "
-                + "compared, so Flametal covers both the old meteorite flametal and the Ashlands "
-                + "one. Names are prefab names, not what the game shows: Gold is the Deep North "
-                + "metal the game calls Bloodgold. A name can also be the dropped item itself "
-                + "(Obsidian:40 would make obsidian rocks vein-mineable, since nothing smelts "
-                + "obsidian). The * entry is the level for any other ore, meaning a drop that goes "
-                + "into a furnace: a station that makes one of the metals named here, or burns "
-                + "the same fuel as one that does. That is how an ore added by another mod joins "
-                + "in without a new build, whether it goes in the vanilla smelter or its own "
-                + "forge. Things that only go into a kiln, the windmill or the eitr refinery are "
-                + "not ore and never match *. Remove * and unnamed ores are never vein-mined. A "
-                + "metal missing from this list is never vein-mined. A level of -1 switches that "
-                + "metal off. The levels climb with the biomes on purpose: each one arrives after "
-                + "you have mined that metal by hand for a while, never before you have seen it. "
-                + "The level compared is the one you have earned, the big number on the skills "
-                + "page. A bonus from gear, food or an effect makes each blow harder but does not "
-                + "open a metal early.");
-
-            LevelsPerExtraChunk = cfg.Bind("Unlocks", "LevelsPerExtraChunk", 10,
-                "At the unlock level a swing takes ONE extra chunk beside the one you hit. Every "
-                + "this many Pickaxes levels above it, one more, up to MaxExtraChunks. So with "
-                + "the defaults copper gives 1 extra chunk at 20, 2 at 30, 3 at 40 and 4 from 50. "
-                + "0 hands out MaxExtraChunks the moment a metal unlocks, which makes the level "
-                + "after the unlock worth nothing to this mod.");
-
-            MaxExtraChunks = cfg.Bind("Unlocks", "MaxExtraChunks", 4,
-                "The most chunks one swing can take beyond the ones vanilla hit, across every "
-                + "deposit that swing touched. This is the constraint that keeps a deposit a job "
-                + "rather than a click: a copper deposit is dozens of chunks, and four extra a "
-                + "swing still leaves it several minutes of work. Each extra chunk takes one of "
-                + "the blows the swing landed on the chunks you hit, so a chunk that needs three "
-                + "hits by hand still needs three. Chunks the game drops by itself when their "
-                + "support breaks do not count. 0 turns vein mining off without turning the mod "
-                + "off.");
+                "Tin:40, Copper:50, Iron:60, Silver:70, Flametal:80, Gold:90, *:90",
+                "The Pickaxes level at which each metal's deposits can be vein mined. Comma "
+                + "separated Name:Level pairs. The name is the smelted metal, the one that comes "
+                + "OUT of the smelter, so Iron covers muddy scrap piles and anything else whose "
+                + "drop smelts into iron. A trailing \"New\" is ignored when names are compared, "
+                + "so Flametal covers both the old meteorite flametal and the Ashlands one. Names "
+                + "are prefab names, not what the game shows: Gold is the Deep North metal the "
+                + "game calls Bloodgold. A name can also be the dropped item itself: nothing "
+                + "smelts obsidian, so obsidian rocks are left out, and Obsidian:70 (silver's "
+                + "level, the same biome) would add them. The * entry is the level for any other "
+                + "ore, meaning a drop that goes into a furnace: a station that makes one of the "
+                + "metals named here, or burns the same fuel as one that does. That is how an ore "
+                + "added by another mod joins in without a new build, whether it goes in the "
+                + "vanilla smelter or its own forge. It sits at 90 with bloodgold because an ore "
+                + "nobody named has no biome to place it by, and last is the one place it cannot "
+                + "skip ahead of the vanilla metals; name the ore here to give it its own level. "
+                + "Things that only go into a kiln, the windmill or the eitr refinery are not ore "
+                + "and never match *. Remove * and unnamed ores are never vein mined. A metal "
+                + "missing from this list is never vein mined. A level of -1 switches that metal "
+                + "off. The level compared is the one you have earned, the big number on the "
+                + "skills page. A bonus from gear, food or an effect makes each blow harder but "
+                + "does not open a metal early.");
 
             // A name table as the override, not the rule. The rule is the drops: a deposit is
             // whatever metal its drop table smelts into, read from the running game. This is
@@ -107,29 +104,21 @@ namespace Malmr
                 + "classed by what it drops, and the log says what each one came out as. Use a "
                 + "Name that is not in Unlocks (for example none) to rule a deposit out.");
 
-            LeaveBuried = cfg.Bind("Unlocks", "LeaveBuried", true,
-                "Leave chunks whose middle is still under the ground alone. Silver veins and big "
-                + "copper deposits sit mostly below the surface, and in vanilla you dig down to "
-                + "reach them. Without this the vein would pull ore out of rock you have not "
-                + "uncovered yet, and digging would stop being part of mining. It is the middle "
-                + "and not the tip that counts because the game drops a chunk's ore at its "
-                + "middle, so a chunk judged by its tip would put its ore inside the hillside.");
-
             // The second half of an unlock, Robbin's rule of 2026-09-26: the level says you have
             // mined the metal by hand for a while, the boss says you have gone back to the fight
             // that opened its biome and won it again at one star. Keyed by metal like Unlocks
             // and matched the same way, so the two lines read side by side and a mod ore named
             // in one can be named in the other. A separate string rather than a third field on
-            // each Unlocks pair: "Copper:20:defeated_gdking" would have turned a line people
-            // already edit into one they have to count colons in, and would have broken every
-            // cfg written before this.
+            // each Unlocks pair: "Copper:50:defeated_gdking" would have turned a line people
+            // edit into one they have to count colons in.
             //
             // Defeat keys rather than creature names, spelled the way Vandi's BossBiomes spells
             // them, because the count is Vandi's and Vandi files it under that key. Gold is on
             // Fader, not on a Deep North boss of its own: Vandi and Utangard both pair
             // defeated_fader with the Deep North, and a key Vandi does not count can never be
             // met - a metal on it would stay shut forever and look exactly like one that was
-            // merely waiting.
+            // merely waiting. The world-load log lists every boss with the key it sets, which is
+            // how the Deep North's own boss gets read the first time somebody looks.
             Bosses = cfg.Bind("Unlocks", "Bosses",
                 "Copper:defeated_gdking, Tin:defeated_gdking, Iron:defeated_bonemass, "
                 + "Silver:defeated_dragon, Obsidian:defeated_dragon, Flametal:defeated_fader, "
@@ -158,50 +147,38 @@ namespace Malmr
                 + "Vandi counts kills, not stars, so with its HarderBosses off the second kill is a "
                 + "plain boss and still counts.");
 
-            // The three costs below share one unit, and it is the blow, not the swing. A swing
-            // pays once however many chunks it struck - a fractured deposit often shows two or
-            // three damage numbers a swing - so what one chunk cost by hand is the swing's cost
-            // divided by the chunks it struck, and that is what an extra chunk pays at 1. The
-            // first version charged a whole swing per extra chunk and so wore the pickaxe two or
-            // three times as fast per blow along the vein as by hand, against the promise below.
-            DurabilityPerChunk = cfg.Bind("Cost", "DurabilityPerChunk", 1f,
-                "Pickaxe wear for each extra chunk, as a fraction of what one blow costs you by "
-                + "hand. A swing wears the pickaxe once however many chunks it strikes, so one "
-                + "blow's share is that wear divided by the chunks the swing struck. 1 means a "
-                + "deposit costs the same pickaxe whichever way you mine it and vein mining buys "
-                + "time, never durability. Below 1 is the setting that makes it a discount. The "
-                + "swing stops taking chunks when the pickaxe reaches zero.");
-
-            StaminaPerChunk = cfg.Bind("Cost", "StaminaPerChunk", 0f,
-                "Stamina for each extra chunk, as a fraction of what one blow costs you by hand "
-                + "(a swing's stamina, after your skill and gear have lowered it, divided by the "
-                + "chunks the swing struck). 0 by default, because at 1 a swing that strikes one "
-                + "chunk and takes four more costs five swings of stamina and you stop to breathe "
-                + "after two or three - the time vein mining saves would go straight back into "
-                + "waiting. Raise it if the durability cost alone feels too cheap. The swing "
-                + "stops taking chunks when you cannot pay for the next one.");
-
-            ExtraChunksTrainSkill = cfg.Bind("Cost", "ExtraChunksTrainSkill", false,
-                "Whether the extra chunks also raise Pickaxes, at the rate mining them by hand "
-                + "would have (a swing raises it once, so each chunk it struck is worth a share). "
-                + "Off, so the skill counts swings, as it does in vanilla. The cost of that is "
-                + "real: a deposit mined along the vein teaches less than one mined chunk by "
-                + "chunk. On would make every unlock speed up the climb to the next one, and the "
-                + "mod would turn into a way to level Pickaxes rather than a reward for having "
-                + "done it.");
+            // A KeyCode, so Core leaves it with the player whatever the host runs - keys are one
+            // of the two types its sync exempts. It is still declared Local in the plugin, which
+            // says the same thing where somebody reading the sync list will look for it.
+            //
+            // Left Alt because Robbin asked for Alt. Two other mods in this suite read it: Jafna's
+            // height hold is Left Alt with a hoe out, and Taum's follow toggle is Alt held with E
+            // on a boar. This only listens with a pickaxe out, which keeps it off Jafna's, and a
+            // tap that has E pressed inside it does not count, which keeps it off Taum's - see
+            // VeinMode.
+            VeinToggleKey = cfg.Bind("Controls", "VeinToggleKey", KeyCode.LeftAlt,
+                "Tap this with a pickaxe out to switch vein mining on, and tap it again to switch "
+                + "it off. It stays on across swings, tool changes and deposits until you tap it "
+                + "again; a small marker under the crosshair says it is on while a pickaxe is out. "
+                + "While it is on, your pickaxe blows on a deposit of an open metal fill a bar "
+                + "instead of breaking chunks, and when the bar is full the whole deposit breaks "
+                + "at once. A tap is a short press and release: holding it, pressing E during it, "
+                + "or leaving the game with Alt+Tab does not switch anything. With any other tool "
+                + "in hand the key does nothing here. None switches the key off.");
 
             AnnounceUnlocks = cfg.Bind("Display", "AnnounceUnlocks", true,
                 "Say so in the middle of the screen when a metal's veins open for you, whichever "
                 + "of the two came last: the Pickaxes level-up or the boss kill. Once per opening. "
                 + "A metal already open when you log in is not announced again. Without it the "
-                + "only way to find out is to notice that a swing took more than it should have, "
-                + "or to type malmr in the console.");
+                + "only way to find out is to switch vein mining on and swing, or to type malmr "
+                + "in the console.");
 
             // Not synced by intent - see the plugin. A diagnostic flag is personal, and a
             // host turning on someone else's logging is not a thing anybody asked for.
             Verbose = cfg.Bind("Display", "Verbose", false,
-                "Write one line per vein-mined swing to BepInEx/LogOutput.log: which deposit, "
-                + "what it counted as, how many chunks, and what stopped it if it stopped early. "
+                "Write a line to BepInEx/LogOutput.log for every vein mining blow this machine "
+                + "handles as the deposit's owner (what it added and where the deposit stands), "
+                + "for every deposit that breaks whole, and for every blow this machine sends. "
                 + "The table of every deposit and what it resolved to is written once per world "
                 + "whatever this says.");
         }
@@ -276,26 +253,6 @@ namespace Malmr
 
             int level;
             return UnlockTable().TryGetValue(entry, out level) ? level : -1;
-        }
-
-        /// <summary>
-        /// How many chunks beyond the struck ones a swing may take, for a metal unlocked at
-        /// <paramref name="unlock"/>, at Pickaxes <paramref name="level"/>.
-        /// </summary>
-        internal static int ExtraChunks(float level, int unlock)
-        {
-            if (unlock < 0) return 0;
-
-            int max = MaxExtraChunks.Value;
-            if (max <= 0) return 0;
-
-            if (level < unlock) return 0;
-
-            int step = LevelsPerExtraChunk.Value;
-            if (step <= 0) return max;
-
-            int extra = 1 + (int)((level - unlock) / step);
-            return extra < max ? extra : max;
         }
 
         // ---------------------------------------------------------------- Deposits

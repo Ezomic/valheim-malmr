@@ -50,7 +50,7 @@ printed rock4_copper_frac=Copper yes
 printed MineRock_Tin=Tin yes
 printed mudpile_frac=Iron yes
 
-# ---- Mountains. Silver veins are mostly buried; LeaveBuried is about these.
+# ---- Mountains. Silver veins are mostly buried, and a full bar breaks the buried chunks too.
 
 printed silvervein_frac=Silver yes
 

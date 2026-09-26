@@ -1,252 +1,171 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using HarmonyLib;
 using UnityEngine;
 
 namespace Malmr
 {
     /// <summary>
-    /// One pickaxe swing, and the chunks it takes beyond the ones it hit.
+    /// One pickaxe blow on a deposit, on the machine that swung it: vanilla's, or the bar's.
     ///
-    /// <b>Where the decision is made, and why nowhere else will do.</b> Skills live in the
-    /// player profile, not on any ZDO, so the only machine that knows this player's Pickaxes
-    /// level is the one swinging. The deposit may be owned by somebody else entirely - whoever
-    /// was nearest when it loaded, or the server - and that owner has no way to ask. So the
-    /// extra chunks are chosen here, on the attacker's machine, and sent down the exact road a
-    /// vanilla swing uses: IDestructible.Damage with a HitData whose m_hitCollider names the
-    /// chunk, which MineRock5 and MineRock turn into an area index and an RPC to the owner.
-    /// The owner applies it the way it applies any hit - resistance, tool tier, health, the
-    /// support check, the drops at the chunk's own position, the ward flash - and every other
-    /// client learns of it from the owner's broadcast, as they would have for a hit by hand.
+    /// <b>The mechanic, since 2026-09-26.</b> Robbin's words: you switch vein mining on with
+    /// Alt, you keep mining a deposit, a bar fills to 100 until you have done enough damage for
+    /// the whole deposit, and then it breaks all at once. So with vein mode on and the metal
+    /// open, a blow on any chunk does not damage that chunk. It is sent to the deposit's owner
+    /// as Malmr_Vein1 instead of RPC_Damage, and the owner puts what vanilla would have dealt
+    /// into the bar - see Owner. It replaced the first mechanic, a few extra chunks taken beside
+    /// the struck one on every swing, always on, with each extra chunk charged a share of the
+    /// swing's wear.
     ///
-    /// Nothing claims ownership. A claim-and-write would race the owner and lose chunks or
-    /// double drops; the RPC is the owner doing its own write, which cannot race. It also means
-    /// the owner needs no mod at all.
+    /// <b>Why the costs need no code now.</b> A swing is still a swing. Attack charges its
+    /// stamina when the swing starts, its durability once when it lands on anything, and raises
+    /// the skill once - none of that is in the deposit's Damage, which is the only thing this
+    /// replaces. So a deposit costs the swings it takes, and its damage is exactly the damage
+    /// those swings would have done by hand. The old per-chunk share of wear and stamina went
+    /// with the old mechanic.
     ///
-    /// <b>How one swing is seen whole.</b> A vanilla pickaxe hits several chunks in one swing -
-    /// Attack.AddHitPoint keeps one hit point per COLLIDER on a MineRock5 or MineRock when
-    /// m_pickaxeSpecial is set, and DoMeleeAttack calls Damage once for each. Extending the vein
-    /// from inside Damage would extend it once per struck chunk and could pick a chunk the same
-    /// swing is about to hit. So the swing is bracketed instead: a prefix on the attack opens
-    /// it, a prefix on each deposit's Damage records what was struck, and the postfix on the
-    /// attack does the extending once, knowing every chunk the swing reached by itself.
+    /// Roughly the same swings as by hand, not exactly, and the difference runs both ways. By
+    /// hand, the last blow on a chunk wastes whatever it deals past the chunk's health, and the
+    /// bar wastes nothing. By hand, a chunk whose support you broke falls for free, and the bar
+    /// charges every chunk's health, buried ones included. Which wins depends on the deposit.
     ///
-    /// <b>What a vein is.</b> For a MineRock5 - copper, silver, the fractured boulders - it is
-    /// the deposit's live chunks, walked outward from the struck ones through chunks that touch,
-    /// nearest first. Touching rather than simply nearest, so the walk follows the ore and does
-    /// not jump a gap to a separate cluster. For a MineRock - tin and the smaller rocks - it is
-    /// the same walk over its handful of areas. Every chunk of a deposit drops the same table,
-    /// so the walk decides the ORDER chunks come off, never how much ore there is.
+    /// <b>Decided here because only this machine can.</b> Skills live in the player profile,
+    /// not on any ZDO, so whether a metal is open for this player is known only where the
+    /// player is. The owner never re-checks it; it has no way to.
     /// </summary>
     internal static class Vein
     {
-        /// <summary>
-        /// How far apart two chunks' boxes may sit and still count as touching. Fractured chunks
-        /// share faces, so their bounding boxes overlap outright; this is slack for rounding and
-        /// for a chunk that sits a hair proud of its neighbour, not a reach. A constant rather
-        /// than a setting because no value of it is a gameplay choice - the per-swing cap is.
-        /// </summary>
-        private const float Gap = 0.3f;
-
-        private sealed class Struck
-        {
-            public Component Rock;
-            public IDestructible Target;
-            public readonly List<Collider> Colliders = new List<Collider>();
-
-            /// <summary>
-            /// Recorded at the moment of the hit, not read later. On a machine that owns the
-            /// deposit the RPC is handled inside the same call - ZRoutedRpc dispatches a call to
-            /// itself synchronously - so a chunk this swing kills is deactivated before the
-            /// attack returns, and a deactivated collider reports empty bounds at the world
-            /// origin. That would start the walk from the wrong end of the map.
-            /// </summary>
-            public readonly List<Bounds> Bounds = new List<Bounds>();
-
-            /// <summary>
-            /// Every blow this swing landed on this deposit, one per struck chunk, in the order
-            /// the swing dealt them. The extra chunks take them in turn - see Record for why
-            /// not the strongest.
-            /// </summary>
-            public readonly List<HitData> Hits = new List<HitData>();
-        }
-
-        /// <summary>
-        /// Durability on the swung pickaxe when the bracket opened, so Close can read what the
-        /// swing itself cost rather than recomputing it. See Close.
-        /// </summary>
-        private static float _durabilityBefore;
-
-        /// <summary>True between the attack's prefix and postfix, for a local pickaxe swing only.</summary>
-        private static bool _open;
-
-        /// <summary>True while this class is calling Damage itself, so it does not record its own hits.</summary>
-        private static bool _applying;
-
-        private static readonly List<Struck> Swing = new List<Struck>();
-
         private static bool _warned;
 
-        internal static void Open(Humanoid character, ItemDrop.ItemData weapon)
-        {
-            Swing.Clear();
-
-            // Everything a swing needs to qualify is known here, so a sword, a thrall's
-            // pickaxe or another player's swing costs one compare and nothing else. Every
-            // Humanoid runs its attacks through the same Attack class, so this line is what
-            // keeps the whole mod to the person at the keyboard.
-            _open = MalmrConfig.Enabled.Value
-                    && character != null
-                    && character == Player.m_localPlayer
-                    && weapon != null
-                    && weapon.m_shared != null
-                    && weapon.m_shared.m_skillType == Skills.SkillType.Pickaxes;
-
-            if (_open) _durabilityBefore = weapon.m_durability;
-        }
-
         /// <summary>
-        /// A hit on a deposit, before the deposit sees it. A clone is kept because the caller's
-        /// HitData is the one that goes on to the owner.
+        /// A blow arriving at a deposit's public Damage, before the deposit sees it. True lets
+        /// vanilla have it; false means it went into the bar.
+        ///
+        /// Everything that keeps this to the player's own pickaxe is read off the blow itself:
+        /// the attacker is the local player, the skill is Pickaxes, and it names the chunk it
+        /// struck. Attack builds every swing's HitData that way, and nothing else in the game
+        /// does. A blow with a radius, or naming no chunk, is the fractured-deposit spawn -
+        /// Destructible hands the new rock the hit that broke the whole one, after the network
+        /// has stripped its collider - and that goes to vanilla, which spreads it over whatever
+        /// chunks the sphere finds.
         /// </summary>
-        internal static void Record(Component rock, HitData hit)
+        internal static bool Intercept(Component rock, HitData hit)
         {
-            if (!_open || _applying) return;
-            if (rock == null || hit == null) return;
-
-            // Only a hit that names its chunk. MineRock5 has a second branch for a hit with a
-            // radius or no collider, which picks chunks by an overlap sphere of its own - and
-            // the one place the game uses it on a swing's behalf is the fractured boulder
-            // Destructible spawns when a whole rock breaks. Destructible.Destroy hands the new
-            // deposit the hit it was given, and by then that hit has been through the RPC:
-            // ZRoutedRpc serialises even a call to itself, and m_hitCollider is not among the
-            // fields HitData writes, so it arrives naming no chunk at all. There is nothing to
-            // walk from, so the vein begins on the next swing, at a chunk the player actually
-            // aimed at.
-            if (hit.m_hitCollider == null || hit.m_radius > 0f) return;
-
-            Struck struck = null;
-            foreach (Struck candidate in Swing)
-                if (candidate.Rock == rock) { struck = candidate; break; }
-
-            if (struck == null)
-            {
-                IDestructible target = rock as IDestructible;
-                if (target == null) return;
-
-                struck = new Struck { Rock = rock, Target = target };
-                Swing.Add(struck);
-            }
-
-            // One blow per chunk, which is also how the swing deals them: with m_pickaxeSpecial
-            // Attack keeps one hit point per collider, so a second hit on the same chunk in one
-            // swing does not happen in vanilla. Keeping the lists aligned is what lets Close
-            // count blows by counting colliders.
-            if (struck.Colliders.Contains(hit.m_hitCollider)) return;
-
-            struck.Colliders.Add(hit.m_hitCollider);
-            struck.Bounds.Add(hit.m_hitCollider.bounds);
-
-            // Every blow, not the strongest. The first version kept the largest, on the idea
-            // that the split between struck chunks made the others smaller - but the split is
-            // the same for every chunk the swing hit (num5 /= list.Count * 0.75f in
-            // DoMeleeAttack), and what differs between them is only the dice:
-            // GetRandomSkillFactor is rolled again for each hit point inside the loop. So the
-            // largest was the best of several rolls - at Pickaxes 50 with three chunks struck,
-            // about 0.78 of a blow against 0.70 by hand - and a chunk just over two blows' worth
-            // of health came off in two swings along the vein where it takes three by hand.
-            // Each struck blow is a fair roll, so the extra chunks take them in turn and none
-            // is chosen for its size.
-            struck.Hits.Add(hit.Clone());
-        }
-
-        internal static void Close(Attack attack, Humanoid character, ItemDrop.ItemData weapon)
-        {
-            if (!_open) return;
-            _open = false;
-
-            if (Swing.Count == 0) return;
-
             try
             {
-                Player player = character as Player;
-                if (player == null || player != Player.m_localPlayer) return;
-
-                // A swing-wide budget, not a per-deposit one. A swing that clips two deposits at
-                // once would otherwise take twice the cap, and the cap is a promise about a
-                // swing.
-                int budget = MalmrConfig.MaxExtraChunks.Value;
-
-                // What one blow cost by hand, which is what each extra chunk pays. A swing pays
-                // ONCE - one durability drain, one stamina cost, one skill raise - however many
-                // chunks it struck, and a fractured deposit often shows two or three damage
-                // numbers a swing. Charging each extra chunk a whole swing, as the first version
-                // did, made the vein-mined half of a deposit wear the pickaxe two or three times
-                // as fast per blow as the half mined by hand, against the promise that a deposit
-                // costs the same pickaxe either way. So the swing's cost is shared across every
-                // chunk it landed on, across every deposit, and an extra chunk pays one share.
-                // With one chunk struck the share is a whole swing, as before.
-                int landed = 0;
-                foreach (Struck struck in Swing) landed += struck.Hits.Count;
-
-                var cost = new Cost { Share = landed > 0 ? 1f / landed : 1f };
-
-                // The wear is read off the pickaxe rather than recomputed. Attack takes
-                // m_useDurabilityDrain * Game.m_durabilityRate on a melee swing and a flat
-                // 1 * m_durabilityRate on an area attack, the drain is asset data, and a mod
-                // that changes wear changes it here too - the difference across the bracket is
-                // what this swing actually cost, whichever of those applied.
-                if (weapon != null && weapon.m_shared != null && weapon.m_shared.m_useDurability)
-                    cost.WearPerBlow = Mathf.Max(0f, _durabilityBefore - weapon.m_durability)
-                                       * cost.Share;
-
-                foreach (Struck struck in Swing)
-                {
-                    if (budget <= 0) break;
-
-                    // Caught per deposit. This runs inside the game's own attack, and an
-                    // exception escaping here would surface as a vanilla swing misbehaving -
-                    // a failure in the vein should cost the vein, never the swing.
-                    try
-                    {
-                        budget -= Extend(struck, player, weapon, attack, budget, cost);
-                    }
-                    catch (Exception error)
-                    {
-                        if (!_warned)
-                        {
-                            _warned = true;
-                            MalmrPlugin.Log.LogWarning("A vein could not be followed, and the "
-                                + "swing went ahead as vanilla. Said once per session: "
-                                + error);
-                        }
-                    }
-                }
+                return !Divert(rock, hit);
             }
-            finally
+            catch (Exception error)
             {
-                Swing.Clear();
+                // A failure here must cost the bar, never the blow. Falling through to vanilla
+                // means the swing still breaks rock the ordinary way.
+                if (!_warned)
+                {
+                    _warned = true;
+                    MalmrPlugin.Log.LogWarning("A vein mining blow could not be sent, and it "
+                        + "went to the deposit the vanilla way. Said once per session: " + error);
+                }
+
+                return true;
             }
         }
 
-        /// <summary>From the attack's finalizer: whatever happened, the next swing starts clean.</summary>
-        internal static void Reset()
+        private static bool Divert(Component rock, HitData hit)
         {
-            _open = false;
-            _applying = false;
-            Swing.Clear();
+            if (!MalmrConfig.Enabled.Value || !VeinMode.On) return false;
+            if (rock == null || hit == null) return false;
+            if (hit.m_hitCollider == null || hit.m_radius > 0f) return false;
+            if (hit.m_skill != Skills.SkillType.Pickaxes) return false;
+
+            Player player = Player.m_localPlayer;
+            if (player == null || hit.m_attacker != player.GetZDOID()) return false;
+
+            ZNetView nview;
+            if (!rock.TryGetComponent(out nview)) return false;
+
+            // A deposit whose ZDO is gone, swallowed rather than handed on. It happens inside the
+            // swing that fills a bar: the owner breaks the deposit on the spot, and the same
+            // swing's next chunk arrives at a rock that no longer exists. Vanilla's MineRock5
+            // returns at once there, but MineRock.Damage does not check and throws on the null
+            // ZDO, which would abort the rest of the swing - the wear and the skill with it.
+            if (!nview.IsValid()) return true;
+
+            Deposits.Kind kind = Deposits.Of(rock);
+            if (kind == null || kind.Entry == null) return false;
+
+            // The earned level, not the buffed one the blow was rolled with - see EarnedLevel. A
+            // bonus still makes each blow harder, as it does in vanilla; it does not open a metal
+            // early.
+            Gate gate = Gate.For(kind.Entry, EarnedLevel(player));
+            if (!gate.Open)
+            {
+                Refused(nview, kind, gate);
+                return false;
+            }
+
+            // The chunk as the deposit numbers it, which is what the owner indexes by. Both
+            // deposit shapes build their area list from their colliders once, while every chunk
+            // is still active, and Areas(true) is that list at any later time - dead chunks are
+            // only deactivated, never removed.
+            int area = Array.IndexOf(Deposits.Areas(rock, true), hit.m_hitCollider);
+            if (area < 0) return false;
+
+            Focus.Struck(rock);
+
+            // To the owner, the road RPC_Damage takes. When this machine is the owner the call is
+            // handled on the spot, inside this swing, before Damage would have returned.
+            nview.InvokeRPC(Owner.Rpc, hit, area);
+
+            if (MalmrConfig.Verbose.Value)
+                MalmrPlugin.Log.LogInfo("Sent a vein mining blow on "
+                    + Utils.GetPrefabName(rock.gameObject) + " (" + kind.Metal + ") chunk " + area
+                    + " to " + (nview.IsOwner() ? "this machine" : "peer " + nview.GetZDO().GetOwner())
+                    + ".");
+
+            return true;
         }
 
-        /// <summary>What one extra chunk pays, worked out once per swing in Close.</summary>
-        private sealed class Cost
-        {
-            /// <summary>1 over the number of chunks the swing struck, across every deposit.</summary>
-            public float Share = 1f;
+        // ---------------------------------------------------------------- the shut metal
 
-            /// <summary>The swing's own durability loss times Share. 0 on a pickaxe that does not wear.</summary>
-            public float WearPerBlow;
+        /// <summary>Deposits already told about this world, by ZDO.</summary>
+        private static readonly HashSet<ZDOID> Told = new HashSet<ZDOID>();
+
+        private static ZNetScene _toldIn;
+
+        /// <summary>
+        /// Vein mode on, the metal shut: the blow goes to vanilla, and once per deposit the
+        /// player is told what is missing - "Iron veins need Pickaxes 60 and Bonemass beaten at
+        /// one star". Once per deposit rather than once per metal because it is the rock in
+        /// front of you that did not do what you expected, and once rather than every swing
+        /// because a player who has read it is mining by hand on purpose.
+        ///
+        /// Top left, not centre. The centre is where the bar and the unlock message live, and a
+        /// crypt full of scrap piles with iron still shut would stack the same line there over
+        /// and over.
+        /// </summary>
+        private static void Refused(ZNetView nview, Deposits.Kind kind, Gate gate)
+        {
+            if (_toldIn != ZNetScene.instance)
+            {
+                _toldIn = ZNetScene.instance;
+                Told.Clear();
+            }
+
+            if (!Told.Add(nview.GetZDO().m_uid)) return;
+
+            Player player = Player.m_localPlayer;
+            if (player == null) return;
+
+            string metal = Deposits.DisplayName(kind.Metal);
+
+            player.Message(MessageHud.MessageType.TopLeft, gate.Off
+                ? metal + " veins cannot be vein mined here"
+                : metal + " veins need " + gate.Needs());
+
+            if (MalmrConfig.Verbose.Value)
+                MalmrPlugin.Log.LogInfo(kind.Metal + " is shut for vein mining: " + gate.Why());
         }
+
+        // ---------------------------------------------------------------- the level
 
         /// <summary>
         /// The level every unlock is read against: the Pickaxes level the character has earned,
@@ -256,9 +175,9 @@ namespace Malmr
         /// the big number with any bonus in a separate "+2" beside it, and the level-up message
         /// Announce rides on carries it too. The first version unlocked on the buffed level and
         /// announced on the earned one, so a character with a standing bonus - Rist's Quick
-        /// study capstone is +2 to every skill and never wears off - had copper veins at 18 in
-        /// silence and was told about them at 20. One level for both, and the one the player can
-        /// read off their own screen.
+        /// study capstone is +2 to every skill and never wears off - had copper veins two levels
+        /// early in silence and was told about them at the level. One level for both, and the
+        /// one the player can read off their own screen.
         ///
         /// Read through GetSkillList because Skills.GetSkill is private and creates an entry as
         /// a side effect; a skill never used yet has no entry, and that is level 0.
@@ -277,329 +196,6 @@ namespace Malmr
             }
 
             return 0f;
-        }
-
-        /// <summary>
-        /// The extra chunks for one deposit this swing touched. Returns how many it took.
-        /// </summary>
-        private static int Extend(Struck struck, Player player, ItemDrop.ItemData weapon,
-                                  Attack attack, int budget, Cost cost)
-        {
-            Component rock = struck.Rock;
-            if (rock == null || struck.Hits.Count == 0) return 0;
-
-            HitData first = struck.Hits[0];
-
-            ZNetView nview = rock.GetComponent<ZNetView>();
-            if (nview == null || !nview.IsValid()) return 0;
-
-            Deposits.Kind kind = Deposits.Of(rock);
-            if (kind == null || kind.Entry == null)
-            {
-                Quiet(rock, "is not a vein: " + (kind == null ? "unreadable" : kind.Why));
-                return 0;
-            }
-
-            // The earned level, not the buffed one the blow was rolled with - see EarnedLevel.
-            // A bonus still makes each blow harder, as it does in vanilla; it does not open a
-            // metal early.
-            float level = EarnedLevel(player);
-
-            // Both halves of the unlock, the level and the boss, asked of the one place the
-            // console and the unlock message also ask - see Gate. Read here, on the swinging
-            // machine, for the same reason the level is: the kill count Vandi keeps is readable
-            // everywhere, but the swing is only ever decided on the machine that swings.
-            Gate gate = Gate.For(kind.Entry, level);
-            int unlock = gate.Unlock;
-
-            int allowed = gate.Extra;
-            if (allowed <= 0)
-            {
-                Quiet(rock, kind.Metal + " is shut: " + gate.Why());
-                return 0;
-            }
-
-            if (allowed > budget) allowed = budget;
-
-            // Checked here as well as by the owner, because the owner's refusal still costs the
-            // hit: a pickaxe too weak for the rock would otherwise spend durability on every
-            // extra chunk just to be told "too hard" once per chunk. Vanilla already said it
-            // once, for the chunk that was struck.
-            if (!first.CheckToolTier(Deposits.MinToolTier(rock))) return 0;
-
-            List<Collider> live = LiveChunks(rock, struck.Colliders);
-
-            // The whole vein in walking order, not just the first `allowed` of it, because a
-            // chunk can come off between being chosen and being struck. See the loop.
-            List<Collider> order = Walk(struck.Bounds, live, first.m_point, live.Count);
-
-            int done = 0;
-            int fell = 0;
-            string stoppedBy = null;
-            float swingStamina = -1f;
-
-            foreach (Collider chunk in order)
-            {
-                if (done >= allowed) break;
-
-                // Re-checked before every chunk, because the previous extra hit can change the
-                // deposit under the list. When this machine owns it the whole hit runs inside
-                // Damage below - ZRoutedRpc handles a call to itself inline - and a chunk that
-                // breaks there runs CheckSupport, which breaks every chunk it was holding up and
-                // deactivates them through RPC_SetAreaHealth, also inline. A chunk the walk
-                // picked can therefore already be ore on the ground. Striking it anyway reached
-                // DamageArea's "Already destroyed" and did nothing, but still took a share of
-                // wear and one of the swing's slots. So a fallen chunk is skipped for free and
-                // the next one along takes its place: the game dropped it by itself, as it would
-                // have for a hit by hand. And a deposit whose last chunk broke has been handed to
-                // ZNetScene.Destroy, which nulls its ZDO - MineRock5.Damage then returns at once,
-                // and MineRock.Damage would throw on the null ZDO.
-                //
-                // What this cannot catch is the same collapse on a deposit someone else owns,
-                // which reaches this machine a round trip later. That hit is spent on nothing,
-                // the same as a vanilla swing at a chunk that has just fallen.
-                if (!nview.IsValid())
-                {
-                    stoppedBy = "the deposit is gone";
-                    break;
-                }
-
-                if (chunk == null || !chunk.gameObject.activeInHierarchy)
-                {
-                    fell++;
-                    continue;
-                }
-
-                // Checked before the chunk, charged after it. A pickaxe at zero cannot swing in
-                // vanilla - Humanoid refuses the attack - so it cannot take a chunk here either.
-                if (weapon.m_shared.m_useDurability && weapon.m_durability <= 0f)
-                {
-                    stoppedBy = "the pickaxe is worn out";
-                    break;
-                }
-
-                float stamina = 0f;
-                if (MalmrConfig.StaminaPerChunk.Value > 0f)
-                {
-                    if (swingStamina < 0f) swingStamina = SwingStamina(attack);
-                    stamina = swingStamina * cost.Share * MalmrConfig.StaminaPerChunk.Value;
-
-                    if (stamina > 0f && !player.HaveStamina(stamina))
-                    {
-                        stoppedBy = "out of stamina";
-                        break;
-                    }
-                }
-
-                // A struck blow, aimed at this chunk, the struck blows taken in turn. The point
-                // moves to the chunk because MineRock drops its ore just in front of
-                // hit.m_point, and MineRock5 uses it for the hit effect when a deposit is not
-                // set to use the chunk's own centre; the point nearest the first blow keeps the
-                // ore on the side the player is standing.
-                HitData hit = struck.Hits[done % struck.Hits.Count].Clone();
-                hit.m_hitCollider = chunk;
-                hit.m_point = chunk.bounds.ClosestPoint(first.m_point);
-
-                _applying = true;
-                try
-                {
-                    struck.Target.Damage(hit);
-                }
-                finally
-                {
-                    _applying = false;
-                }
-
-                done++;
-
-                // One blow's share of what the swing cost, scaled by the setting - see Close.
-                // Clamped at zero because vanilla's own is not, and a negative durability is a
-                // number no repair or tooltip expects.
-                if (weapon.m_shared.m_useDurability && cost.WearPerBlow > 0f)
-                {
-                    weapon.m_durability = Mathf.Max(0f, weapon.m_durability
-                        - cost.WearPerBlow * MalmrConfig.DurabilityPerChunk.Value);
-                }
-
-                if (stamina > 0f) player.UseStamina(stamina);
-
-                // Vanilla raises the skill once per swing, whatever it struck, so a blow is
-                // worth one share of a raise here too.
-                if (MalmrConfig.ExtraChunksTrainSkill.Value)
-                    player.RaiseSkill(Skills.SkillType.Pickaxes, hit.m_skillRaiseAmount * cost.Share);
-            }
-
-            if (MalmrConfig.Verbose.Value)
-            {
-                MalmrPlugin.Log.LogInfo(Utils.GetPrefabName(rock.gameObject) + " (" + kind.Metal
-                    + ", Pickaxes " + level + " against " + unlock
-                    + (gate.Boss != null
-                        ? ", " + gate.Boss + " " + gate.Kills + " of " + gate.KillsNeeded
-                        : "")
-                    + "): " + done + " of "
-                    + allowed + " extra chunk(s) at " + cost.Share.ToString("0.##")
-                    + " of a swing each, " + live.Count + " live beside the "
-                    + struck.Colliders.Count + " struck"
-                    + (fell > 0 ? ", " + fell + " fell on their own first" : "")
-                    + (stoppedBy != null ? " - stopped, " + stoppedBy : "")
-                    + (done < allowed && stoppedBy == null
-                        ? " - the vein ran out of reachable chunks" : ""));
-            }
-
-            return done;
-        }
-
-        /// <summary>
-        /// This deposit's chunks that are still standing, were not already struck by this
-        /// swing, and are not buried.
-        /// </summary>
-        private static List<Collider> LiveChunks(Component rock, List<Collider> struck)
-        {
-            var live = new List<Collider>();
-
-            foreach (Collider chunk in Deposits.Areas(rock, false))
-            {
-                if (chunk == null || !chunk.enabled) continue;
-                if (struck.Contains(chunk)) continue;
-
-                // A trigger is in the area list too, if a deposit has one, and no swing can
-                // reach it - the attack's casts ignore triggers. Striking one here would be a
-                // chunk the player could never have hit by hand.
-                if (chunk.isTrigger) continue;
-
-                if (MalmrConfig.LeaveBuried.Value && Buried(chunk.bounds.center)) continue;
-
-                live.Add(chunk);
-            }
-
-            return live;
-        }
-
-        /// <summary>
-        /// Whether a point is under the terrain. ZoneSystem's own ground probe, which casts
-        /// down from far above against the terrain layer only - so inside a dungeon, hung
-        /// thousands of metres above its entrance, it finds the surface far below and every
-        /// chunk counts as uncovered, which is right: nobody digs in a crypt.
-        /// </summary>
-        private static bool Buried(Vector3 point)
-        {
-            if (ZoneSystem.instance == null) return false;
-
-            float ground;
-            return ZoneSystem.instance.GetGroundHeight(point, out ground) && point.y < ground;
-        }
-
-        /// <summary>
-        /// Outward from the struck chunks, a ring at a time. Each ring is every remaining chunk
-        /// that touches the ring before it, taken nearest to the blow first, until the count is
-        /// met or nothing more touches.
-        /// </summary>
-        private static List<Collider> Walk(List<Bounds> seeds, List<Collider> live,
-                                           Vector3 origin, int count)
-        {
-            var picked = new List<Collider>();
-            var left = new List<Collider>(live);
-            var frontier = new List<Bounds>(seeds);
-            var ring = new List<Collider>();
-
-            while (picked.Count < count && left.Count > 0 && frontier.Count > 0)
-            {
-                ring.Clear();
-
-                foreach (Collider chunk in left)
-                {
-                    Bounds box = chunk.bounds;
-
-                    foreach (Bounds edge in frontier)
-                    {
-                        Bounds grown = edge;
-                        grown.Expand(Gap * 2f);
-                        if (!grown.Intersects(box)) continue;
-
-                        ring.Add(chunk);
-                        break;
-                    }
-                }
-
-                if (ring.Count == 0) break;
-
-                ring.Sort((a, b) => (a.bounds.center - origin).sqrMagnitude
-                                    .CompareTo((b.bounds.center - origin).sqrMagnitude));
-
-                frontier = new List<Bounds>();
-
-                foreach (Collider chunk in ring)
-                {
-                    if (picked.Count >= count) break;
-
-                    picked.Add(chunk);
-                    left.Remove(chunk);
-                    frontier.Add(chunk.bounds);
-                }
-            }
-
-            return picked;
-        }
-
-        // ---------------------------------------------------------------- stamina
-
-        private static MethodInfo _attackStamina;
-        private static bool _staminaBound;
-
-        /// <summary>
-        /// What one swing of this attack costs, from the game's own private GetAttackStamina,
-        /// so skill, gear and status effects lower it for the extra chunks exactly as they
-        /// lower it for the swing.
-        ///
-        /// Bound lazily inside a try, never in a static field initialiser: a reflection bind
-        /// that throws at type-init poisons every patch the class carries. If the method has
-        /// gone, the extra chunks are free of stamina and the log says so once - which is the
-        /// default setting anyway.
-        /// </summary>
-        private static float SwingStamina(Attack attack)
-        {
-            if (!_staminaBound)
-            {
-                _staminaBound = true;
-                try
-                {
-                    _attackStamina = AccessTools.Method(typeof(Attack), "GetAttackStamina");
-                }
-                catch (Exception)
-                {
-                    _attackStamina = null;
-                }
-
-                if (_attackStamina == null)
-                    MalmrPlugin.Log.LogWarning("Attack.GetAttackStamina is gone, so "
-                        + "StaminaPerChunk cannot be charged and extra chunks cost no stamina.");
-            }
-
-            if (_attackStamina == null || attack == null) return 0f;
-
-            try
-            {
-                return (float)_attackStamina.Invoke(attack, null);
-            }
-            catch (Exception)
-            {
-                return 0f;
-            }
-        }
-
-        // ---------------------------------------------------------------- logging
-
-        private static readonly HashSet<string> Said = new HashSet<string>();
-
-        /// <summary>One Verbose line per deposit kind and reason, not one per swing.</summary>
-        private static void Quiet(Component rock, string why)
-        {
-            if (!MalmrConfig.Verbose.Value) return;
-
-            string line = Utils.GetPrefabName(rock.gameObject) + " " + why;
-            if (!Said.Add(line)) return;
-
-            MalmrPlugin.Log.LogInfo(line);
         }
     }
 }
