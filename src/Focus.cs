@@ -12,9 +12,9 @@ namespace Malmr
     /// up when a swing's recoil or a step back takes the crosshair off the rock between blows -
     /// hover alone would make it flicker on every swing.
     ///
-    /// Only for an open metal. A shut one gets its one line in the corner from Vein and no bar,
-    /// because an empty bar over a rock you cannot vein mine would promise something it cannot
-    /// deliver.
+    /// Only for an open metal, and not for a deposit the Mistlands rule leaves to the hand. Those
+    /// get their one line in the corner from Vein and no bar, because an empty bar over a rock you
+    /// cannot vein mine would promise something it cannot deliver.
     ///
     /// Every client reads the same numbers off the deposit's ZDO (see Ledger), so the bar a
     /// player sees is the deposit's, not their own share of it: a friend's blows fill it too, and
@@ -37,8 +37,8 @@ namespace Malmr
         private static Component _gated;
         private static float _nextGate;
         private static bool _open;
-        /// <summary>The metal as the player's game names it, looked up with the gate rather than every frame.</summary>
-        private static string _metal = "";
+        /// <summary>One deposit as the screen names it, "Copper vein", looked up with the gate rather than every frame.</summary>
+        private static string _noun = "";
 
         private static ZDOID _readUid = ZDOID.None;
         private static uint _readRevision;
@@ -67,9 +67,10 @@ namespace Malmr
             Player player = Player.m_localPlayer;
             if (player == null || player.IsDead() || !VeinMode.PickaxeOut(player)) return;
 
-            // The mode is on and a pickaxe is out: that alone earns the marker. Robbin asked for
-            // a small sign that it is on, and it matters most exactly when there is no bar, since
-            // the next rock you hit will not break the way it used to.
+            // The mode is on and a pickaxe is out: that alone earns the gold Vein above the
+            // crosshair. Robbin asked for a small sign that it is on, and it matters most exactly
+            // when there is no bar, since the next rock you hit will not break the way it used to.
+            // It stays up while the bar shows as well: mockup A has both.
             _marker = true;
 
             Component target = Hovered(player);
@@ -90,10 +91,14 @@ namespace Malmr
                 _gated = target;
                 _nextGate = Time.time + Recheck;
 
+                // The same two questions the swing asks, in the same order: where the deposit
+                // stands, then what you have opened. A copper vein in the Mistlands gets no bar
+                // for the same reason a shut metal gets none.
                 Deposits.Kind kind = Deposits.Of(target);
                 _open = kind != null && kind.Entry != null
+                        && !Deposits.HandOnly(target, kind.Entry)
                         && Gate.For(kind.Entry, Vein.EarnedLevel(player)).Open;
-                _metal = kind != null ? Deposits.DisplayName(kind.Metal) : "";
+                _noun = kind != null ? Deposits.Noun(kind.Metal) : "";
             }
 
             if (!_open) return;
@@ -103,7 +108,7 @@ namespace Malmr
 
             _bar = true;
             _fraction = reading.Fraction;
-            _label = _metal + " vein " + reading.Percent + "%";
+            _label = _noun + " " + reading.Percent + "%";
         }
 
         /// <summary>From the plugin's OnGUI.</summary>

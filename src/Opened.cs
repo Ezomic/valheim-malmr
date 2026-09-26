@@ -9,18 +9,20 @@ namespace Malmr
     ///
     /// <b>Why this is not simply the level-up any more.</b> The first version announced on
     /// Player.OnSkillLevelup, when the level reached matched a metal's. With the boss half that
-    /// is only right when the boss came first. A player who reaches Pickaxes 50 before beating
-    /// the Elder at one star would be told copper was open when it was not, and then told
+    /// is only right when the boss came first. A player who reaches Pickaxes 30 before beating
+    /// the Elder would be told copper was open when it was not, and then told
     /// nothing on the kill that actually opened it. So the message follows the metal's state,
     /// not either event: it fires when the whole Gate goes from shut to open.
     ///
-    /// <b>How the kill is seen.</b> Vandi records a kill with SetGlobalKey on whichever machine
-    /// owned the boss, and the server passes the new key list to every client. There is no event
-    /// for "a key changed" to hook on the client - RPC_GlobalKeys clears the list and adds every
-    /// key back - so this looks, once a second, from the plugin's Update. That is a handful of
-    /// dictionary reads, and a second is well inside the time a player spends looking at a dead
-    /// boss. The level-up still calls in directly, so a metal opened by the level is announced on
-    /// the swing that earned it, beside vanilla's own skill line, as before.
+    /// <b>How the kill is seen.</b> With Vandi, a kill is recorded with SetGlobalKey on whichever
+    /// machine owned the boss, and the server passes the new key list to every client. There is
+    /// no event for "a key changed" to hook on the client - RPC_GlobalKeys clears the list and
+    /// adds every key back - so this looks, once a second, from the plugin's Update. Without
+    /// Vandi the count is the character's own tally, which Game.RPC_RegisterKill bumps the moment
+    /// the boss dies, and the same look finds it. Either way a handful of dictionary reads, and a
+    /// second is well inside the time a player spends looking at a dead boss. The level-up still
+    /// calls in directly, so a metal opened by the level is announced on the swing that earned
+    /// it, beside vanilla's own skill line, as before.
     ///
     /// <b>What keeps it to one message.</b> Only a change from shut to open speaks, measured
     /// against what this same character saw a moment ago. The first look after logging in, after
@@ -150,24 +152,66 @@ namespace Malmr
                 MalmrPlugin.Log.LogInfo(gate.Entry + " veins open: Pickaxes " + (int)gate.Level
                     + " of " + gate.Unlock
                     + (gate.Boss != null
-                        ? ", " + gate.Boss + " killed " + gate.Kills + " of " + gate.KillsNeeded + " time(s)"
+                        ? ", " + gate.Boss + " killed " + gate.Kills + " of " + gate.KillsNeeded
+                          + " time(s) " + (Bosses.ThroughVandi ? "through Vandi" : "as the game counts it")
                         : ", no boss needed")
                     + ".");
 
             if (!MalmrConfig.Enabled.Value || !MalmrConfig.AnnounceUnlocks.Value) return;
 
-            var names = new List<string>();
-            foreach (Gate gate in opened) names.Add(Deposits.DisplayName(gate.Entry));
+            player.Message(MessageHud.MessageType.Center, Message(opened));
+        }
 
-            string metals = names.Count == 1
-                ? names[0]
-                : string.Join(", ", names.GetRange(0, names.Count - 1).ToArray())
-                  + " and " + names[names.Count - 1];
+        /// <summary>
+        /// "Copper veins open to you now: Pickaxes 30 and The Elder beaten at one star through
+        /// Vandi." and then how to use it. What opened each one is said, because the boss half
+        /// of that sentence is where the player learns which count applies - at one star through
+        /// Vandi, or beaten by you without it - and a rule nobody is told is a rule that reads as
+        /// a bug the first time it differs from a friend's.
+        ///
+        /// Metals that opened for the same reason share a line, which is the usual case: one
+        /// level-up or one boss kill. Several reasons at once - a skill set by hand, or a host's
+        /// table arriving mid-session - get a line each rather than one sentence nobody can parse.
+        /// </summary>
+        private static string Message(List<Gate> opened)
+        {
+            var reasons = new List<string>();
+            var nouns = new Dictionary<string, List<string>>();
+
+            foreach (Gate gate in opened)
+            {
+                string reason = gate.Earned();
+
+                List<string> list;
+                if (!nouns.TryGetValue(reason, out list))
+                {
+                    nouns[reason] = list = new List<string>();
+                    reasons.Add(reason);
+                }
+
+                list.Add(Deposits.Nouns(gate.Entry));
+            }
+
+            var text = new System.Text.StringBuilder();
+
+            foreach (string reason in reasons)
+            {
+                List<string> list = nouns[reason];
+
+                string things = list.Count == 1
+                    ? list[0]
+                    : string.Join(", ", list.GetRange(0, list.Count - 1).ToArray())
+                      + " and " + list[list.Count - 1];
+
+                text.Append(things).Append(" open to you now: ").Append(reason).Append(".\n");
+            }
 
             // The key is named, because the message is the one moment a player learns this mod
             // exists: an open metal does nothing at all until vein mode is switched on.
-            player.Message(MessageHud.MessageType.Center, metals + " veins open to you now. Tap "
-                + KeyName(MalmrConfig.VeinToggleKey.Value) + " with a pickaxe out to mine a whole deposit");
+            text.Append("Tap ").Append(KeyName(MalmrConfig.VeinToggleKey.Value))
+                .Append(" with a pickaxe out to mine a whole deposit");
+
+            return text.ToString();
         }
 
         /// <summary>

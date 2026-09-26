@@ -2,10 +2,9 @@
     "name":  "Malmr",
     "author":  "Robbin Thijssen",
     "version_number":  "0.1.0",
-    "description":  "Tap Alt with a pickaxe and your blows fill a bar until the whole ore deposit breaks at once. Opens metal by metal, on your Pickaxes skill and the biome's boss beaten at one star.",
+    "description":  "Tap Alt with a pickaxe and your blows fill a bar until the whole ore deposit breaks at once. Opens metal by metal, on your Pickaxes skill and the biome's boss beaten.",
     "dependencies":  [
-                         "denikson-BepInExPack_Valheim-5.4.2350",
-                         "Ezomic-Vandi-1.0.0"
+                         "denikson-BepInExPack_Valheim-5.4.2350"
                      ],
     "website_url":  "https://github.com/Ezomic/valheim-malmr"
 }

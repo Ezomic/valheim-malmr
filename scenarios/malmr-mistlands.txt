@@ -1,0 +1,96 @@
+# Malmr: in the Mistlands only the giant brains vein mine. A copper deposit there is mined by
+# hand even with copper open to you, and the same copper deposit elsewhere is not.
+#
+# The rule is decided per deposit by the biome under it, and `malmr progress <prefab>` answers
+# the swing's own three questions for the nearest deposit of that name: is it a vein (metal=),
+# does its biome leave it to the hand (handonly=), and would the swing fill a bar (open=). The
+# bar and the swing ask the same Deposits.HandOnly, so this is the rule they act on.
+#
+# Runs against the DEFAULT config: Copper at 30 on defeated_gdking, Eitr (the brains) at 60 on
+# defeated_queen, and the Mistlands line at Eitr.
+#
+# NEEDS VANDI, like malmr-unlock-levels.txt: the boss half is seeded through Vandi's own kill
+# record, and the scenario removes those two keys at the end. A character with real Vandi kills
+# of the Elder or the Queen in this world loses them.
+#
+# SINGLEPLAYER, in a TEST WORLD. It travels: `biome` teleports to the nearest dry Black Forest
+# and then the nearest dry Mistlands, which is far and loads slowly the first time. God mode and
+# ghost mode are switched on first so nothing kills or chases the character on the way, and
+# Devkit cannot switch them off again, so they stay on.
+#
+# It LEAVES BEHIND: a copper deposit where it stood in the Black Forest, and a copper deposit and
+# a giant brain where it stood in the Mistlands. `put` marks what it makes and takes its own
+# earlier copies down on the next run within 30m, so a rerun from the same spot tidies up after
+# the last one. Pickaxes is put back and vein mode is never switched on.
+#
+# THE CONTROL: the Black Forest copper. Without it, open=no in the Mistlands could be a copper
+# gate that never opened at all. The same prefab, the same level, the same kills, reading
+# open=yes handonly=no one biome over, is what makes the Mistlands answer mean the biome.
+#
+# What a broken build reads: a build without the rule reads the Mistlands copper as open=yes
+# handonly=no. A build that applied it to everything reads the brain as handonly=yes open=no.
+# A build that read the player's biome instead of the deposit's would still pass here - the two
+# stand in the same biome - which is the one thing this cannot tell apart.
+#
+# If `put` refuses with an unmarked deposit within 8m, the world made one there: move on a little
+# and run it again. If the brain's `put` or its progress line fails with nothing found, check
+# malmr-deposits-by-their-drops.txt for the brain's real prefab name.
+
+god
+ghost
+
+# ---- through zero first, for the reason malmr-unlock-levels.txt gives, and then the brains'
+# level, which is above copper's, so both are open by the level.
+
+skill Pickaxes 0
+skill Pickaxes 60
+
+key vandi_p_$player_defeated_gdking 2
+key vandi_p_$player_defeated_queen 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+keyis vandi_p_$player_defeated_queen 2
+
+# The metal half is open for both, everywhere, so what changes below is only the biome.
+
+console malmr
+printed bosscount=vandi yes
+printed mistlands=Eitr yes
+printed Copper unlock=30 open=yes yes
+printed Eitr unlock=60 open=yes yes
+
+# ---- the control: copper in the Black Forest vein mines.
+
+biome BlackForest
+put rock4_copper_frac 3
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper yes
+printed biome=BlackForest yes
+printed handonly=no yes
+printed open=yes yes
+
+# ---- the same copper in the Mistlands is mined by hand.
+
+biome Mistlands
+put rock4_copper_frac 3
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper yes
+printed biome=Mistlands yes
+printed handonly=yes yes
+printed open=no yes
+
+# ---- and the brains there vein mine. Further out than the copper so the two do not overlap;
+# progress is asked by name, so which pivot is nearer does not matter.
+
+put giant_brain_frac 8
+console malmr progress giant_brain_frac
+printed prefab=giant_brain_frac metal=Eitr yes
+printed biome=Mistlands yes
+printed handonly=no yes
+printed open=yes yes
+
+# ---- put back what can be put back.
+
+unkey vandi_p_$player_defeated_gdking
+unkey vandi_p_$player_defeated_queen
+skill Pickaxes back

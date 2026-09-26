@@ -1,18 +1,23 @@
-# Malmr: every vanilla ore deposit is recognised by what it drops, and nothing else is.
+# Malmr: every deposit in the default table is recognised by what it drops, and nothing else is.
 #
 # The metal of a deposit is read from the running game: its drop table, and what every
 # Smelter in the scene turns each drop into. None of that can be read offline, so this file is
 # where the classification is actually proved. It is also the file most likely to fail for a
 # reason that is not a bug, so read the notes on each block before trusting a failure.
 #
-# Runs against the DEFAULT config, in any world. `malmr` lists every deposit prefab ZNetScene
-# holds, whether or not one is standing near you.
+# Runs against the DEFAULT config (Copper, Iron, Silver, Eitr, Flametal and Gold in Unlocks, and
+# no * entry), in any world, singleplayer. Stand anywhere: `malmr` lists every deposit prefab
+# ZNetScene holds, whether or not one is standing near you. Changes nothing and leaves nothing.
 #
-# What it reads: `malmr` prints "<prefab>=<Metal> chunks=<n>" for each deposit that counts as
+# What it reads: `malmr` prints "<prefab>=<Entry> chunks=<n>" for each deposit that counts as
 # a vein, a "not veins:" line with the rest, and one "Smelting stations here turn:" line with
-# every station and its conversions as "<station>: A>B, C>D; <next station>: ...". A station
-# whose inputs are not ore reads "<station> (not a furnace, so never *): ...". The same block
-# goes to the log once per world load.
+# every station and its conversions as "<station>: A>B, C>D; <next station>: ...". The same
+# block goes to the log once per world load.
+#
+# What a broken build reads: a classifier that stopped reading the drops prints every deposit
+# under "not veins", so every "=<Entry> yes" line fails. The old defaults print MineRock_Tin=Tin,
+# which the tin block catches. A * entry left in by mistake would turn anything a furnace takes
+# into a vein, which the same block catches for tin.
 #
 # THE TRAP: the deposit and station names below come off the game's asset manifest, which
 # lists what is on disk and not what loads. A deposit here as MineRock5 is usually the *_frac*
@@ -24,35 +29,42 @@
 console malmr
 
 # ---- the stations. If these fail, every deposit below fails with them, and the reason is
-# that no Smelter was found at all.
+# that no Smelter was found at all. Softtissue>Eitr is the eitr refinery's line, and it is the
+# one the giant brains hang on: naming Eitr in Unlocks is what makes a brain a vein.
 
 printed CopperOre>Copper yes
 printed TinOre>Tin yes
 printed IronScrap>Iron yes
 printed SilverOre>Silver yes
+printed Softtissue>Eitr yes
 
-# ---- which stations are furnaces. A station counts when it makes a metal named in Unlocks,
-# or burns the same fuel as one that does. Only a furnace's inputs can fall to the * level.
-# The smelter and the blast furnace make named metals and burn coal. The charcoal kiln burns
-# nothing (its rip reads m_maxFuel = 0) and makes coal, which is not named, so it is not one.
-# The eitr refinery burns sap and makes eitr; it is the station this rule exists for, because
-# a giant's brain is mined with a pickaxe and what it drops goes in there. Its prefab name is
-# the least certain here - eitrrefinery is the manifest's spelling.
+# ---- which stations are furnaces. Only matters to somebody who adds a * entry back, since only
+# a furnace's inputs can fall to it, but the label is still printed and still has to be right.
+# A station counts when it makes an entry named in Unlocks, or burns the same fuel as one that
+# does. The smelter and the blast furnace make named metals. The charcoal kiln burns nothing
+# (its rip reads m_maxFuel = 0) and makes coal, which is not named, so it is not one. The eitr
+# refinery is not asserted either way: it makes Eitr, which is named for the brains, so by the
+# rule it now counts, and that is the rule working rather than a fact worth pinning.
 
 printed smelter (not a furnace no
 printed blastfurnace (not a furnace no
 printed charcoal_kiln (not a furnace yes
-printed eitrrefinery (not a furnace yes
 
-# ---- Black Forest and Swamp. Copper is the one vein mining exists for.
+# ---- Black Forest and Swamp.
 
 printed rock4_copper_frac=Copper yes
-printed MineRock_Tin=Tin yes
 printed mudpile_frac=Iron yes
 
 # ---- Mountains. Silver veins are mostly buried, and a full bar breaks the buried chunks too.
 
 printed silvervein_frac=Silver yes
+
+# ---- Mistlands. The giant brains, as Eitr: a brain drops soft tissue, and the refinery turns
+# soft tissue into Eitr. The least certain name in this file - giant_brain is the whole brain
+# and giant_brain_frac the fractured one - so if this fails with "nothing containing", read the
+# printed list for whichever of the two it really is.
+
+printed giant_brain_frac=Eitr yes
 
 # ---- Ashlands and the Deep North. The least certain two. Flametal passes on either the old
 # name or the Ashlands one, because a trailing New is ignored when names are compared.
@@ -67,20 +79,15 @@ printed silvervein_frac=Silver yes
 printed FlametalRockstand_frac=Flametal yes
 printed goldvein_frac=Gold yes
 
-# ---- not metals. Nothing smelts obsidian or stone, so neither is a vein by default. The
-# "=" matters: in the not-veins line these names are followed by a comma instead. Each name
-# is asserted to be printed at all first, because "no" alone would also pass for a prefab
-# that is not in the world under that name, and then nothing was tested.
+# ---- not veins. Tin is left out of the table on purpose, and with no * entry nothing catches
+# it. Nothing smelts obsidian or stone, so neither is a vein by default either. The "=" matters:
+# in the not-veins line these names are followed by a comma instead. Each name is asserted to be
+# printed at all first, because "no" alone would also pass for a prefab that is not in the world
+# under that name, and then nothing was tested.
 
+printed MineRock_Tin yes
+printed MineRock_Tin= no
 printed MineRock_Obsidian yes
 printed MineRock_Obsidian= no
 printed MineRock_Stone yes
 printed MineRock_Stone= no
-
-# ---- the giant's brain. Its drop goes into the eitr refinery, which is not a furnace, so it
-# must not come out as an Eitr vein through the * level. The least certain name in this file:
-# if the first line fails with "nothing containing", the brain is not a MineRock or MineRock5
-# under this name, Malmr never touches it, and both lines can go.
-
-printed giant_brain_frac yes
-printed giant_brain_frac= no

@@ -153,6 +153,58 @@ namespace Malmr
         }
 
         /// <summary>
+        /// One deposit of this metal as the screen calls it: "Copper vein", or what Names says -
+        /// "Giant brain" for Eitr by default. The bar reads "Copper vein 45%" off it.
+        /// </summary>
+        internal static string Noun(string metal)
+        {
+            string named = MalmrConfig.NameFor(metal);
+            if (!string.IsNullOrEmpty(named)) return named;
+
+            return DisplayName(metal) + " vein";
+        }
+
+        /// <summary>
+        /// Several, for the messages: "Copper veins", "Giant brains". An s on the end, which is
+        /// right for every default and for anything a player is likely to write in Names; a name
+        /// that needs another plural is one nobody has asked for yet.
+        /// </summary>
+        internal static string Nouns(string metal)
+        {
+            return Noun(metal) + "s";
+        }
+
+        // ---------------------------------------------------------------- the Mistlands
+
+        /// <summary>
+        /// Whether this deposit must be mined by hand because of where it stands, whatever the
+        /// player has opened: Robbin's call of 2026-09-26 that in the Mistlands only the giant
+        /// brains vein mine, and copper, iron or anything else found there is mined the normal
+        /// way. Which entries still vein mine there is the Mistlands config line.
+        ///
+        /// Asked by the swing, the bar and the console alike, per deposit, so the three cannot
+        /// disagree about one rock. Never by the owner: the swinger decides, as it decides the
+        /// rest of the gate, and the owner only counts what arrives.
+        ///
+        /// Heightmap.FindBiome at the deposit, which is the map's biome at that spot. It compares
+        /// X and Z only, so a deposit in a dungeon reads the surface biome above it; that is the
+        /// biome the dungeon belongs to, which is the right answer here. None when the ground
+        /// under the deposit is not loaded - which cannot be the case for a rock someone is
+        /// standing at and swinging on - and None is never the Mistlands, so the answer there is
+        /// the permissive one rather than a rock that refuses for no reason anybody could see.
+        /// </summary>
+        internal static bool HandOnly(Component rock, string entry)
+        {
+            if (rock == null || string.IsNullOrEmpty(entry)) return false;
+            return BiomeOf(rock) == Heightmap.Biome.Mistlands && !MalmrConfig.MistlandsAllows(entry);
+        }
+
+        internal static Heightmap.Biome BiomeOf(Component rock)
+        {
+            return rock == null ? Heightmap.Biome.None : Heightmap.FindBiome(rock.transform.position);
+        }
+
+        /// <summary>
         /// The chunks a deposit is made of, the same way the game counts them.
         ///
         /// Mirrors each class's own Awake/Start exactly, because the area index the RPC carries
@@ -302,6 +354,11 @@ namespace Malmr
 
             text.Append("\n   ").Append(SmeltingLine);
 
+            // The deposit-level rule, so a player asking why a copper vein in the Mistlands
+            // breaks by hand finds the answer in the same block as the rest.
+            text.Append("\n   In the Mistlands only these vein mine, everything else there by hand: ")
+                .Append(MalmrConfig.MistlandsText());
+
             // The boss half, in the same block and for the same reason: which metal waits for
             // whom, any boss that can never be met, and every boss the world has with the key it
             // sets. That last line is the offline-unreadable fact the Deep North's own boss needs.
@@ -414,7 +471,7 @@ namespace Malmr
         /// message, in a mod that opens metal by metal. A deposit that dropped wood would
         /// likewise have been a coal vein through the charcoal kiln.
         ///
-        /// So a station counts as a furnace when it makes one of the metals named in Unlocks -
+        /// So a station counts as a furnace when it makes one of the entries named in Unlocks -
         /// the smelter, the blast furnace, whatever makes the Deep North's metal - or when it
         /// burns the same fuel as one that does. The second half is what keeps the promise to a
         /// mod ore: a mod that puts its ore in the vanilla smelter is covered by the first half,
@@ -423,6 +480,13 @@ namespace Malmr
         /// already edits is the only input. A mod ore at a station that fits neither is still
         /// one line away - name its metal in Unlocks and the named path finds it, because that
         /// path reads every station.
+        ///
+        /// Since 2026-09-26 the default table has no "*" and names Eitr, for the giant brains.
+        /// So by default nothing here decides anything - it only labels the log line - and the
+        /// eitr refinery counts as a furnace, because it makes a named entry. That is only ever
+        /// felt by somebody who adds a "*" back: anything else that goes into the refinery would
+        /// then be ore at the "*" level too. It is the rule doing what it says, and the fix, if
+        /// anybody minds, is to name that thing rather than to special-case the refinery.
         /// </summary>
         private static void OreStations()
         {

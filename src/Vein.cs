@@ -29,8 +29,10 @@ namespace Malmr
     /// charges every chunk's health, buried ones included. Which wins depends on the deposit.
     ///
     /// <b>Decided here because only this machine can.</b> Skills live in the player profile,
-    /// not on any ZDO, so whether a metal is open for this player is known only where the
-    /// player is. The owner never re-checks it; it has no way to.
+    /// not on any ZDO, and so does the game's own boss kill tally that the gate reads without
+    /// Vandi, so whether a metal is open for this player is known only where the player is. The
+    /// owner never re-checks it; it has no way to. The Mistlands rule is decided here too, for
+    /// the same one-place reason, though the owner could have read that one.
     /// </summary>
     internal static class Vein
     {
@@ -92,13 +94,26 @@ namespace Malmr
             Deposits.Kind kind = Deposits.Of(rock);
             if (kind == null || kind.Entry == null) return false;
 
+            // Where it stands before what you have earned: a copper vein in the Mistlands is
+            // mined by hand however open copper is, and "you need Pickaxes 30" would be the
+            // wrong thing to tell a player looking at one. See Deposits.HandOnly.
+            if (Deposits.HandOnly(rock, kind.Entry))
+            {
+                Tell(nview, kind, Deposits.Nouns(kind.Metal) + " in the Mistlands are mined by hand",
+                     "is mined by hand in the Mistlands (the Mistlands line)");
+                return false;
+            }
+
             // The earned level, not the buffed one the blow was rolled with - see EarnedLevel. A
             // bonus still makes each blow harder, as it does in vanilla; it does not open a metal
             // early.
             Gate gate = Gate.For(kind.Entry, EarnedLevel(player));
             if (!gate.Open)
             {
-                Refused(nview, kind, gate);
+                Tell(nview, kind, gate.Off
+                        ? Deposits.Nouns(kind.Metal) + " cannot be vein mined here"
+                        : Deposits.Nouns(kind.Metal) + " need " + gate.Needs(),
+                     "is shut for vein mining: " + gate.Why());
                 return false;
             }
 
@@ -132,17 +147,17 @@ namespace Malmr
         private static ZNetScene _toldIn;
 
         /// <summary>
-        /// Vein mode on, the metal shut: the blow goes to vanilla, and once per deposit the
-        /// player is told what is missing - "Iron veins need Pickaxes 60 and Bonemass beaten at
-        /// one star". Once per deposit rather than once per metal because it is the rock in
-        /// front of you that did not do what you expected, and once rather than every swing
-        /// because a player who has read it is mining by hand on purpose.
+        /// Vein mode on, and this deposit is not one it takes: the blow goes to vanilla, and once
+        /// per deposit the player is told why - "Iron veins need Pickaxes 40 and Bonemass beaten
+        /// at one star through Vandi", or "Copper veins in the Mistlands are mined by hand".
+        /// Once per deposit rather than once per metal because it is the rock in front of you
+        /// that did not do what you expected, and once rather than every swing because a player
+        /// who has read it is mining by hand on purpose.
         ///
-        /// Top left, not centre. The centre is where the bar and the unlock message live, and a
-        /// crypt full of scrap piles with iron still shut would stack the same line there over
-        /// and over.
+        /// Top left, not centre. The centre is where the unlock message lives, and a crypt full
+        /// of scrap piles with iron still shut would stack the same line there over and over.
         /// </summary>
-        private static void Refused(ZNetView nview, Deposits.Kind kind, Gate gate)
+        private static void Tell(ZNetView nview, Deposits.Kind kind, string onScreen, string forLog)
         {
             if (_toldIn != ZNetScene.instance)
             {
@@ -155,14 +170,10 @@ namespace Malmr
             Player player = Player.m_localPlayer;
             if (player == null) return;
 
-            string metal = Deposits.DisplayName(kind.Metal);
-
-            player.Message(MessageHud.MessageType.TopLeft, gate.Off
-                ? metal + " veins cannot be vein mined here"
-                : metal + " veins need " + gate.Needs());
+            player.Message(MessageHud.MessageType.TopLeft, onScreen);
 
             if (MalmrConfig.Verbose.Value)
-                MalmrPlugin.Log.LogInfo(kind.Metal + " is shut for vein mining: " + gate.Why());
+                MalmrPlugin.Log.LogInfo(kind.Metal + " " + forLog);
         }
 
         // ---------------------------------------------------------------- the level

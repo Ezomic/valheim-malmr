@@ -16,7 +16,7 @@ namespace Malmr
     /// change. When a config-driven change appears to do nothing in game, read the cfg
     /// before reading any code.
     ///
-    /// The three strings below are parsed on demand and re-parsed only when their text changes,
+    /// The strings below are parsed on demand and re-parsed only when their text changes,
     /// because Core can rewrite them live when a host's values arrive, and so can a config
     /// manager. A parse cached once at load would keep the joining player on their own table
     /// for the whole evening while the log said the host's was in force.
@@ -26,6 +26,11 @@ namespace Malmr
     /// three per-chunk costs. Robbin replaced the mechanic with the bar that fills until the whole
     /// deposit breaks, and all six went with it rather than staying as keys nothing reads. No
     /// Malmr cfg existed on any machine yet, so nobody carries a stale one.
+    ///
+    /// <b>And the defaults that moved the same evening</b>, after the bar: the levels came down
+    /// to copper 30 up to bloodgold 80, tin and the "*" entry left the table, the giant brains
+    /// joined it at 60, and the Mistlands line and the Names line arrived. Still no cfg on any
+    /// machine - the test profile had never run - so again nothing stale is out there.
     /// </summary>
     internal static class MalmrConfig
     {
@@ -33,6 +38,8 @@ namespace Malmr
 
         internal static ConfigEntry<string> Unlocks;
         internal static ConfigEntry<string> Deposits;
+        internal static ConfigEntry<string> Mistlands;
+        internal static ConfigEntry<string> Names;
 
         internal static ConfigEntry<string> Bosses;
         internal static ConfigEntry<int> BossKills;
@@ -59,38 +66,45 @@ namespace Malmr
             // the metal from the drops is that a mod-added ore turns up without a new build.
             // A string can carry that ore's name the moment someone wants to give it a level.
             //
-            // The levels are Robbin's, 2026-09-26: tin 40 and ten more per metal up to bloodgold
-            // at 90. They are late on purpose. Taking a whole deposit in one go is a big thing
-            // to hand out, so each metal has been mined by hand for a long while first.
+            // The levels are Robbin's, 2026-09-26, the second table of that day: copper 30 and
+            // ten more per step up to bloodgold at 80, with the Mistlands' giant brains at 60 in
+            // the step between silver and flametal. Taking a whole deposit in one go is a big
+            // thing to hand out, so each one has been mined by hand for a while first.
             //
-            // * sits at 90 with bloodgold, the top of the table. An ore nobody named has no
-            // biome this file knows, so there is nothing to place it by, and the one placement
-            // that can never open a mod's ore ahead of the vanilla metals is the last one. The
-            // cost lands on a mod ore that belongs early - it waits until 90 - and the fix for
-            // that is one pair naming it, which is what the table is for.
+            // Tin is not in it, his words: "tin doesnt need vein mining". Tin comes in small
+            // rocks by the shore, a few swings each, and there is no deposit worth a bar.
+            //
+            // The "*" entry went with the same change, so only what is named here vein mines.
+            // The code for it stays, because a mod's ore is exactly what it is for, and the text
+            // below says how to put it back.
+            //
+            // Eitr is the brains' entry. A giant brain drops soft tissue, the eitr refinery turns
+            // soft tissue into refined eitr, and the named path in Deposits asks every station
+            // what a drop becomes - so naming Eitr is what makes a brain a vein, the same way
+            // naming Copper makes a copper deposit one. Names below is what puts "Giant brain"
+            // on the screen instead of the refinery's product.
             Unlocks = cfg.Bind("Unlocks", "Unlocks",
-                "Tin:40, Copper:50, Iron:60, Silver:70, Flametal:80, Gold:90, *:90",
+                "Copper:30, Iron:40, Silver:50, Eitr:60, Flametal:70, Gold:80",
                 "The Pickaxes level at which each metal's deposits can be vein mined. Comma "
-                + "separated Name:Level pairs. The name is the smelted metal, the one that comes "
-                + "OUT of the smelter, so Iron covers muddy scrap piles and anything else whose "
-                + "drop smelts into iron. A trailing \"New\" is ignored when names are compared, "
-                + "so Flametal covers both the old meteorite flametal and the Ashlands one. Names "
+                + "separated Name:Level pairs. Only what is named here vein mines; everything "
+                + "else is mined by hand. The name is the smelted metal, the one that comes OUT "
+                + "of the smelter, so Iron covers muddy scrap piles and anything else whose drop "
+                + "smelts into iron. A trailing \"New\" is ignored when names are compared, so "
+                + "Flametal covers both the old meteorite flametal and the Ashlands one. Names "
                 + "are prefab names, not what the game shows: Gold is the Deep North metal the "
-                + "game calls Bloodgold. A name can also be the dropped item itself: nothing "
-                + "smelts obsidian, so obsidian rocks are left out, and Obsidian:70 (silver's "
-                + "level, the same biome) would add them. The * entry is the level for any other "
-                + "ore, meaning a drop that goes into a furnace: a station that makes one of the "
-                + "metals named here, or burns the same fuel as one that does. That is how an ore "
-                + "added by another mod joins in without a new build, whether it goes in the "
-                + "vanilla smelter or its own forge. It sits at 90 with bloodgold because an ore "
-                + "nobody named has no biome to place it by, and last is the one place it cannot "
-                + "skip ahead of the vanilla metals; name the ore here to give it its own level. "
-                + "Things that only go into a kiln, the windmill or the eitr refinery are not ore "
-                + "and never match *. Remove * and unnamed ores are never vein mined. A metal "
-                + "missing from this list is never vein mined. A level of -1 switches that metal "
-                + "off. The level compared is the one you have earned, the big number on the "
-                + "skills page. A bonus from gear, food or an effect makes each blow harder but "
-                + "does not open a metal early.");
+                + "game calls Bloodgold, and Eitr is the Mistlands' giant brains, because what "
+                + "they drop becomes refined eitr in the eitr refinery (Names sets what the "
+                + "screen calls them). Tin is left out on purpose; Tin:20 would add it. A name "
+                + "can also be the dropped item itself: nothing smelts obsidian, so obsidian "
+                + "rocks are left out, and Obsidian:50 (silver's level, the same biome) would "
+                + "add them. A * entry, for example *:80, would give every other ore a level, "
+                + "meaning a drop that goes into a furnace: a station that makes one of the "
+                + "entries named here, or burns the same fuel as one that does. That is how an "
+                + "ore added by another mod could join without a new build; naming that ore "
+                + "here is the better way, because it gets its own level. A level of -1 "
+                + "switches that entry off. The level compared is the one you have earned, the "
+                + "big number on the skills page. A bonus from gear, food or an effect makes "
+                + "each blow harder but does not open a metal early.");
 
             // A name table as the override, not the rule. The rule is the drops: a deposit is
             // whatever metal its drop table smelts into, read from the running game. This is
@@ -104,6 +118,39 @@ namespace Malmr
                 + "classed by what it drops, and the log says what each one came out as. Use a "
                 + "Name that is not in Unlocks (for example none) to rule a deposit out.");
 
+            // Robbin's answer of 2026-09-26 to "how does it work with the iron and copper you
+            // can find in the Mistlands": it doesn't. In the Mistlands only the giant brains vein
+            // mine, and copper, iron or any other ore found there is mined the normal way, even
+            // when that metal is long open to you. A line rather than a rule in code, so a
+            // server that sees it differently changes a word instead of waiting for a build.
+            //
+            // Decided by the deposit's own biome, Heightmap.FindBiome at its position - the
+            // ground's biome, the same one the map shows. That reads X and Z only, so a deposit
+            // inside a dungeon reads the biome on the surface above it: iron in a Mistlands
+            // crypt would be Mistlands iron. Nothing vanilla puts a deposit there, and it would
+            // be the right answer if something did.
+            Mistlands = cfg.Bind("Unlocks", "Mistlands", "Eitr",
+                "Which Unlocks entries still vein mine when the deposit stands in the Mistlands, "
+                + "comma separated. Everything else found in the Mistlands, like copper or iron, "
+                + "is mined the normal way there even when that metal is open to you, and the "
+                + "top left of the screen says so once per deposit. The default is Eitr, the "
+                + "giant brains, which are the Mistlands' own vein. * lets every open entry vein "
+                + "mine there too. Empty means nothing vein mines in the Mistlands. The biome is "
+                + "the one on the map at the deposit's spot; everywhere else this line does "
+                + "nothing.");
+
+            // What the screen calls an entry's deposits. A metal is named off its item, in the
+            // player's own language - "Copper vein" - and that is right for every metal. It is
+            // wrong for exactly one default: the brains' entry is Eitr, whose item the game
+            // calls refined eitr, and "Refined eitr vein 45%" over a giant brain would be a
+            // puzzle. So the default names that one, and the line is there for a mod's ore that
+            // wants the same.
+            Names = cfg.Bind("Unlocks", "Names", "Eitr:Giant brain",
+                "What the screen calls one deposit of an Unlocks entry, as Name:Text pairs, "
+                + "comma separated. It shows on the vein bar (\"Giant brain 45%\") and, with an s "
+                + "added, in the messages (\"Giant brains open to you now\"). An entry not listed "
+                + "is called after its metal as the game names it, plus vein: \"Copper vein\".");
+
             // The second half of an unlock, Robbin's rule of 2026-09-26: the level says you have
             // mined the metal by hand for a while, the boss says you have gone back to the fight
             // that opened its biome and won it again at one star. Keyed by metal like Unlocks
@@ -112,40 +159,47 @@ namespace Malmr
             // each Unlocks pair: "Copper:50:defeated_gdking" would have turned a line people
             // edit into one they have to count colons in.
             //
-            // Defeat keys rather than creature names, spelled the way Vandi's BossBiomes spells
-            // them, because the count is Vandi's and Vandi files it under that key. Gold is on
-            // Fader, not on a Deep North boss of its own: Vandi and Utangard both pair
-            // defeated_fader with the Deep North, and a key Vandi does not count can never be
-            // met - a metal on it would stay shut forever and look exactly like one that was
-            // merely waiting. The world-load log lists every boss with the key it sets, which is
-            // how the Deep North's own boss gets read the first time somebody looks.
+            // Defeat keys rather than creature names. It is the name both counts can be reached
+            // by: Vandi files its count under the key, and the key leads to the creature whose
+            // name the game's own kill tally is kept under (see Bosses). Gold is on Fader, not on
+            // a Deep North boss of its own: Vandi and Utangard both pair defeated_fader with the
+            // Deep North, and a key Vandi does not count can never be met - a metal on it would
+            // stay shut forever and look exactly like one that was merely waiting. That is a
+            // fallback, not a choice: the world-load log lists every boss with the key it sets,
+            // and the Frozen King's is read there the first time somebody looks.
             Bosses = cfg.Bind("Unlocks", "Bosses",
-                "Copper:defeated_gdking, Tin:defeated_gdking, Iron:defeated_bonemass, "
-                + "Silver:defeated_dragon, Obsidian:defeated_dragon, Flametal:defeated_fader, "
+                "Copper:defeated_gdking, Iron:defeated_bonemass, Silver:defeated_dragon, "
+                + "Obsidian:defeated_dragon, Eitr:defeated_queen, Flametal:defeated_fader, "
                 + "Gold:defeated_fader",
-                "The boss each metal also waits for, as Metal:bosskey pairs, comma separated. A "
-                + "metal opens when BOTH hold: your Pickaxes level has reached its Unlocks level, "
-                + "and you have killed its boss at least BossKills times through Vandi. The boss "
-                + "is the one whose biome the metal comes from: the Elder for tin and copper, "
-                + "Bonemass for iron, Moder for silver and obsidian, Fader for flametal. Gold, the "
-                + "Deep North's bloodgold, is on Fader too, the same pairing Vandi and Utangard use "
-                + "for the Deep North. The key is the boss's defeat key, the one the game sets when "
-                + "it dies, spelled as in Vandi's BossBiomes. Names match Unlocks the same way, so "
-                + "Flametal covers both flametals. A metal not in this list needs no boss, only "
-                + "the level, and that includes every other ore under * unless you add a "
-                + "*:bosskey pair. Only a boss Vandi counts can ever be met: a key missing from "
-                + "Vandi's BossBiomes reads as no kills forever, and the log says so when a world "
-                + "loads.");
+                "The boss each Unlocks entry also waits for, as Name:bosskey pairs, comma "
+                + "separated. An entry opens when BOTH hold: your Pickaxes level has reached its "
+                + "Unlocks level, and you have beaten its boss (see BossKills for how that is "
+                + "counted, with Vandi and without it). The boss is the one whose biome the ore "
+                + "comes from: the Elder for copper, Bonemass for iron, Moder for silver and "
+                + "obsidian, the Queen for the giant brains (Eitr), Fader for flametal. Gold, the "
+                + "Deep North's bloodgold, is on Fader too until the Deep North's own boss has "
+                + "been read from a world: the log lists every boss in the world with its key "
+                + "when a world loads. The key is the boss's defeat key, the one the game sets "
+                + "when it dies. Names match Unlocks the same way, so Flametal covers both "
+                + "flametals. An entry not in this list needs no boss, only the level. With "
+                + "Vandi installed, only a boss in Vandi's BossBiomes can ever be met, and the log "
+                + "says so when a world loads.");
 
+            // Robbin, 2026-09-26: Vandi is a soft dependency, and "still boss kill but no star
+            // since vanilla doesnt provide star". So the one number means two things depending
+            // on what is installed, and the text says both, because the same cfg can sit on a
+            // machine with Vandi and one without.
             BossKills = cfg.Bind("Unlocks", "BossKills", 2,
-                "How many times you must have killed a metal's boss, as Vandi counts them: kills of "
-                + "a boss you summoned yourself at its altar. 2 is the one-star kill. Vandi brings "
-                + "a boss back one star harder for every repeat kill, so your first kill is the "
-                + "boss as the game ships it and your second is the boss at one star. That second "
-                + "fight is the price of the vein. 1 asks only that you have beaten it once. 0 "
-                + "switches the boss half off, and every metal opens on the Pickaxes level alone. "
-                + "Vandi counts kills, not stars, so with its HarderBosses off the second kill is a "
-                + "plain boss and still counts.");
+                "How many times you must have killed an entry's boss. With Vandi installed it is "
+                + "Vandi's count: kills of a boss you summoned yourself at its altar. 2 is the "
+                + "one-star kill, because Vandi brings a boss back one star harder for every "
+                + "repeat kill, so your first kill is the boss as the game ships it and your "
+                + "second is the boss at one star. Vandi counts kills, not stars, so with its "
+                + "HarderBosses off the second kill is a plain boss and still counts. Without "
+                + "Vandi there are no stars to ask for, and this number is not used: one kill of "
+                + "the boss by this character, as the game itself counts kills, opens it. On both, "
+                + "0 switches the boss half off and every entry opens on the Pickaxes level "
+                + "alone.");
 
             // A KeyCode, so Core leaves it with the player whatever the host runs - keys are one
             // of the two types its sync exempts. It is still declared Local in the plugin, which
@@ -159,7 +213,7 @@ namespace Malmr
             VeinToggleKey = cfg.Bind("Controls", "VeinToggleKey", KeyCode.LeftAlt,
                 "Tap this with a pickaxe out to switch vein mining on, and tap it again to switch "
                 + "it off. It stays on across swings, tool changes and deposits until you tap it "
-                + "again; a small marker under the crosshair says it is on while a pickaxe is out. "
+                + "again; a small gold Vein above the crosshair says it is on while a pickaxe is out. "
                 + "While it is on, your pickaxe blows on a deposit of an open metal fill a bar "
                 + "instead of breaking chunks, and when the bar is full the whole deposit breaks "
                 + "at once. A tap is a short press and release: holding it, pressing E during it, "
@@ -261,7 +315,7 @@ namespace Malmr
         private static Dictionary<string, string> _deposits;
 
         /// <summary>
-        /// Bumped whenever any of the three strings changes, so cached classifications know, and
+        /// Bumped whenever Unlocks, Deposits or Bosses changes, so cached classifications know, and
         /// so the unlock message can tell a changed rule from a metal opening. See Opened.
         /// </summary>
         internal static int Revision { get; private set; }
@@ -347,6 +401,89 @@ namespace Malmr
         private static void Changed()
         {
             Revision++;
+        }
+
+        // ---------------------------------------------------------------- Mistlands
+
+        private static string _mistlandsRaw;
+        private static List<string> _mistlands;
+
+        /// <summary>
+        /// Whether an Unlocks entry may vein mine a deposit standing in the Mistlands. Matched
+        /// the way MatchEntry matches, exact and then without a trailing "New", so the two lines
+        /// may spell a metal differently and still meet. A "*" in the line lets everything.
+        ///
+        /// No revision bump when it changes, unlike the three strings above: nothing is cached
+        /// against it. The swing, the bar and the console ask it fresh for each deposit.
+        /// </summary>
+        internal static bool MistlandsAllows(string entry)
+        {
+            string raw = Mistlands.Value ?? "";
+            if (_mistlands == null || raw != _mistlandsRaw)
+            {
+                _mistlandsRaw = raw;
+                _mistlands = new List<string>();
+
+                foreach (string part in raw.Split(','))
+                {
+                    string name = part.Trim();
+                    if (name.Length > 0) _mistlands.Add(name);
+                }
+            }
+
+            if (string.IsNullOrEmpty(entry)) return false;
+
+            foreach (string name in _mistlands)
+            {
+                if (name == AnyMetal) return true;
+                if (string.Equals(name, entry, StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(WithoutNew(name), WithoutNew(entry), StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>The Mistlands line as it stands, for the console and the log.</summary>
+        internal static string MistlandsText()
+        {
+            string raw = (Mistlands.Value ?? "").Trim();
+            return raw.Length == 0 ? "(none)" : raw.Replace(" ", "");
+        }
+
+        // ---------------------------------------------------------------- Names
+
+        private static string _namesRaw;
+        private static Dictionary<string, string> _names;
+
+        /// <summary>
+        /// The screen name for one deposit of this entry or metal, "Giant brain", or null when
+        /// the Names line does not mention it. Matched like the rest, so FlametalNew finds a
+        /// Flametal pair.
+        /// </summary>
+        internal static string NameFor(string entry)
+        {
+            string raw = Names.Value ?? "";
+            if (_names == null || raw != _namesRaw)
+            {
+                _namesRaw = raw;
+                _names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var pair in Pairs(raw))
+                    _names[pair.Key] = pair.Value;
+            }
+
+            if (string.IsNullOrEmpty(entry)) return null;
+
+            string text;
+            if (_names.TryGetValue(entry, out text)) return text;
+
+            string bare = WithoutNew(entry);
+            foreach (KeyValuePair<string, string> pair in _names)
+                if (string.Equals(WithoutNew(pair.Key), bare, StringComparison.OrdinalIgnoreCase))
+                    return pair.Value;
+
+            return null;
         }
 
         // ---------------------------------------------------------------- parsing

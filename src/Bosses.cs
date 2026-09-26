@@ -1,97 +1,207 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
 namespace Malmr
 {
     /// <summary>
-    /// The boss half of an unlock: how many times the local player has killed a boss, as Vandi
-    /// counts it, and what the game calls that boss.
+    /// The boss half of an unlock: how many times the local player has killed a boss, and what
+    /// the game calls that boss. Counted one of two ways, decided once at load by whether Vandi
+    /// is installed.
     ///
-    /// <b>Why Vandi and not the game's own record.</b> The game remembers a boss as a world key
-    /// set the first time anybody kills it, and a player unique key for whoever stood near.
-    /// Neither says who fought it, nor how many times, nor at how many stars. Vandi does: it
-    /// credits each kill to the player who made the offering, and brings the boss back one star
-    /// harder for each repeat kill by that player. So "beaten at one star" is Vandi's count
-    /// reaching two, and that is a number only Vandi keeps. Hence the hard dependency - see the
-    /// plugin.
+    /// <b>Two counts, since Robbin's call of 2026-09-26.</b> Vandi is a soft dependency now:
+    /// "make vandi a soft dependency of malmr but recommend it in the readme", and without it
+    /// "still boss kill but no star since vanilla doesnt provide star". So:
     ///
-    /// <b>Through VandiApi, never the key.</b> Vandi keeps the count in a global key whose layout
-    /// is its own business. Reading that key here would work until Vandi renamed it, and then it
-    /// would read zero for everybody and keep every metal shut without a word. VandiApi exists
-    /// so that rename breaks a build instead.
+    ///  - With Vandi, the count is Vandi's: kills of a boss this player summoned at its altar,
+    ///    and BossKills of them (2 by default) is the one-star kill, because Vandi brings a boss
+    ///    back one star harder per repeat kill. Only Vandi keeps who beat what at how many stars.
+    ///  - Without Vandi, the count is the game's own tally of this character's kills, and one
+    ///    kill is enough. There are no stars to ask for, and asking for a second plain kill would
+    ///    be a grind the rule never meant.
     ///
-    /// Every call into Vandi sits in its own never-inlined method inside a try. Both mods ship
-    /// from one source tree and Core's gate compares builds, so a mismatch should not reach a
-    /// player - but if one does, the JIT throws MissingMethodException when it compiles the
-    /// method that names the missing member, and isolating that method is what lets the throw
-    /// cost the boss half and not the class. Unreadable counts as not met: fail shut.
+    /// Not a fallback between the two while running. With Vandi installed and its answer
+    /// unreadable - two builds that disagree - the count reads Unreadable and the metal stays
+    /// shut. Dropping to the game's count there would open it on one kill, which is the generous
+    /// version a Vandi server chose not to be.
+    ///
+    /// <b>The game's tally.</b> Every character carries per-creature kill counts in its profile,
+    /// <c>PlayerProfile.m_playerStats[0].m_enemyStats[0]</c>, keyed by the creature's m_name
+    /// token ("$enemy_gdking"). It is written live: when a creature dies, its owner's
+    /// Character.OnDeath sends RPC_RegisterKill to every player marked on its ZDO as having hit
+    /// it, and Game.RPC_RegisterKill calls PlayerProfile.IncrementStatEnemy on the spot - no
+    /// save, no respawn in between. That is the difference from m_uniques, which CLAUDE.md warns
+    /// never holds a boss killed this session: the defeat key waits in a static queue until the
+    /// next Player.Start. So this reads the tally, never the uniques. "Marked as having hit it"
+    /// is Character.ApplyDamage writing the attacker's name to the ZDO, so the tally credits
+    /// everyone who landed a blow, not only the last one, and a character that only watched
+    /// gets nothing. The tally is the character's and not the world's: a boss killed in any
+    /// world counts, in every world.
+    ///
+    /// The token comes off the creatures themselves: the world-load survey already walks every
+    /// Character prefab for its defeat key, and the same walk records its m_name. A boss key
+    /// therefore leads to the boss prefab, and the prefab to the name its kills are filed under.
     /// </summary>
     internal static class Bosses
     {
-        /// <summary>A count Vandi could not be asked for. Never met.</summary>
+        /// <summary>A count that could not be read. Never met.</summary>
         internal const int Unreadable = -1;
 
-        private static bool _warned;
-
-        /// <summary>The local player's kills of that boss, or Unreadable.</summary>
-        internal static int LocalKills(string bossKey)
+        /// <summary>
+        /// Whether counts come from Vandi. The plugin asks BepInEx once, at load, and Vandi loads
+        /// before Malmr when it is there at all (the soft dependency's one guarantee), so the
+        /// answer cannot change during a session.
+        /// </summary>
+        internal static bool ThroughVandi
         {
-            if (string.IsNullOrEmpty(bossKey)) return 0;
-
-            try
-            {
-                return ReadLocalKills(bossKey);
-            }
-            catch (Exception error)
-            {
-                Warn(error);
-                return Unreadable;
-            }
+            get { return MalmrPlugin.VandiPresent; }
         }
 
         /// <summary>
-        /// Whether Vandi records kills of that boss at all, or null when it could not be asked.
-        /// A boss missing from Vandi's BossBiomes reads as zero kills forever, which looks
-        /// exactly like a boss nobody has killed yet - this is how the log tells the two apart.
+        /// How many kills open a metal: BossKills through Vandi, one without it. Only asked for
+        /// a metal that has a boss, and BossFor already answers "no boss" when BossKills is 0,
+        /// so 0 switches the boss half off on both roads.
+        /// </summary>
+        internal static int KillsNeeded
+        {
+            get { return ThroughVandi ? MalmrConfig.BossKills.Value : 1; }
+        }
+
+        private static bool _vandiWarned, _gameWarned;
+
+        /// <summary>The local player's kills of that boss, by whichever count applies, or Unreadable.</summary>
+        internal static int LocalKills(string bossKey)
+        {
+            if (string.IsNullOrEmpty(bossKey)) return 0;
+            return ThroughVandi ? VandiKills(bossKey) : GameKills(bossKey);
+        }
+
+        /// <summary>
+        /// Whether that boss can be counted at all, or null when it could not be asked. Through
+        /// Vandi, whether Vandi records it - a key missing from its BossBiomes reads as zero
+        /// kills forever, which looks exactly like a boss nobody has killed yet. Without Vandi,
+        /// whether any creature in this world files kills under a name the key leads to.
         /// </summary>
         internal static bool? Counted(string bossKey)
         {
             if (string.IsNullOrEmpty(bossKey)) return false;
 
+            if (!ThroughVandi)
+            {
+                Scan();
+                return Tokens.ContainsKey(bossKey);
+            }
+
             try
             {
-                return ReadCounted(bossKey);
+                return VandiBridge.CountsKillsOf(bossKey);
             }
             catch (Exception error)
             {
-                Warn(error);
+                WarnVandi(error);
                 return null;
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ReadLocalKills(string bossKey)
+        private static int VandiKills(string bossKey)
         {
-            return Vandi.VandiApi.LocalBossKills(bossKey);
+            try
+            {
+                return VandiBridge.LocalBossKills(bossKey);
+            }
+            catch (Exception error)
+            {
+                WarnVandi(error);
+                return Unreadable;
+            }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool ReadCounted(string bossKey)
+        /// <summary>
+        /// The local character's kills of every creature that sets this key, from the profile's
+        /// raw tally. Summed over the names, because two boss prefabs can set one key - nothing
+        /// vanilla does, but a mod's variant would - and a kill of either is a kill of that boss.
+        /// </summary>
+        private static int GameKills(string bossKey)
         {
-            return Vandi.VandiApi.CountsKillsOf(bossKey);
+            try
+            {
+                Scan();
+
+                List<string> tokens;
+                if (!Tokens.TryGetValue(bossKey, out tokens)) return 0;
+
+                // Plain == null, not ?. - Game is a Unity object.
+                Game game = Game.instance;
+                if (game == null) return 0;
+
+                PlayerProfile profile = game.GetPlayerProfile();
+                if (profile == null || profile.m_playerStats == null || profile.m_playerStats.Length == 0)
+                    return 0;
+
+                PlayerProfile.PlayerStats raw = profile.m_playerStats[0];
+                if (raw == null || raw.m_enemyStats == null || raw.m_enemyStats.Length == 0
+                    || raw.m_enemyStats[0] == null) return 0;
+
+                float total = 0f;
+                foreach (string token in tokens)
+                {
+                    float kills;
+                    if (raw.m_enemyStats[0].TryGetValue(token, out kills)) total += kills;
+                }
+
+                return Mathf.Max(0, Mathf.FloorToInt(total + 0.001f));
+            }
+            catch (Exception error)
+            {
+                if (!_gameWarned)
+                {
+                    _gameWarned = true;
+                    MalmrPlugin.Log.LogWarning("Could not read this character's boss kills from "
+                        + "the game, so every metal that waits for a boss stays shut. Probably a "
+                        + "game update moved the kill tally. Said once per session: " + error.Message);
+                }
+
+                return Unreadable;
+            }
         }
 
-        private static void Warn(Exception error)
+        private static void WarnVandi(Exception error)
         {
-            if (_warned) return;
-            _warned = true;
+            if (_vandiWarned) return;
+            _vandiWarned = true;
 
             MalmrPlugin.Log.LogWarning("Could not ask Vandi for a boss count, so every metal that "
                 + "waits for a boss stays shut. Malmr and Vandi are probably from different "
                 + "builds. Said once per session: " + error.Message);
+        }
+
+        /// <summary>
+        /// The boss half in words, as the player reads it on screen: "The Elder beaten at one
+        /// star through Vandi", or "The Elder beaten by you" without it. Used both for what is
+        /// missing and for what opened a metal, so the two always say the same thing, and it is
+        /// what tells the player which count applies.
+        ///
+        /// Said in stars through Vandi, because stars are what the player sees on the boss: kill
+        /// number N is the boss at N-1 stars. That is only a translation of BossKills, never a
+        /// second rule - a host who sets BossKills 3 is asking for the two-star kill, and that is
+        /// what the line says.
+        /// </summary>
+        internal static string Phrase(string bossKey)
+        {
+            string boss = DisplayName(bossKey);
+
+            if (!ThroughVandi) return boss + " beaten by you";
+
+            int stars = KillsNeeded - 1;
+            if (stars <= 0) return boss + " beaten through Vandi";
+            return boss + " beaten at " + (stars == 1 ? "one star" : stars + " stars") + " through Vandi";
+        }
+
+        /// <summary>One token for the console and the scenarios: which count applies.</summary>
+        internal static string CountName
+        {
+            get { return ThroughVandi ? "vandi" : "game"; }
         }
 
         // ---------------------------------------------------------------- names
@@ -102,6 +212,14 @@ namespace Malmr
         /// <summary>Defeat key to the name the player's own game gives the creature that sets it.</summary>
         private static readonly Dictionary<string, string> Names =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Defeat key to the m_name tokens the game's kill tally files that boss under. The
+        /// bosses' own when any creature marked m_boss sets the key, and only otherwise the
+        /// lesser creatures that do: a creature carrying a boss's key is not the boss.
+        /// </summary>
+        private static readonly Dictionary<string, List<string>> Tokens =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>Every creature the game marks as a boss, as prefab=defeatkey, for the log.</summary>
         private static readonly List<string> Marked = new List<string>();
@@ -120,13 +238,16 @@ namespace Malmr
             return Names.TryGetValue(bossKey, out name) ? name : bossKey;
         }
 
+        /// <summary>The tally names a boss key leads to, joined for the log. Empty when none.</summary>
+        private static string TokenText(string bossKey)
+        {
+            List<string> tokens;
+            return Tokens.TryGetValue(bossKey, out tokens) ? string.Join("+", tokens.ToArray()) : "";
+        }
+
         /// <summary>
-        /// Every creature prefab that sets a defeat key when it dies, read once per world.
-        ///
-        /// Keyed by the defeat key rather than by prefab because the key is what the config
-        /// names. Where several creatures set one key, a creature the game marks as a boss wins
-        /// the name - a lesser creature can carry a boss's key, and "the boss of copper is a
-        /// summoned aspect" is not what anybody means.
+        /// Every creature prefab that sets a defeat key when it dies, read once per world: its
+        /// name on screen, and the token its kills are counted under.
         /// </summary>
         private static void Scan()
         {
@@ -134,11 +255,17 @@ namespace Malmr
 
             _scene = ZNetScene.instance;
             Names.Clear();
+            Tokens.Clear();
             Marked.Clear();
 
             if (_scene == null) return;
 
-            var namedByBoss = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Per key, the bosses that set it and the rest that do, in prefab order. Decided
+            // after the walk, so the answer does not depend on which of them ZNetScene lists
+            // first.
+            var bosses = new Dictionary<string, List<Character>>(StringComparer.OrdinalIgnoreCase);
+            var others = new Dictionary<string, List<Character>>(StringComparer.OrdinalIgnoreCase);
+            var prefabOf = new Dictionary<Character, string>();
 
             foreach (GameObject prefab in _scene.m_prefabs)
             {
@@ -154,11 +281,30 @@ namespace Malmr
                 if (character.m_boss) Marked.Add(prefab.name + "=" + (key ?? "(no key)"));
                 if (key == null) continue;
 
-                if (namedByBoss.Contains(key)) continue;
-                if (Names.ContainsKey(key) && !character.m_boss) continue;
+                Dictionary<string, List<Character>> into = character.m_boss ? bosses : others;
 
-                Names[key] = Localised(character.m_name, prefab.name);
-                if (character.m_boss) namedByBoss.Add(key);
+                List<Character> list;
+                if (!into.TryGetValue(key, out list)) into[key] = list = new List<Character>();
+                list.Add(character);
+                prefabOf[character] = prefab.name;
+            }
+
+            var keys = new HashSet<string>(bosses.Keys, StringComparer.OrdinalIgnoreCase);
+            keys.UnionWith(others.Keys);
+
+            foreach (string key in keys)
+            {
+                List<Character> use;
+                if (!bosses.TryGetValue(key, out use)) use = others[key];
+
+                Names[key] = Localised(use[0].m_name, prefabOf[use[0]]);
+
+                var tokens = new List<string>();
+                foreach (Character character in use)
+                    if (!string.IsNullOrEmpty(character.m_name) && !tokens.Contains(character.m_name))
+                        tokens.Add(character.m_name);
+
+                if (tokens.Count > 0) Tokens[key] = tokens;
             }
 
             Marked.Sort(StringComparer.OrdinalIgnoreCase);
@@ -191,8 +337,7 @@ namespace Malmr
             {
                 string metals = string.Join(", ", pair.Value.ToArray());
 
-                bool? counted = Counted(pair.Key);
-                if (counted == false)
+                if (ThroughVandi && Counted(pair.Key) == false)
                     lines.Add(pair.Key + ": Vandi does not count kills of it, because it is not in "
                         + "Vandi's BossBiomes. " + metals + " can never open until it is, or until "
                         + "Bosses gives " + (pair.Value.Count == 1 ? "it" : "them") + " a boss Vandi counts.");
@@ -226,7 +371,10 @@ namespace Malmr
             }
             else
             {
-                text.Append("\n   Bosses, each killed ").Append(need).Append(" time(s) through Vandi: ");
+                text.Append(ThroughVandi
+                    ? "\n   Bosses, each killed " + KillsNeeded + " time(s) through Vandi: "
+                    : "\n   Bosses, each killed once by the character, as the game's own kill "
+                      + "tally counts it (Vandi is not installed): ");
 
                 bool first = true;
                 foreach (KeyValuePair<string, List<string>> pair in byBoss)
@@ -235,7 +383,17 @@ namespace Malmr
                     first = false;
 
                     text.Append(string.Join(", ", pair.Value.ToArray())).Append(" on ")
-                        .Append(pair.Key).Append(" (").Append(DisplayName(pair.Key)).Append(')');
+                        .Append(pair.Key).Append(" (").Append(DisplayName(pair.Key));
+
+                    // The tally name only where it is what gets read. It is the one fact the
+                    // game-count road hangs on, and the only place a wrong one would show.
+                    if (!ThroughVandi)
+                    {
+                        string tokens = TokenText(pair.Key);
+                        text.Append(", counted as ").Append(tokens.Length > 0 ? tokens : "nothing");
+                    }
+
+                    text.Append(')');
                 }
             }
 
@@ -244,14 +402,14 @@ namespace Malmr
             // Every creature the game itself calls a boss, and the key it sets. Written so that
             // a boss this mod has never heard of is one log line away from being named in
             // Bosses: 1.0's Deep North has a boss of its own, and its defeat key is asset data
-            // that nothing offline can read.
+            // that nothing offline can read. Bloodgold waits on Fader until it is read here.
             text.Append("\n   Bosses this world has, with the key each sets when it dies: ")
                 .Append(Marked.Count == 0 ? "none found" : string.Join(", ", Marked.ToArray()));
         }
 
         /// <summary>
         /// Boss key to the Unlocks entries waiting for it, in Unlocks order. Only entries that are
-        /// in Unlocks: a Bosses pair for a metal nobody vein-mines, like the default's Obsidian,
+        /// in Unlocks: a Bosses pair for something nobody vein-mines, like the default's Obsidian,
         /// is a line ready for the day somebody adds it, not a hole.
         /// </summary>
         private static Dictionary<string, List<string>> MetalsByBoss()

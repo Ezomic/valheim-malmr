@@ -7,10 +7,11 @@ namespace Malmr
     ///
     /// Two things, both needed since Robbin's rule of 2026-09-26: the Pickaxes level the
     /// character has earned has reached the metal's Unlocks level, AND the character has beaten
-    /// the boss of that metal's biome at one star through Vandi - which is Vandi's count of
-    /// kills by this player reaching BossKills, 2 by default. The level says you have mined the
-    /// metal by hand for a while. The boss says you have gone back to the fight that opened its
-    /// biome and won it again, harder.
+    /// the boss of that metal's biome. How the boss is counted depends on whether Vandi is
+    /// installed - through Vandi it is the one-star kill, BossKills (2) of this player's kills;
+    /// without it, one kill as the game's own tally has it. Bosses keeps both roads; this only
+    /// asks. The level says you have mined the metal by hand for a while. The boss says you have
+    /// won the fight that opened its biome, and with Vandi, won it again, harder.
     ///
     /// <b>One answer, four askers.</b> The swing, the bar, the console and the unlock message
     /// all come here, so they cannot disagree. The first version of this mod computed "is it
@@ -18,18 +19,22 @@ namespace Malmr
     /// standing skill bonus before anybody noticed - see Vein.EarnedLevel. A second half to the
     /// rule is a second chance for that, so the rule lives in one place.
     ///
+    /// <b>The metal, not the deposit.</b> The Mistlands rule - only the giant brains vein mine
+    /// there - is about where a deposit stands, and a metal has no place. It is asked separately,
+    /// per deposit, in Deposits.HandOnly, by the same three callers that hold a deposit.
+    ///
     /// <b>Open or shut, nothing in between.</b> Until 2026-09-26 an open metal also carried a
     /// count - how many extra chunks a swing took, growing every ten levels up to a cap. The bar
     /// replaced that mechanic, and there is nothing left to grow into: a metal is either yours to
     /// vein mine or it is not.
     ///
-    /// <b>The local player only.</b> The kill count is read through Vandi for the player at this
-    /// keyboard, which is the only player a swing is ever decided for - Vein refuses any other
-    /// attacker - and the only one the console and the message speak to.
+    /// <b>The local player only.</b> The kill count is read for the player at this keyboard,
+    /// which is the only player a swing is ever decided for - Vein refuses any other attacker -
+    /// and the only one the console and the message speak to.
     ///
     /// A snapshot, built fresh each time it is asked for. Nothing here is cached, because both
-    /// halves move while the game runs: the skill on every level-up, the count whenever Vandi
-    /// credits a kill, and the rule itself whenever Core hands over a host's config.
+    /// halves move while the game runs: the skill on every level-up, the count whenever a boss
+    /// dies, and the rule itself whenever Core hands over a host's config.
     /// </summary>
     internal sealed class Gate
     {
@@ -45,13 +50,13 @@ namespace Malmr
         /// <summary>The defeat key the metal also waits for, or null when it needs no boss.</summary>
         public string Boss;
 
-        /// <summary>BossKills at the time of asking. 0 when there is no boss.</summary>
+        /// <summary>Kills needed at the time of asking: BossKills through Vandi, 1 without. 0 when there is no boss.</summary>
         public int KillsNeeded;
 
         /// <summary>
-        /// The local player's count of that boss, as Vandi keeps it, or Bosses.Unreadable when
-        /// Vandi could not be asked. Unreadable counts as not met: a metal that cannot prove its
-        /// boss stays shut rather than opening on a guess.
+        /// The local player's count of that boss, by whichever count applies, or
+        /// Bosses.Unreadable when it could not be read. Unreadable counts as not met: a metal
+        /// that cannot prove its boss stays shut rather than opening on a guess.
         /// </summary>
         public int Kills;
 
@@ -67,7 +72,7 @@ namespace Malmr
 
             if (gate.Boss != null)
             {
-                gate.KillsNeeded = MalmrConfig.BossKills.Value;
+                gate.KillsNeeded = Bosses.KillsNeeded;
                 gate.Kills = Bosses.LocalKills(gate.Boss);
             }
 
@@ -126,41 +131,43 @@ namespace Malmr
                 wants.Add("Pickaxes " + Unlock + ", you are at " + (int)Level);
 
             if (!BossMet)
-                wants.Add(Bosses.DisplayName(Boss) + " killed " + KillsNeeded
-                          + " time(s) through Vandi, you have "
-                          + (Kills < 0 ? "a count Vandi would not give" : Kills.ToString()));
+            {
+                string have = Kills < 0 ? "a count that could not be read" : Kills.ToString();
+
+                wants.Add(Bosses.ThroughVandi
+                    ? Bosses.DisplayName(Boss) + " killed " + KillsNeeded + " time(s) through Vandi, you have " + have
+                    : Bosses.DisplayName(Boss) + " killed once by this character, as the game counts it, you have " + have);
+            }
 
             return "needs " + string.Join(" and ", wants.ToArray());
         }
 
         /// <summary>
         /// What is missing, as the player reads it on screen when a swing in vein mode meets a
-        /// shut metal: "Pickaxes 60 and Bonemass beaten at one star". Only the missing halves,
-        /// so a player who has the level is not told about it again.
-        ///
-        /// The boss half is said in stars, not kills, because stars are what the player sees on
-        /// the boss: Vandi brings a boss back one star harder per repeat kill, so kill number N
-        /// is the boss at N-1 stars. That is only a translation of BossKills, never a second
-        /// rule - a host who sets BossKills 3 is asking for the two-star kill, and that is what
-        /// the line says.
+        /// shut metal: "Pickaxes 40 and Bonemass beaten at one star through Vandi". Only the
+        /// missing halves, so a player who has the level is not told about it again.
         /// </summary>
         public string Needs()
         {
             var wants = new List<string>();
 
             if (!LevelMet) wants.Add("Pickaxes " + Unlock);
-
-            if (!BossMet)
-            {
-                string boss = Bosses.DisplayName(Boss);
-                int stars = KillsNeeded - 1;
-
-                wants.Add(stars <= 0
-                    ? boss + " beaten"
-                    : boss + " beaten at " + (stars == 1 ? "one star" : stars + " stars"));
-            }
+            if (!BossMet) wants.Add(Bosses.Phrase(Boss));
 
             return string.Join(" and ", wants.ToArray());
+        }
+
+        /// <summary>
+        /// What opened it, for the unlock message: "Pickaxes 30 and The Elder beaten at one star
+        /// through Vandi", or the level alone for a metal with no boss. Both halves, because the
+        /// message is the one place the player learns what the rule was, and the boss half is
+        /// what says which count applied. Built from the same phrase Needs uses, so what a
+        /// player is told they lack and what they are told they earned read alike.
+        /// </summary>
+        public string Earned()
+        {
+            string level = "Pickaxes " + Unlock;
+            return Boss == null ? level : level + " and " + Bosses.Phrase(Boss);
         }
     }
 }

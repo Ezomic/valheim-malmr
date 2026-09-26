@@ -13,7 +13,8 @@ namespace Malmr
     /// Malmr. Tap Left Alt with a pickaxe out and vein mining is on: your blows on a deposit
     /// fill a bar instead of breaking chunks, and when the bar reaches the whole deposit's
     /// health, every chunk breaks at once, buried ones too. Each metal opens at its own Pickaxes
-    /// level, late, and once its biome's boss has been beaten at one star through Vandi.
+    /// level, late, and once its biome's boss has been beaten - at one star through Vandi when
+    /// Vandi is installed, and plainly, as the game counts kills, when it is not.
     ///
     /// That is Robbin's design of 2026-09-26, in his words: "you enable it by pressing alt, and
     /// u keep mining a piece and a progress bar will show up that goes up to 100 till u have done
@@ -33,22 +34,24 @@ namespace Malmr
     ///    health of every chunk. Stamina, pickaxe wear and the skill are charged by the swing
     ///    itself, as vanilla charges them. What it saves is the walking between chunks and the
     ///    digging after buried ones.
-    ///  - Metal by metal, late. Tin at Pickaxes 40 up to bloodgold at 90, so every metal has been
-    ///    mined by hand for a long while first. The level is the one you earned; a bonus from
-    ///    gear or an effect does not open a metal early.
-    ///  - And the boss of the metal's biome, beaten at one star, which is Vandi's count of your
-    ///    kills reaching two. See Gate for the rule and Bosses for why only Vandi can answer it.
+    ///  - Metal by metal, late. Copper at Pickaxes 30 up to bloodgold at 80, the giant brains
+    ///    at 60, so every one has been mined by hand for a while first. Tin is not in it, and
+    ///    in the Mistlands only the brains vein mine. The level is the one you earned; a bonus
+    ///    from gear or an effect does not open a metal early.
+    ///  - And the boss of the metal's biome. With Vandi, beaten at one star, which is Vandi's
+    ///    count of your kills reaching two; without it, beaten once, as the game counts your
+    ///    kills. See Gate for the rule and Bosses for the two counts.
     ///  - A switch you choose to flip. It stays on until tapped again, a marker says it is on,
     ///    and with it off every blow is vanilla - for the times you want one chunk by hand.
     ///
     /// <b>Where each part runs.</b> The swing is decided on the machine that swings, because
     /// only that machine knows the swinger's skill - skills live in the player profile, not on
-    /// any ZDO. The bar is kept on the deposit, because it must survive a logout and a friend
-    /// must be able to finish it - and only the deposit's owner may write that, so the blow
-    /// travels there as a message, the road a vanilla blow takes (Vein, then Owner). The owner
-    /// counts it and, at 100%, breaks the deposit through the deposit's own damage path
-    /// (Collapse). The one thing read from outside either machine is Vandi's kill count, which
-    /// lives in the world's global keys and so is already on every client.
+    /// any ZDO, and so does the game's own kill tally. The bar is kept on the deposit, because
+    /// it must survive a logout and a friend must be able to finish it - and only the deposit's
+    /// owner may write that, so the blow travels there as a message, the road a vanilla blow
+    /// takes (Vein, then Owner). The owner counts it and, at 100%, breaks the deposit through the
+    /// deposit's own damage path (Collapse). Vandi's kill count, when it is used, lives in the
+    /// world's global keys and so is already on every client.
     ///
     /// There is deliberately no BepInProcess attribute. A dedicated server runs
     /// valheim_server.exe, and it can own deposits: it has to load this to fill their bars.
@@ -60,15 +63,18 @@ namespace Malmr
     // check that everybody connected has Malmr, not the mod. Soft still buys the load-order
     // guarantee when Core is present, which is all that registering with the gate needs.
     [BepInDependency(CoreGuid, BepInDependency.DependencyFlags.SoftDependency)]
-    // Hard, and the opposite argument. Vandi is not something Malmr can do without: the rule is
-    // that a metal opens once its biome's boss has been beaten at one star, and the only record
-    // of who beat what at how many stars is Vandi's. Soft would have left two bad choices when
-    // it is missing - every metal with a boss shut forever, which is a mod that loads and does
-    // nothing while its log says it is ready, or the boss half waved through, which is the
-    // generous version this mod exists not to be. A plugin BepInEx refuses to load, with a line
-    // naming the missing dependency, is the honest one of the three. Through a mod manager it
-    // is still one install: the manifest lists Vandi, so it comes along.
-    [BepInDependency(VandiGuid, BepInDependency.DependencyFlags.HardDependency)]
+    // Soft as well, since Robbin's call of 2026-09-26: "make vandi a soft dependency of malmr but
+    // recommend it in the readme". It was hard until then, on the argument that without Vandi
+    // there was no honest answer to "beaten at one star" - the choices were every boss metal
+    // shut forever or the boss half waved through. His answer found the third one: without
+    // Vandi it is "still boss kill but no star since vanilla doesnt provide star", read off the
+    // game's own per-character kill tally. So Malmr stands alone with a plain boss kill, and
+    // Vandi adds the star. See Bosses for the two counts and VandiBridge for how a missing
+    // Vandi.dll is kept from taking the whole plugin down with it.
+    //
+    // Soft still buys the load order: when Vandi is there it loads first, so the answer the
+    // plugin reads in Awake is final for the session.
+    [BepInDependency(VandiGuid, BepInDependency.DependencyFlags.SoftDependency)]
     public class MalmrPlugin : BaseUnityPlugin
     {
         public const string PluginGuid = "ezomic.valheim.malmr";
@@ -79,7 +85,7 @@ namespace Malmr
         /// <summary>Core's plugin GUID. Optional - see TryRegisterWithCore.</summary>
         private const string CoreGuid = "ezomic.valheim.core";
 
-        /// <summary>Vandi's plugin GUID. Required - see the attribute above and Bosses.</summary>
+        /// <summary>Vandi's plugin GUID. Optional - see the attribute above and Bosses.</summary>
         private const string VandiGuid = "ezomic.valheim.vandi";
 
         internal static ManualLogSource Log;
@@ -90,6 +96,13 @@ namespace Malmr
         /// is what a warning on spawn would be driven by.
         /// </summary>
         internal static bool CorePresent;
+
+        /// <summary>
+        /// Whether Vandi loaded, which decides how a boss is counted for the whole session - see
+        /// Bosses. Asked of BepInEx's list of loaded plugins and never of the Vandi assembly
+        /// itself: on a machine without it, the asking is the thing that must not touch Vandi.
+        /// </summary>
+        internal static bool VandiPresent;
 
         private Harmony _harmony;
 
@@ -104,6 +117,19 @@ namespace Malmr
             MalmrConfig.Bind(Config);
 
             TryRegisterWithCore();
+
+            // A plugin that failed to load is taken back out of PluginInfos by the chainloader,
+            // so presence here means Vandi is really running, not merely that its file is there.
+            VandiPresent = Chainloader.PluginInfos.ContainsKey(VandiGuid);
+
+            // Said at load either way, because the two counts ask for different things and a
+            // player on the other one will otherwise read the difference as a bug.
+            Log.LogInfo(VandiPresent
+                ? "Vandi is installed, so a metal's boss counts through Vandi: kills of a boss you "
+                  + "summoned yourself, BossKills of them, 2 by default, which is the one-star kill."
+                : "Vandi is not installed, so a metal's boss counts once this character has killed "
+                  + "it, as the game's own kill tally has it. There are no stars without Vandi, so "
+                  + "BossKills is not used beyond 0 switching the boss half off.");
 
             // One named type at a time, never the whole assembly, and each on its own so a
             // game update that renames one target costs that feature and not the rest.
@@ -227,15 +253,16 @@ namespace Malmr
             // own write, which cannot race.
             //
             // It costs what Everyone always costs: a player without Malmr is refused at a Core
-            // server that runs it, and the server needs it too. Vandi already asks the same of
-            // everybody, and Malmr brings Vandi, so on a server that runs both nothing new is
-            // asked of anyone.
+            // server that runs it, and the server needs it too. Vandi asks the same of everybody
+            // when a server runs it, so on a server with both nothing new is asked of anyone.
             Suite.Register(PluginGuid, PluginName, PluginVersion, Config, Requirement.Everyone);
 
             // Registering already absorbs the whole config file, so naming these is a formality.
             // It is worth writing anyway: these are the mod's balance, and saying out loud that
-            // the host owns them is the point of putting Malmr on a server.
+            // the host owns them is the point of putting Malmr on a server. Names is only words
+            // on the screen, but it names the host's table entries, so it travels with them.
             Suite.Sync(MalmrConfig.Enabled, MalmrConfig.Unlocks, MalmrConfig.Deposits,
+                       MalmrConfig.Mistlands, MalmrConfig.Names,
                        MalmrConfig.Bosses, MalmrConfig.BossKills);
 
             // The key, the message and the logging are the player's own. A KeyCode is exempt
