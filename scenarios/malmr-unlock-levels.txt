@@ -1,0 +1,84 @@
+# Malmr: each metal opens at its own Pickaxes level, and the extra chunks grow with the skill
+# after that, up to the cap.
+#
+# Runs against the DEFAULT config. Every number asserted below is the default Unlocks table
+# (Copper 20, Tin 10, Iron 30, Silver 40, Flametal 60, Gold 70, * 50), a step of 10 levels per
+# extra chunk and a cap of 4. A cfg that has been edited fails here honestly, so read the cfg
+# first if the first assertion is off by a clean amount.
+#
+# SINGLEPLAYER, or anywhere the host runs the defaults. On a server Core swaps the host's table
+# in, and `malmr` prints what is in force rather than what is in your own file.
+#
+# What it reads: `malmr` prints "<Metal> unlock=<level> extra=<n>" for every entry, where n is
+# how many chunks beyond the struck ones a swing at that metal takes right now. That is the
+# same function the swing calls, so this is the level arithmetic as the swing sees it.
+#
+# WHAT IT CANNOT SEE, so that a pass is not read as more than it is:
+#
+#   - The swing. Devkit has no step that swings a pickaxe and none that puts a deposit in the
+#     world, so nothing here proves a chunk comes off. The steps that would are written up in
+#     the mod's notes: put, swing, hurt and durability.
+#   - The unlock message. `skill` sets the level through CheatRaiseSkill, which does not go
+#     through Player.OnSkillLevelup, so the message never fires here. Level up by mining to
+#     see it.
+#
+# It moves Pickaxes and puts it back at the end with `skill Pickaxes back`.
+
+# ---- through zero first. `skill` adds (target - current) to the level, and from a fractional
+# level like 23.46 that sum can land on 8.9999, which the game floors to 8 - so would the mod,
+# and the first assertion would fail on float rounding in the setup rather than on anything
+# Malmr did. x + (-x) is exactly zero, and whole numbers from there on stay whole.
+
+skill Pickaxes 0
+
+# ---- one below tin. Nothing is open.
+
+skill Pickaxes 9
+console malmr
+printed pickaxes=9 yes
+printed Tin unlock=10 extra=0 yes
+printed Copper unlock=20 extra=0 yes
+
+# ---- tin opens, copper does not.
+
+skill Pickaxes 10
+console malmr
+printed Tin unlock=10 extra=1 yes
+printed Copper unlock=20 extra=0 yes
+
+# ---- copper opens with one, and tin has grown to two ten levels on.
+
+skill Pickaxes 20
+console malmr
+printed Copper unlock=20 extra=1 yes
+printed Tin unlock=10 extra=2 yes
+printed Iron unlock=30 extra=0 yes
+
+# ---- the step is floored, not rounded. 29 is still one for copper.
+
+skill Pickaxes 29
+console malmr
+printed Copper unlock=20 extra=1 yes
+printed Tin unlock=10 extra=2 yes
+
+# ---- the cap. Tin would be 5 at 50 without it, and copper exactly reaches it.
+
+skill Pickaxes 50
+console malmr
+printed Tin unlock=10 extra=4 yes
+printed Copper unlock=20 extra=4 yes
+printed Iron unlock=30 extra=3 yes
+printed Silver unlock=40 extra=2 yes
+printed * unlock=50 extra=1 yes
+printed Flametal unlock=60 extra=0 yes
+printed Gold unlock=70 extra=0 yes
+
+# ---- the top of the skill. Everything is open, and nothing is past the cap.
+
+skill Pickaxes 100
+console malmr
+printed Flametal unlock=60 extra=4 yes
+printed Gold unlock=70 extra=4 yes
+printed Tin unlock=10 extra=4 yes
+
+skill Pickaxes back

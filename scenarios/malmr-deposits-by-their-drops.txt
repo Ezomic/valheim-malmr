@@ -1,0 +1,53 @@
+# Malmr: every vanilla ore deposit is recognised by what it drops, and nothing else is.
+#
+# The metal of a deposit is read from the running game: its drop table, and what every
+# Smelter in the scene turns each drop into. None of that can be read offline, so this file is
+# where the classification is actually proved. It is also the file most likely to fail for a
+# reason that is not a bug, so read the notes on each block before trusting a failure.
+#
+# Runs against the DEFAULT config, in any world. `malmr` lists every deposit prefab ZNetScene
+# holds, whether or not one is standing near you.
+#
+# What it reads: `malmr` prints "<prefab>=<Metal> chunks=<n>" for each deposit that counts as
+# a vein, a "not veins:" line with the rest, and "Smelting stations here turn: A>B, ..." with
+# every conversion it found. The same block goes to the log once per world load.
+#
+# THE TRAP: the deposit prefab names below come off the game's asset manifest, which lists
+# what is on disk and not what loads. A deposit here as MineRock5 is usually the *_frac* prefab,
+# because the whole rock is a Destructible that spawns the fractured one when it breaks. If an
+# assertion fails with "nothing containing", look at the printed list for the name the world
+# really uses before touching any code - that is a wrong name in this file, not a wrong metal.
+
+console malmr
+
+# ---- the stations. If these fail, every deposit below fails with them, and the reason is
+# that no Smelter was found at all.
+
+printed CopperOre>Copper yes
+printed TinOre>Tin yes
+printed IronScrap>Iron yes
+printed SilverOre>Silver yes
+
+# ---- Black Forest and Swamp. Copper is the one vein mining exists for.
+
+printed rock4_copper_frac=Copper yes
+printed MineRock_Tin=Tin yes
+printed mudpile_frac=Iron yes
+
+# ---- Mountains. Silver veins are mostly buried; LeaveBuried is about these.
+
+printed silvervein_frac=Silver yes
+
+# ---- Ashlands and the Deep North. The least certain two. Flametal passes on either the old
+# name or the Ashlands one, because a trailing New is ignored when names are compared. Gold
+# needs whatever turns GoldOre into Gold to be a Smelter; if it is not, the log block says
+# "Gold: no deposit here resolves to it" and the fix is one line in Deposits.
+
+printed FlametalRockstand_frac=Flametal yes
+printed goldvein_frac=Gold yes
+
+# ---- not metals. Nothing smelts obsidian or stone, so neither is a vein by default. The
+# "=" matters: in the not-veins line these names are followed by a comma instead.
+
+printed MineRock_Obsidian= no
+printed MineRock_Stone= no
