@@ -57,13 +57,21 @@ namespace Malmr
                 return;
             }
 
-            float level = player.GetSkillLevel(Skills.SkillType.Pickaxes);
+            // The level the swing reads, which is the earned one - see Vein.EarnedLevel. A bonus
+            // on top is said on its own line so that a player looking at "+2" on their skills
+            // page and a different number here knows why, rather than suspecting the mod.
+            float level = Vein.EarnedLevel(player);
+            float buffed = player.GetSkillLevel(Skills.SkillType.Pickaxes);
 
             term.AddString("malmr enabled=" + (MalmrConfig.Enabled.Value ? "yes" : "no")
                 + " pickaxes=" + (int)level
                 + " maxextra=" + MalmrConfig.MaxExtraChunks.Value
                 + " step=" + MalmrConfig.LevelsPerExtraChunk.Value
                 + " buried=" + (MalmrConfig.LeaveBuried.Value ? "left" : "taken"));
+
+            if ((int)buffed != (int)level)
+                term.AddString("Your gear and effects put Pickaxes at " + (int)buffed
+                    + ". That makes each blow harder but does not open veins early.");
 
             foreach (KeyValuePair<string, int> entry in MalmrConfig.UnlockTable())
             {

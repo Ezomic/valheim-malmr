@@ -14,9 +14,9 @@ rock in one go while you hold a key. That is quick, but it turns a deposit into 
 key means you had it from the moment you installed it.
 
 Malmr is narrower on purpose. A swing takes a handful of extra chunks, never the deposit. You
-earn it per metal on the Pickaxes skill you already have, so tin opens early and gold late. And
-the extra chunks cost the pickaxe what swinging at them would have cost, so mining gets faster
-without getting cheaper.
+earn it per metal on the Pickaxes skill you already have, so tin opens early and bloodgold late.
+And the extra chunks cost the pickaxe what mining them by hand would have cost, so mining gets
+faster without getting cheaper.
 
 ## What it does
 
@@ -24,10 +24,11 @@ without getting cheaper.
   walking outward through chunks that touch, nearest first.
 - One extra chunk at the unlock level, one more every 10 levels after it, and never more than
   4 extra chunks in one swing.
-- Each extra chunk takes the same blow the struck chunk took. A chunk that needs three hits by
-  hand still needs three.
-- Each extra chunk wears the pickaxe as much as a swing does. When the pickaxe hits zero the
-  swing stops taking chunks.
+- Each extra chunk takes one of the blows your swing landed on the chunks you hit. A chunk that
+  needs three hits by hand still needs three.
+- Each extra chunk wears the pickaxe as much as that blow would have by hand. When the pickaxe
+  hits zero the swing stops taking chunks.
+- A chunk that falls by itself because the one under it broke does not use up one of the four.
 - Chunks still under the ground are left alone. You dig down to a silver vein in vanilla and
   you still do.
 - When a level-up opens a metal, the game tells you in the middle of the screen.
@@ -43,23 +44,29 @@ without getting cheaper.
 | Iron | 30 |
 | Silver | 40 |
 | Flametal | 60 |
-| Gold | 70 |
-| Any other ore a smelter takes | 50 |
+| Bloodgold (`Gold` in the config) | 70 |
+| Any other ore a furnace takes | 50 |
 
 The levels follow the biomes. By the time a metal opens you have mined it by hand for a while.
 Copper at 20 means one extra chunk at 20, two at 30, three at 40 and four from 50 on.
+
+The level that counts is the one you earned, the big number on the skills page. A bonus on top
+of it from gear, food or another mod makes each blow harder, as it always does, but it does not
+open a metal early. The message arrives on the level-up that opens the metal, not before.
 
 Iron covers anything whose drop smelts into iron, so muddy scrap piles count. Obsidian is not on
 the list because nothing smelts it, so obsidian rocks stay vanilla unless you add them.
 
 ## What it costs
 
-Pickaxe durability, one swing's worth per extra chunk. A deposit wears the pickaxe the same
-amount whichever way you mine it. What you save is time.
+Pickaxe durability. A swing wears the pickaxe once, however many chunks it hits, and a swing
+at a broken deposit often hits two or three. So one blow costs a share of a swing, and each
+extra chunk pays exactly that share. A deposit wears the pickaxe the same amount whichever way
+you mine it. What you save is time.
 
-Stamina is not charged by default. At a full swing's stamina per chunk, a swing taking four
-extra chunks would cost five swings of stamina and you would stop to rest every two or three
-swings. `StaminaPerChunk` is there if you want it.
+Stamina is not charged by default. At a full blow's stamina per chunk, a swing that hits one
+chunk and takes four more would cost five swings of stamina and you would stop to rest every
+two or three swings. `StaminaPerChunk` is there if you want it.
 
 The extra chunks do not raise Pickaxes. The skill still counts your swings, so a deposit mined
 along the vein teaches you less than one mined chunk by chunk. `ExtraChunksTrainSkill` turns
@@ -69,8 +76,13 @@ that around if you prefer it.
 
 It reads the drops. Every deposit has a drop table, and every smelter and furnace in the game
 lists what it takes in and what comes out. A deposit that drops copper ore is a copper deposit
-because copper ore smelts into copper. The same goes for an ore another mod adds, as long as
-some station smelts it. That ore gets the `*` level from the table until you give it its own.
+because copper ore smelts into copper. The same goes for an ore another mod adds, as long as a
+furnace smelts it. That ore gets the `*` level from the table until you give it its own.
+
+A furnace here is a station that makes one of the metals in the table, or burns the same fuel
+as one that does. That covers the smelter, the blast furnace and a mod's own coal forge. The
+charcoal kiln, the windmill and the eitr refinery are not furnaces, so nothing that only goes
+into them counts as ore.
 
 When a world loads, the log gets one block listing every deposit in it, what it counted as and
 why, and any metal in the table that nothing matched. If a deposit comes out wrong, name it in
@@ -121,9 +133,9 @@ their own settings. The server has no way to tell those hits apart from normal o
 
 ## What has not been tested
 
-None of it has run in game yet. The deposit list, the metal names Ashlands and the Deep North
-use, how many chunks a swing takes in practice, and anything with a second player are all
-still to be seen.
+None of it has run in game yet. The deposit list, whether the Ashlands flametal and the Deep
+North bloodgold deposits are recognised, how many chunks a swing takes in practice, and
+anything with a second player are all still to be seen.
 
 ## Bugs and ideas
 

@@ -59,14 +59,21 @@ namespace Malmr
                 + "that comes OUT of the smelter, so Iron covers muddy scrap piles and anything "
                 + "else whose drop smelts into iron. A trailing \"New\" is ignored when names are "
                 + "compared, so Flametal covers both the old meteorite flametal and the Ashlands "
-                + "one. A name can also be the dropped item itself (Obsidian:40 would make "
-                + "obsidian rocks vein-mineable, since nothing smelts obsidian). The * entry is "
-                + "the level for any other SMELTABLE ore, which is how an ore added by another "
-                + "mod joins in without a new build; remove it and such ores are never "
-                + "vein-mined. A metal missing from this list is never vein-mined. A level of -1 "
-                + "switches that metal off. The levels climb with the biomes on purpose: each "
-                + "one arrives after you have mined that metal by hand for a while, never "
-                + "before you have seen it.");
+                + "one. Names are prefab names, not what the game shows: Gold is the Deep North "
+                + "metal the game calls Bloodgold. A name can also be the dropped item itself "
+                + "(Obsidian:40 would make obsidian rocks vein-mineable, since nothing smelts "
+                + "obsidian). The * entry is the level for any other ore, meaning a drop that goes "
+                + "into a furnace: a station that makes one of the metals named here, or burns "
+                + "the same fuel as one that does. That is how an ore added by another mod joins "
+                + "in without a new build, whether it goes in the vanilla smelter or its own "
+                + "forge. Things that only go into a kiln, the windmill or the eitr refinery are "
+                + "not ore and never match *. Remove * and unnamed ores are never vein-mined. A "
+                + "metal missing from this list is never vein-mined. A level of -1 switches that "
+                + "metal off. The levels climb with the biomes on purpose: each one arrives after "
+                + "you have mined that metal by hand for a while, never before you have seen it. "
+                + "The level compared is the one you have earned, the big number on the skills "
+                + "page. A bonus from gear, food or an effect makes each blow harder but does not "
+                + "open a metal early.");
 
             LevelsPerExtraChunk = cfg.Bind("Unlocks", "LevelsPerExtraChunk", 10,
                 "At the unlock level a swing takes ONE extra chunk beside the one you hit. Every "
@@ -79,9 +86,11 @@ namespace Malmr
                 "The most chunks one swing can take beyond the ones vanilla hit, across every "
                 + "deposit that swing touched. This is the constraint that keeps a deposit a job "
                 + "rather than a click: a copper deposit is dozens of chunks, and four extra a "
-                + "swing still leaves it several minutes of work. Each extra chunk takes the same "
-                + "blow the struck chunk took, so a chunk that needs three hits by hand still "
-                + "needs three. 0 turns vein mining off without turning the mod off.");
+                + "swing still leaves it several minutes of work. Each extra chunk takes one of "
+                + "the blows the swing landed on the chunks you hit, so a chunk that needs three "
+                + "hits by hand still needs three. Chunks the game drops by itself when their "
+                + "support breaks do not count. 0 turns vein mining off without turning the mod "
+                + "off.");
 
             // A name table as the override, not the rule. The rule is the drops: a deposit is
             // whatever metal its drop table smelts into, read from the running game. This is
@@ -103,28 +112,37 @@ namespace Malmr
                 + "and not the tip that counts because the game drops a chunk's ore at its "
                 + "middle, so a chunk judged by its tip would put its ore inside the hillside.");
 
+            // The three costs below share one unit, and it is the blow, not the swing. A swing
+            // pays once however many chunks it struck - a fractured deposit often shows two or
+            // three damage numbers a swing - so what one chunk cost by hand is the swing's cost
+            // divided by the chunks it struck, and that is what an extra chunk pays at 1. The
+            // first version charged a whole swing per extra chunk and so wore the pickaxe two or
+            // three times as fast per blow along the vein as by hand, against the promise below.
             DurabilityPerChunk = cfg.Bind("Cost", "DurabilityPerChunk", 1f,
-                "Pickaxe wear for each extra chunk, as a fraction of what one swing costs. 1 "
-                + "means every extra chunk wears the pickaxe exactly as if you had swung at it "
-                + "yourself, so a deposit costs the same pickaxe whichever way you mine it and "
-                + "vein mining buys time, never durability. Below 1 is the setting that makes it "
-                + "a discount. The swing stops taking chunks when the pickaxe reaches zero.");
+                "Pickaxe wear for each extra chunk, as a fraction of what one blow costs you by "
+                + "hand. A swing wears the pickaxe once however many chunks it strikes, so one "
+                + "blow's share is that wear divided by the chunks the swing struck. 1 means a "
+                + "deposit costs the same pickaxe whichever way you mine it and vein mining buys "
+                + "time, never durability. Below 1 is the setting that makes it a discount. The "
+                + "swing stops taking chunks when the pickaxe reaches zero.");
 
             StaminaPerChunk = cfg.Bind("Cost", "StaminaPerChunk", 0f,
-                "Stamina for each extra chunk, as a fraction of what one swing costs you (after "
-                + "your skill and gear have lowered it). 0 by default, because at 1 a swing "
-                + "that takes four extra chunks costs five swings of stamina and you stop to "
-                + "breathe after two or three - the time vein mining saves would go straight "
-                + "back into waiting. Raise it if the durability cost alone feels too cheap. The "
-                + "swing stops taking chunks when you cannot pay for the next one.");
+                "Stamina for each extra chunk, as a fraction of what one blow costs you by hand "
+                + "(a swing's stamina, after your skill and gear have lowered it, divided by the "
+                + "chunks the swing struck). 0 by default, because at 1 a swing that strikes one "
+                + "chunk and takes four more costs five swings of stamina and you stop to breathe "
+                + "after two or three - the time vein mining saves would go straight back into "
+                + "waiting. Raise it if the durability cost alone feels too cheap. The swing "
+                + "stops taking chunks when you cannot pay for the next one.");
 
             ExtraChunksTrainSkill = cfg.Bind("Cost", "ExtraChunksTrainSkill", false,
-                "Whether each extra chunk also raises Pickaxes the way a swing does. Off, so the "
-                + "skill counts swings, as it does in vanilla. The cost of that is real: a "
-                + "deposit mined along the vein teaches less than one mined chunk by chunk. On "
-                + "would make every unlock speed up the climb to the next one, and the mod "
-                + "would turn into a way to level Pickaxes rather than a reward for having done "
-                + "it.");
+                "Whether the extra chunks also raise Pickaxes, at the rate mining them by hand "
+                + "would have (a swing raises it once, so each chunk it struck is worth a share). "
+                + "Off, so the skill counts swings, as it does in vanilla. The cost of that is "
+                + "real: a deposit mined along the vein teaches less than one mined chunk by "
+                + "chunk. On would make every unlock speed up the climb to the next one, and the "
+                + "mod would turn into a way to level Pickaxes rather than a reward for having "
+                + "done it.");
 
             AnnounceUnlocks = cfg.Bind("Display", "AnnounceUnlocks", true,
                 "Say so in the middle of the screen when a Pickaxes level-up opens a metal's "

@@ -88,9 +88,11 @@ namespace Malmr
     ///
     /// On Player.OnSkillLevelup, which Skills.RaiseSkill calls once for every level gained,
     /// with the new level, right before it shows vanilla's own "skill improved" line - so this
-    /// lands beside the level-up it is about. Only the raw level is compared here: a buff that
-    /// lifts Pickaxes past an unlock opens the vein without a message, which is honest, because
-    /// the buff will wear off and the message would still be on the screen.
+    /// lands beside the level-up it is about. The level it is handed is the earned one, without
+    /// bonuses, and that is also the level the swing unlocks on (Vein.EarnedLevel), so the
+    /// message arrives on the swing where the vein starts and never before or after it. The
+    /// first version unlocked on the buffed level and announced on this one, which put the two
+    /// a standing bonus apart - two levels, for anyone with Rist's Quick study capstone.
     /// </summary>
     internal static class Announce
     {

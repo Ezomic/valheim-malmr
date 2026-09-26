@@ -23,13 +23,15 @@ namespace Malmr
     ///
     ///  - A few chunks a swing, never the deposit. Four at most by default, so a copper
     ///    deposit is still minutes of work, only fewer of them.
-    ///  - Each extra chunk takes the same blow the struck chunk did. A chunk that needs three
+    ///  - Each extra chunk takes one of the blows the swing landed. A chunk that needs three
     ///    hits still needs three, so the swing count per deposit drops by the cap and no more.
-    ///  - Each extra chunk wears the pickaxe as if swung. The deposit costs the same pickaxe
-    ///    either way; what vein mining buys is time.
-    ///  - Metal by metal, on the skill. Tin opens first, gold last, and the swings that level
-    ///    the skill are vanilla's own. The extra chunks do not train it by default, so a
-    ///    deposit mined along the vein teaches less than one mined chunk by chunk.
+    ///  - Each extra chunk wears the pickaxe what that blow cost by hand - the swing's wear
+    ///    shared across the chunks it struck. The deposit costs the same pickaxe either way;
+    ///    what vein mining buys is time.
+    ///  - Metal by metal, on the skill you have earned. Tin opens first, gold last, and the
+    ///    swings that level the skill are vanilla's own. A bonus from gear or an effect does not
+    ///    open a metal early. The extra chunks do not train it by default, so a deposit mined
+    ///    along the vein teaches less than one mined chunk by chunk.
     ///  - Buried chunks stay buried. Silver in particular is dug for, and a vein that reached
     ///    through the hillside would have deleted the digging.
     ///  - No key. It is on for a metal once you have earned it, on the pickaxe in your hand,

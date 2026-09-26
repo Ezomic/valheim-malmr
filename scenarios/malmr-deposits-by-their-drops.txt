@@ -9,14 +9,17 @@
 # holds, whether or not one is standing near you.
 #
 # What it reads: `malmr` prints "<prefab>=<Metal> chunks=<n>" for each deposit that counts as
-# a vein, a "not veins:" line with the rest, and "Smelting stations here turn: A>B, ..." with
-# every conversion it found. The same block goes to the log once per world load.
+# a vein, a "not veins:" line with the rest, and one "Smelting stations here turn:" line with
+# every station and its conversions as "<station>: A>B, C>D; <next station>: ...". A station
+# whose inputs are not ore reads "<station> (not a furnace, so never *): ...". The same block
+# goes to the log once per world load.
 #
-# THE TRAP: the deposit prefab names below come off the game's asset manifest, which lists
-# what is on disk and not what loads. A deposit here as MineRock5 is usually the *_frac* prefab,
-# because the whole rock is a Destructible that spawns the fractured one when it breaks. If an
-# assertion fails with "nothing containing", look at the printed list for the name the world
-# really uses before touching any code - that is a wrong name in this file, not a wrong metal.
+# THE TRAP: the deposit and station names below come off the game's asset manifest, which
+# lists what is on disk and not what loads. A deposit here as MineRock5 is usually the *_frac*
+# prefab, because the whole rock is a Destructible that spawns the fractured one when it
+# breaks. If an assertion fails with "nothing containing", look at the printed list for the
+# name the world really uses before touching any code - that is a wrong name in this file, not
+# a wrong metal.
 
 console malmr
 
@@ -27,6 +30,19 @@ printed CopperOre>Copper yes
 printed TinOre>Tin yes
 printed IronScrap>Iron yes
 printed SilverOre>Silver yes
+
+# ---- which stations are furnaces. A station counts when it makes a metal named in Unlocks,
+# or burns the same fuel as one that does. Only a furnace's inputs can fall to the * level.
+# The smelter and the blast furnace make named metals and burn coal. The charcoal kiln burns
+# nothing (its rip reads m_maxFuel = 0) and makes coal, which is not named, so it is not one.
+# The eitr refinery burns sap and makes eitr; it is the station this rule exists for, because
+# a giant's brain is mined with a pickaxe and what it drops goes in there. Its prefab name is
+# the least certain here - eitrrefinery is the manifest's spelling.
+
+printed smelter (not a furnace no
+printed blastfurnace (not a furnace no
+printed charcoal_kiln (not a furnace yes
+printed eitrrefinery (not a furnace yes
 
 # ---- Black Forest and Swamp. Copper is the one vein mining exists for.
 
@@ -39,15 +55,32 @@ printed mudpile_frac=Iron yes
 printed silvervein_frac=Silver yes
 
 # ---- Ashlands and the Deep North. The least certain two. Flametal passes on either the old
-# name or the Ashlands one, because a trailing New is ignored when names are compared. Gold
-# needs whatever turns GoldOre into Gold to be a Smelter; if it is not, the log block says
-# "Gold: no deposit here resolves to it" and the fix is one line in Deposits.
+# name or the Ashlands one, because a trailing New is ignored when names are compared.
+#
+# Gold is the prefab name of the metal the game shows as Bloodgold. That much is read off a 1.0
+# session already: Yoke's item list has Gold as "Bloodgold" and GoldOre as "Petrified Tissue",
+# and no item called BloodGold at all, so the BloodGold names in the manifest are meshes and
+# materials. What is not known is whether goldvein drops GoldOre and whether whatever smelts
+# it is a Smelter. If not, the log block says "Gold: no deposit here resolves to it" and the
+# fix is one line in Deposits.
 
 printed FlametalRockstand_frac=Flametal yes
 printed goldvein_frac=Gold yes
 
 # ---- not metals. Nothing smelts obsidian or stone, so neither is a vein by default. The
-# "=" matters: in the not-veins line these names are followed by a comma instead.
+# "=" matters: in the not-veins line these names are followed by a comma instead. Each name
+# is asserted to be printed at all first, because "no" alone would also pass for a prefab
+# that is not in the world under that name, and then nothing was tested.
 
+printed MineRock_Obsidian yes
 printed MineRock_Obsidian= no
+printed MineRock_Stone yes
 printed MineRock_Stone= no
+
+# ---- the giant's brain. Its drop goes into the eitr refinery, which is not a furnace, so it
+# must not come out as an Eitr vein through the * level. The least certain name in this file:
+# if the first line fails with "nothing containing", the brain is not a MineRock or MineRock5
+# under this name, Malmr never touches it, and both lines can go.
+
+printed giant_brain_frac yes
+printed giant_brain_frac= no

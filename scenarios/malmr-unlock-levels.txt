@@ -9,9 +9,14 @@
 # SINGLEPLAYER, or anywhere the host runs the defaults. On a server Core swaps the host's table
 # in, and `malmr` prints what is in force rather than what is in your own file.
 #
-# What it reads: `malmr` prints "<Metal> unlock=<level> extra=<n>" for every entry, where n is
-# how many chunks beyond the struck ones a swing at that metal takes right now. That is the
-# same function the swing calls, so this is the level arithmetic as the swing sees it.
+# Any character. The level compared is the one earned, the big number on the skills page, so a
+# bonus on top - Rist's Quick study capstone, a set effect, a food - changes nothing here. If
+# the character has one, `malmr` says so on a line of its own, and every assertion still holds.
+#
+# What it reads: `malmr` prints "pickaxes=<earned level>" and "<Metal> unlock=<level>
+# extra=<n>" for every entry, where n is how many chunks beyond the struck ones a swing at that
+# metal takes right now. That is the same function the swing calls, with the same level, so
+# this is the level arithmetic as the swing sees it.
 #
 # WHAT IT CANNOT SEE, so that a pass is not read as more than it is:
 #

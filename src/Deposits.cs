@@ -61,9 +61,43 @@ namespace Malmr
         /// <summary>The config revision the cache below was built against.</summary>
         private static int _revision = -1;
 
-        /// <summary>Ore prefab name to metal prefab name, from every Smelter in the scene.</summary>
-        private static readonly Dictionary<string, string> SmeltsInto =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>One smelting station as the scene holds it.</summary>
+        private sealed class Station
+        {
+            public string Name;
+
+            /// <summary>The fuel item's prefab name, or empty for a station that burns nothing.</summary>
+            public string Fuel = "";
+
+            /// <summary>What goes in and what comes out, in the asset's order.</summary>
+            public readonly List<Conversion> Conversions = new List<Conversion>();
+        }
+
+        /// <summary>One line of a station's m_conversion, by prefab name.</summary>
+        private sealed class Conversion
+        {
+            public Station Station;
+            public string From;
+            public string To;
+        }
+
+        private static readonly List<Station> Stations = new List<Station>();
+
+        /// <summary>
+        /// Dropped item to every conversion that takes it, one per station. A list, because two
+        /// stations can take one item - a mod that adds an ore to both the smelter and its own
+        /// forge - and the classification should see both rather than whichever loaded first.
+        /// </summary>
+        private static readonly Dictionary<string, List<Conversion>> TakenBy =
+            new Dictionary<string, List<Conversion>>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly List<Conversion> None = new List<Conversion>();
+
+        /// <summary>
+        /// The stations whose inputs count as ore for the "*" entry. Depends on the Unlocks table,
+        /// so it is rebuilt with it - see OreStations.
+        /// </summary>
+        private static readonly HashSet<Station> Ore = new HashSet<Station>();
 
         private static readonly Dictionary<string, Kind> ByPrefab =
             new Dictionary<string, Kind>(StringComparer.OrdinalIgnoreCase);
@@ -278,65 +312,161 @@ namespace Malmr
             MalmrConfig.UnlockTable();
             MalmrConfig.DepositOverride("");
 
+            bool changed = false;
+
             if (ZNetScene.instance != _scene)
             {
                 _scene = ZNetScene.instance;
                 ReadSmelters();
                 ByPrefab.Clear();
+                changed = true;
             }
 
             if (MalmrConfig.Revision != _revision)
             {
                 _revision = MalmrConfig.Revision;
                 ByPrefab.Clear();
+                changed = true;
             }
+
+            if (changed) OreStations();
         }
 
         /// <summary>
         /// Every conversion every smelting station in the scene performs. Kilns, the eitr
-        /// refinery and the windmill are Smelters too, and are read as well - harmless, because
-        /// nothing a rock drops goes into any of them, and filtering them out by name would be
-        /// one more list to keep up to date.
+        /// refinery, the windmill and the spinning wheel are Smelters too, and are all read,
+        /// because a named metal is looked up in all of them - a metal is a metal wherever it is
+        /// made. Which of them may feed the "*" entry is a separate, narrower question, answered
+        /// by OreStations.
         /// </summary>
         private static void ReadSmelters()
         {
-            SmeltsInto.Clear();
+            Stations.Clear();
+            TakenBy.Clear();
 
-            var pairs = new List<string>();
+            if (_scene == null) return;
 
-            if (_scene != null)
+            foreach (GameObject prefab in _scene.m_prefabs)
             {
-                foreach (GameObject prefab in _scene.m_prefabs)
+                if (prefab == null) continue;
+
+                Smelter smelter;
+                if (!prefab.TryGetComponent(out smelter) || smelter.m_conversion == null) continue;
+
+                var station = new Station { Name = prefab.name };
+
+                // m_maxFuel first, because it is what the game itself asks: a Smelter with
+                // m_maxFuel 0 runs without fuel whatever m_fuelItem says (Smelter's own
+                // "m_maxFuel != 0 &&" guards), and the charcoal kiln is ripped at exactly that.
+                // A leftover fuel item on such a station would otherwise match the smelter's coal
+                // and make the kiln a furnace. Plain == null, not ?. - m_fuelItem is a Unity
+                // object. An empty fuel is never "the same fuel" as anything.
+                if (smelter.m_maxFuel > 0 && smelter.m_fuelItem != null)
+                    station.Fuel = Utils.GetPrefabName(smelter.m_fuelItem.gameObject);
+
+                foreach (Smelter.ItemConversion line in smelter.m_conversion)
                 {
-                    if (prefab == null) continue;
+                    if (line == null || line.m_from == null || line.m_to == null) continue;
 
-                    Smelter smelter;
-                    if (!prefab.TryGetComponent(out smelter) || smelter.m_conversion == null) continue;
-
-                    foreach (Smelter.ItemConversion conversion in smelter.m_conversion)
+                    var conversion = new Conversion
                     {
-                        if (conversion == null || conversion.m_from == null || conversion.m_to == null)
-                            continue;
+                        Station = station,
+                        From = Utils.GetPrefabName(line.m_from.gameObject),
+                        To = Utils.GetPrefabName(line.m_to.gameObject),
+                    };
 
-                        string from = Utils.GetPrefabName(conversion.m_from.gameObject);
-                        string to = Utils.GetPrefabName(conversion.m_to.gameObject);
+                    station.Conversions.Add(conversion);
 
-                        if (SmeltsInto.ContainsKey(from)) continue;
+                    List<Conversion> takers;
+                    if (!TakenBy.TryGetValue(conversion.From, out takers))
+                        TakenBy[conversion.From] = takers = new List<Conversion>();
+                    takers.Add(conversion);
+                }
 
-                        SmeltsInto[from] = to;
-                        pairs.Add(from + ">" + to);
-                    }
+                if (station.Conversions.Count > 0) Stations.Add(station);
+            }
+        }
+
+        /// <summary>Every conversion that takes a dropped item, or an empty list.</summary>
+        private static List<Conversion> Taking(string item)
+        {
+            List<Conversion> takers;
+            return TakenBy.TryGetValue(item, out takers) ? takers : None;
+        }
+
+        /// <summary>
+        /// Which stations' inputs count as ore for the "*" entry, and the log line that says so.
+        ///
+        /// Not every Smelter is a furnace. The first version let "*" take anything any Smelter
+        /// took and argued it was harmless because nothing a rock drops goes into a kiln or a
+        /// refinery - which is an assumption about asset data, and the likeliest place it fails
+        /// is the Mistlands: a giant's brain is mined with a pickaxe and what it drops goes into
+        /// the eitr refinery. It would have become an "Eitr vein" at Pickaxes 50, with no
+        /// message, in a mod that opens metal by metal. A deposit that dropped wood would
+        /// likewise have been a coal vein through the charcoal kiln.
+        ///
+        /// So a station counts as a furnace when it makes one of the metals named in Unlocks -
+        /// the smelter, the blast furnace, whatever makes the Deep North's metal - or when it
+        /// burns the same fuel as one that does. The second half is what keeps the promise to a
+        /// mod ore: a mod that puts its ore in the vanilla smelter is covered by the first half,
+        /// and one that ships its own coal-burning forge by the second. Neither half names a
+        /// station or an item, so neither is a list to keep up to date; the table the player
+        /// already edits is the only input. A mod ore at a station that fits neither is still
+        /// one line away - name its metal in Unlocks and the named path finds it, because that
+        /// path reads every station.
+        /// </summary>
+        private static void OreStations()
+        {
+            Ore.Clear();
+
+            var fuels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (Station station in Stations)
+            {
+                foreach (Conversion conversion in station.Conversions)
+                {
+                    if (MalmrConfig.MatchEntry(conversion.To) == null) continue;
+
+                    Ore.Add(station);
+                    if (station.Fuel.Length > 0) fuels.Add(station.Fuel);
+                    break;
                 }
             }
 
-            SmeltingLine = "Smelting stations here turn: "
-                + (pairs.Count == 0 ? "nothing (no Smelter found)" : string.Join(", ", pairs.ToArray()));
+            foreach (Station station in Stations)
+                if (station.Fuel.Length > 0 && fuels.Contains(station.Fuel)) Ore.Add(station);
+
+            // One entry per station, its conversions as From>To, so the line answers both "was
+            // this ore read at all" and "which station decided it". A scenario asserts on the
+            // From>To tokens, so they stay spelled exactly that way.
+            var text = new StringBuilder("Smelting stations here turn: ");
+
+            if (Stations.Count == 0) text.Append("nothing (no Smelter found)");
+
+            for (int i = 0; i < Stations.Count; i++)
+            {
+                Station station = Stations[i];
+                if (i > 0) text.Append("; ");
+
+                text.Append(station.Name)
+                    .Append(Ore.Contains(station) ? "" : " (not a furnace, so never *)")
+                    .Append(": ");
+
+                for (int j = 0; j < station.Conversions.Count; j++)
+                {
+                    if (j > 0) text.Append(", ");
+                    text.Append(station.Conversions[j].From).Append('>').Append(station.Conversions[j].To);
+                }
+            }
+
+            SmeltingLine = text.ToString();
         }
 
         /// <summary>
         /// The rule, in order: the override if there is one; then the drops, heaviest first,
-        /// each tried as the metal it smelts into and then as itself; then the "*" entry for any
-        /// drop that smelts into something; and otherwise not a vein.
+        /// each tried as the metal it smelts into at any station and then as itself; then the
+        /// "*" entry for any drop a furnace takes (OreStations says which stations are
+        /// furnaces); and otherwise not a vein.
         ///
         /// Heaviest drop first so that a deposit which mostly gives one thing is that thing,
         /// even if it sometimes gives another. Only drops that match an entry count toward it,
@@ -365,15 +495,15 @@ namespace Malmr
             {
                 string item = Utils.GetPrefabName(drop.m_item);
 
-                string metal;
-                if (SmeltsInto.TryGetValue(item, out metal))
+                foreach (Conversion conversion in Taking(item))
                 {
-                    string entry = MalmrConfig.MatchEntry(metal);
+                    string entry = MalmrConfig.MatchEntry(conversion.To);
                     if (entry != null)
                         return new Kind
                         {
                             Entry = entry, Metal = entry, Ore = item,
-                            Why = "drops " + item + ", which smelts into " + metal,
+                            Why = "drops " + item + ", which smelts into " + conversion.To
+                                  + " at " + conversion.Station.Name,
                         };
                 }
 
@@ -392,15 +522,18 @@ namespace Malmr
                 {
                     string item = Utils.GetPrefabName(drop.m_item);
 
-                    string metal;
-                    if (!SmeltsInto.TryGetValue(item, out metal)) continue;
-
-                    return new Kind
+                    foreach (Conversion conversion in Taking(item))
                     {
-                        Entry = MalmrConfig.AnyMetal, Metal = metal, Ore = item,
-                        Why = "drops " + item + ", which smelts into " + metal
-                              + " - not named, so the * level applies",
-                    };
+                        if (!Ore.Contains(conversion.Station)) continue;
+
+                        return new Kind
+                        {
+                            Entry = MalmrConfig.AnyMetal, Metal = conversion.To, Ore = item,
+                            Why = "drops " + item + ", which smelts into " + conversion.To
+                                  + " at " + conversion.Station.Name
+                                  + " - not named, so the * level applies",
+                        };
+                    }
                 }
             }
 
