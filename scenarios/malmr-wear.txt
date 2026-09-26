@@ -1,0 +1,159 @@
+# Malmr: a swing into the bar wears the pickaxe exactly as much as the same swing by hand. Three hand
+# swings are measured first, one at a time, then three vein swings the same way, and every reading
+# must be the same number.
+#
+# Why they should: the bar only replaces what the deposit does with a blow. The swing's own costs
+# belong to Attack. DoMeleeAttack takes the wear once per swing that struck anything, the pickaxe's
+# m_useDurabilityDrain times the world's durability rate, after every struck chunk's Damage call has
+# returned, whatever those calls did. So there are two ways for a build to get this wrong. A throw
+# inside Damage aborts the swing before that line, and the swing costs nothing. Or Malmr charges
+# something of its own on top, which is what the first mechanic did: a share of the swing's wear for
+# every extra chunk it took. Both read a different number in the vein rounds below.
+#
+# THE NUMBERS. A pickaxe's maximum durability is asset data nothing offline can read, and
+# `durability` asks for absolute units, so no number here may depend on the maximum. Each swing
+# therefore starts from a sliver: `wear PickaxeBlackMetal 0.001` puts the pickaxe at a thousandth of
+# a percent of its maximum, which is a few thousandths of a unit for any maximum under five thousand.
+# One swing then takes it to minus one unit, give or take that sliver, whatever the maximum was.
+#
+# It cannot start from zero. Humanoid.UpdateEquipment unequips any tool at zero or below on the next
+# physics step, and Humanoid.EquipItem will not put one back in your hand. The same rule unequips the
+# pickaxe right after each swing here, which is why every round wears it back to the sliver, equips
+# it again and swings once. The `wait 2` after each swing lets the swing's animation finish, because
+# EquipItem also refuses while you are still in an attack.
+#
+# The hand rounds are the measurement. They expect one unit a swing, the drain an item has unless its
+# asset says otherwise, at the default durability rate of one. If they fail, their notes give the real
+# reading: put that number into all six `durability` lines and run it again. If every round fails
+# with the SAME reading, the rule holds and only the expectation was wrong.
+#
+# Copper is open (Pickaxes 30, the Elder killed twice) so that the vein rounds really fill a bar. The
+# `hurt 0` after each of them is what proves the swing went into it. Without that, this file could be
+# comparing a hand swing with a hand swing. Each `swing` is one swing and it must land on the rock, so
+# every reading is one swing that struck something.
+#
+# NEEDS VANDI, like malmr-bar.txt: copper's boss half is seeded through Vandi's own kill record,
+# vandi_p_<playerid>_defeated_gdking at 2, and the key is removed at the end. A character with real
+# Vandi kills of the Elder in this world loses them.
+#
+# SINGLEPLAYER, in a TEST WORLD, with the default config and the default world modifiers, because a
+# world set to another durability rate changes every number below. Face open ground. `biome Meadows`
+# takes you to the Meadows if you are not there, and leaves you where you stand if you are.
+#
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the ore the hand
+# swings knocked loose, and the second deposit 3 metres in front of you with three blows in its bar
+# until the next run's `put` takes it down. The pickaxe ends broken, and Devkit empties the pack when
+# a run ends, so it goes with the rest. Pickaxes is put back, the Vandi key is removed and vein
+# mining ends off.
+#
+# What a broken build reads: a vein round's `durability` outside -1 give or take 0.05. A swing that
+# lost its wear reads the sliver, just above zero. One that paid extra reads below -1.05.
+#
+# If a `durability` line fails with "not carrying any", the pickaxe was destroyed when it broke.
+# Vanilla pickaxes are not, so something else in the profile is doing that.
+#
+# WHAT IT CANNOT SEE: the swing that fills the bar. That one breaks the deposit inside itself, and the
+# rest of its chunks then reach a rock that no longer exists, which is where a throw is most likely.
+# How many swings a deposit takes is not known in advance, so its wear cannot be counted here.
+# malmr-bar.txt runs that swing, and its `logged` lines would show the throw.
+
+god
+ghost
+
+# ---- the fixture. Through zero first, for the reason malmr-unlock-levels.txt gives, then copper's
+# own level. Exactly one black metal pickaxe: `strip` takes any other copy out first, because with
+# two in the pack and neither in your hand, `durability` refuses to guess which one you meant. Its
+# tool tier is well above copper's, so no blow is refused as too hard.
+
+skill Pickaxes 0
+skill Pickaxes 30
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+
+strip PickaxeBlackMetal
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+biome Meadows
+
+console malmr
+printed bosscount=vandi yes
+printed Copper unlock=30 open=yes yes
+
+# ---- by hand, the measurement. Vein mining off. Three rounds of one swing each, and the first one
+# is checked to have knocked rock off a chunk, so these are hand swings on the rock.
+
+console malmr vein off
+printed malmr vein=off yes
+
+put rock4_copper_frac 3
+
+wear PickaxeBlackMetal 0.001
+tool PickaxeBlackMetal
+swing rock4_copper_frac 1
+wait 2
+hurt rock4_copper_frac 1+
+durability PickaxeBlackMetal -1.05 -0.95
+
+wear PickaxeBlackMetal 0.001
+tool PickaxeBlackMetal
+swing rock4_copper_frac 1
+wait 2
+durability PickaxeBlackMetal -1.05 -0.95
+
+wear PickaxeBlackMetal 0.001
+tool PickaxeBlackMetal
+swing rock4_copper_frac 1
+wait 2
+durability PickaxeBlackMetal -1.05 -0.95
+
+# ---- into the bar. A fresh deposit and vein mining on, then the same three rounds. After each one
+# no chunk is hurt, so the swing went into the bar. At the end the bar is off zero and the deposit
+# still stands, so none of the three was the swing that breaks it.
+
+console malmr vein on
+printed malmr vein=on yes
+
+put rock4_copper_frac 3
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+wear PickaxeBlackMetal 0.001
+tool PickaxeBlackMetal
+swing rock4_copper_frac 1
+wait 2
+hurt rock4_copper_frac 0
+durability PickaxeBlackMetal -1.05 -0.95
+
+wear PickaxeBlackMetal 0.001
+tool PickaxeBlackMetal
+swing rock4_copper_frac 1
+wait 2
+hurt rock4_copper_frac 0
+durability PickaxeBlackMetal -1.05 -0.95
+
+wear PickaxeBlackMetal 0.001
+tool PickaxeBlackMetal
+swing rock4_copper_frac 1
+wait 2
+hurt rock4_copper_frac 0
+durability PickaxeBlackMetal -1.05 -0.95
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 no
+
+# A backstop, for the reason malmr-bar.txt gives: each is said once per session.
+
+logged could not be sent no
+logged could not be counted no
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_gdking
+skill Pickaxes back

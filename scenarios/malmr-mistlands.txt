@@ -25,8 +25,9 @@
 # It LEAVES BEHIND: a copper deposit where it stood in the Black Forest, and a copper deposit and
 # a giant brain where it stood in the Mistlands, each with one swing's worth of damage in it or
 # in its bar. `put` marks what it makes and takes its own earlier copies down on the next run
-# within 30m, so a rerun from the same spot tidies up after the last one. A black metal pickaxe is
-# added to the pack on every run. Pickaxes is put back and vein mode ends off.
+# within 30m, so a rerun from the same spot tidies up after the last one. Devkit empties the pack
+# when a run ends and hands back its kit, so the black metal pickaxe does not stay. Pickaxes is put
+# back and vein mode ends off.
 #
 # THE CONTROL: the Black Forest copper. Without it, open=no in the Mistlands could be a copper
 # gate that never opened at all, and a hurt chunk there could be vein mining that never worked
