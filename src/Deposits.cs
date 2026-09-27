@@ -23,6 +23,10 @@ namespace Malmr
     /// is only as good as the day it was written - the manifest names seven or eight vanilla
     /// deposit prefabs, and the manifest lists what exists on disk, not what loads.
     ///
+    /// Stone is the one default that is not a metal, since 2026-09-27. Nothing smelts it, so it
+    /// is named as the dropped item itself, and it is the reason Classify now asks the ore
+    /// first and the raw material only after - see there.
+    ///
     /// Both lookups are asset data. None of it can be read offline, so the first time a world
     /// is up this writes the whole table to the log once: every deposit prefab in ZNetScene,
     /// what it came out as and why, and every Unlocks entry that nothing resolved to. That log
@@ -180,7 +184,9 @@ namespace Malmr
         /// Whether this deposit must be mined by hand because of where it stands, whatever the
         /// player has opened: Robbin's call of 2026-09-26 that in the Mistlands only the giant
         /// brains vein mine, and copper, iron or anything else found there is mined the normal
-        /// way. Which entries still vein mine there is the Mistlands config line.
+        /// way. Stone joined the brains there on 2026-09-27, because the rule was about the ore
+        /// scattered in the Mistlands and stone is stone everywhere. Which entries still vein
+        /// mine there is the Mistlands config line.
         ///
         /// Asked by the swing, the bar and the console alike, per deposit, so the three cannot
         /// disagree about one rock. Never by the owner: the swinger decides, as it decides the
@@ -315,9 +321,15 @@ namespace Malmr
 
             foreach (Row row in Survey)
             {
+                // With what each one drops, which the console leaves out for length. Since stone
+                // joined the table the question "why is this boulder not a stone vein" has an
+                // answer only the running game holds - the rock drops something beside its stone -
+                // and this block is the one place a person reads it.
                 if (row.Kind == null || row.Kind.Entry == null)
                 {
-                    notVeins.Add(row.Prefab);
+                    notVeins.Add(row.Kind != null && row.Kind.Why.Length > 0
+                        ? row.Prefab + " (" + row.Kind.Why + ")"
+                        : row.Prefab);
                     continue;
                 }
 
@@ -337,7 +349,7 @@ namespace Malmr
             }
 
             if (notVeins.Count > 0)
-                text.Append("\n   Not veins (nothing they drop is in Unlocks): ")
+                text.Append("\n   Not veins (no entry in Unlocks answers for what they drop): ")
                     .Append(string.Join(", ", notVeins.ToArray()));
 
             // The half of the check that finds a hole rather than a mistake. A metal in the
@@ -348,8 +360,9 @@ namespace Malmr
                 if (entry == MalmrConfig.AnyMetal || used.Contains(entry)) continue;
 
                 text.Append("\n   ").Append(entry).Append(": no deposit here resolves to it. "
-                    + "If one should, its drop is not smelted by any station this world has - "
-                    + "name it in Deposits as Prefab:").Append(entry).Append('.');
+                    + "If one should, either no station this world has makes it from what the "
+                    + "deposit drops, or the deposit drops something besides it (see the not-veins "
+                    + "list) - name it in Deposits as Prefab:").Append(entry).Append('.');
             }
 
             text.Append("\n   ").Append(SmeltingLine);
@@ -536,14 +549,43 @@ namespace Malmr
         }
 
         /// <summary>
-        /// The rule, in order: the override if there is one; then the drops, heaviest first,
-        /// each tried as the metal it smelts into at any station and then as itself; then the
-        /// "*" entry for any drop a furnace takes (OreStations says which stations are
-        /// furnaces); and otherwise not a vein.
+        /// The rule, in order: the override if there is one; then the deposit's ore, if it has
+        /// any; and only for a deposit with no ore at all, the raw material it is made of.
         ///
-        /// Heaviest drop first so that a deposit which mostly gives one thing is that thing,
-        /// even if it sometimes gives another. Only drops that match an entry count toward it,
-        /// so the stone every boulder also drops cannot make a copper vein into a stone one.
+        /// <b>Ore first, and ore decides alone.</b> A drop some station takes is ore. Those are
+        /// tried heaviest first, each as the metal it smelts into at any station and then as
+        /// itself, and after them the "*" entry for any drop a furnace takes (OreStations says
+        /// which stations are furnaces). Heaviest first so that a deposit which mostly gives one
+        /// ore is that ore, even if it sometimes gives another. And a deposit with ore that
+        /// matched none of that is not a vein at all: it never falls through to whatever else
+        /// it drops.
+        ///
+        /// That last sentence is the one stone needed, on 2026-09-27. Until then every drop was
+        /// tried in weight order, ore or not, as its metal and then as itself, and the comment
+        /// here leaned on no raw drop being in the table: "the stone every boulder also drops
+        /// cannot make a copper vein into a stone one". With Stone an entry that stopped being
+        /// true twice over. A copper deposit drops stone beside its ore, and wherever the stone
+        /// weighs more it would have come out a stone vein, open at stone's level rather than
+        /// copper's. Worse, tin, which Robbin left out on purpose ("tin doesnt need vein
+        /// mining"), would have found nothing in its tin ore and fallen through to any stone its
+        /// table carries, and vein mined at Pickaxes 20 through the back door. So the ore speaks for
+        /// the whole deposit now: an ore that is named makes it that metal's vein, and one that
+        /// is not named makes it nobody's. That covers every ore a station takes, tin and the
+        /// copper and iron scattered through the Mistlands included.
+        ///
+        /// <b>Raw material only when EVERY drop is named.</b> A deposit with no ore is what it
+        /// is made of, stone for a boulder, and it answers to an entry only when every drop it
+        /// has is named in Unlocks as itself. The reason is that a full bar hands out the whole
+        /// deposit: a rock that drops obsidian beside its stone would otherwise give obsidian to
+        /// a player who opened stone, and obsidian is opt-in. For the same reason, when more than
+        /// one of its drops is named, the strictest of them answers for it - an entry switched
+        /// off before any, then the highest level - so the gate in front of a deposit always
+        /// covers everything behind it. That is also what keeps obsidian rocks behaving as they
+        /// did before stone, whether or not their table carries a little stone: Obsidian:50
+        /// beats Stone:20.
+        ///
+        /// Nothing here names Stone. The ore guard and the every-drop rule hold for any entry
+        /// named by its drop, a mod's included, and no named metal can lose its deposit to one.
         /// </summary>
         private static Kind Classify(string prefab, List<DropTable.DropData> drops)
         {
@@ -564,11 +606,38 @@ namespace Malmr
             if (drops.Count == 0)
                 return new Kind { Why = "drops nothing" };
 
+            // Each item once, heaviest first. A table can list one item twice with different
+            // stacks, and the log line should not.
+            var items = new List<string>();
             foreach (DropTable.DropData drop in drops)
             {
                 string item = Utils.GetPrefabName(drop.m_item);
+                if (!items.Contains(item)) items.Add(item);
+            }
 
-                foreach (Conversion conversion in Taking(item))
+            string dropped = "drops " + string.Join(", ", items.ToArray());
+
+            Kind ore = AsOre(items);
+            if (ore != null) return ore;
+
+            foreach (string item in items)
+                if (Taking(item).Count > 0) return new Kind { Why = dropped };
+
+            return AsRawMaterial(items, dropped);
+        }
+
+        /// <summary>
+        /// The ore half of Classify: a drop some station takes, as the named metal it becomes,
+        /// then as itself, then as "*". Null when no ore in it answers to anything.
+        /// </summary>
+        private static Kind AsOre(List<string> items)
+        {
+            foreach (string item in items)
+            {
+                List<Conversion> takers = Taking(item);
+                if (takers.Count == 0) continue;
+
+                foreach (Conversion conversion in takers)
                 {
                     string entry = MalmrConfig.MatchEntry(conversion.To);
                     if (entry != null)
@@ -589,31 +658,63 @@ namespace Malmr
                     };
             }
 
-            if (MalmrConfig.UnlockTable().ContainsKey(MalmrConfig.AnyMetal))
+            if (!MalmrConfig.UnlockTable().ContainsKey(MalmrConfig.AnyMetal)) return null;
+
+            foreach (string item in items)
             {
-                foreach (DropTable.DropData drop in drops)
+                foreach (Conversion conversion in Taking(item))
                 {
-                    string item = Utils.GetPrefabName(drop.m_item);
+                    if (!Ore.Contains(conversion.Station)) continue;
 
-                    foreach (Conversion conversion in Taking(item))
+                    return new Kind
                     {
-                        if (!Ore.Contains(conversion.Station)) continue;
-
-                        return new Kind
-                        {
-                            Entry = MalmrConfig.AnyMetal, Metal = conversion.To, Ore = item,
-                            Why = "drops " + item + ", which smelts into " + conversion.To
-                                  + " at " + conversion.Station.Name
-                                  + " - not named, so the * level applies",
-                        };
-                    }
+                        Entry = MalmrConfig.AnyMetal, Metal = conversion.To, Ore = item,
+                        Why = "drops " + item + ", which smelts into " + conversion.To
+                              + " at " + conversion.Station.Name
+                              + " - not named, so the * level applies",
+                    };
                 }
             }
 
-            var names = new List<string>();
-            foreach (DropTable.DropData drop in drops) names.Add(Utils.GetPrefabName(drop.m_item));
+            return null;
+        }
 
-            return new Kind { Why = "drops " + string.Join(", ", names.ToArray()) };
+        /// <summary>
+        /// The raw material half: a deposit with no ore, and every drop named in Unlocks as
+        /// itself, is the strictest of those entries. Anything unnamed among its drops makes it
+        /// not a vein - see Classify for why one unnamed drop is enough.
+        /// </summary>
+        private static Kind AsRawMaterial(List<string> items, string dropped)
+        {
+            string strictest = null;
+            string from = null;
+
+            foreach (string item in items)
+            {
+                string entry = MalmrConfig.MatchEntry(item);
+                if (entry == null) return new Kind { Why = dropped };
+
+                if (strictest == null || Strictness(entry) > Strictness(strictest))
+                {
+                    strictest = entry;
+                    from = item;
+                }
+            }
+
+            return new Kind
+            {
+                Entry = strictest, Metal = strictest, Ore = from,
+                Why = items.Count == 1
+                    ? "drops only " + from + ", named in Unlocks"
+                    : dropped + ", all named in Unlocks, and " + strictest + " is the strictest",
+            };
+        }
+
+        /// <summary>How hard an entry is to open, for AsRawMaterial: its level, and switched off hardest of all.</summary>
+        private static int Strictness(string entry)
+        {
+            int level = MalmrConfig.LevelFor(entry);
+            return level < 0 ? int.MaxValue : level;
         }
 
         /// <summary>A deposit's drops with an item, heaviest first, ties in table order.</summary>

@@ -5,8 +5,8 @@
 # where the classification is actually proved. It is also the file most likely to fail for a
 # reason that is not a bug, so read the notes on each block before trusting a failure.
 #
-# Runs against the DEFAULT config (Copper, Iron, Silver, Eitr, Flametal and Gold in Unlocks, and
-# no * entry), in any world, singleplayer. Stand anywhere: `malmr` lists every deposit prefab
+# Runs against the DEFAULT config (Stone, Copper, Iron, Silver, Eitr, Flametal and Gold in Unlocks,
+# and no * entry), in any world, singleplayer. Stand anywhere: `malmr` lists every deposit prefab
 # ZNetScene holds, whether or not one is standing near you. Changes nothing and leaves nothing.
 #
 # What it reads: `malmr` prints "<prefab>=<Entry> chunks=<n>" for each deposit that counts as
@@ -14,10 +14,14 @@
 # every station and its conversions as "<station>: A>B, C>D; <next station>: ...". The same
 # block goes to the log once per world load.
 #
-# What a broken build reads: a classifier that stopped reading the drops prints every deposit
-# under "not veins", so every "=<Entry> yes" line fails. The old defaults print MineRock_Tin=Tin,
-# which the tin block catches. A * entry left in by mistake would turn anything a furnace takes
-# into a vein, which the same block catches for tin.
+# What a broken build reads: a classifier that stopped reading the drops prints every deposit under
+# "not veins", so every "=<Entry> yes" line fails. The old defaults print MineRock_Tin=Tin, which
+# the tin block catches. A * entry left in by mistake would turn anything a furnace takes into a
+# vein, which the same block catches for tin. And the rule before stone, which tried every drop
+# heaviest first whether it was ore or not, would print a copper deposit whose stone weighs more
+# than its ore as =Stone, and a tin rock as =Stone through any stone beside its tin: the ore lines
+# and the tin block catch both. A classifier that never reads a drop as itself prints every boulder
+# under "not veins", and the stone block fails.
 #
 # THE TRAP: the deposit and station names below come off the game's asset manifest, which
 # lists what is on disk and not what loads. A deposit here as MineRock5 is usually the *_frac*
@@ -25,6 +29,14 @@
 # breaks. If an assertion fails with "nothing containing", look at the printed list for the
 # name the world really uses before touching any code - that is a wrong name in this file, not
 # a wrong metal.
+#
+# The stone boulders are the likeliest to trip it, because there are many of them and every name
+# is off the manifest. A "=Stone" line can fail two ways, and they need different fixes. The name
+# is not printed at all: wrong name, as above. The name IS printed, in the "not veins:" line: the
+# rock is in the world and drops something besides stone, which by the rule makes it not a stone
+# vein. The world-load log block lists what every not-vein drops, so read that line there. If it is
+# stone and some other raw material, the rule is doing its job and the line here is what is wrong.
+# If it is stone alone, the classifier is wrong.
 
 console malmr
 
@@ -79,15 +91,42 @@ printed giant_brain_frac=Eitr yes
 printed FlametalRockstand_frac=Flametal yes
 printed goldvein_frac=Gold yes
 
+# ---- ore beside stone. Ore deposits can drop stone as well as their ore, and where the stone
+# weighs more the old rule would have made them stone veins. Each is still its metal. Every prefab
+# prints one line, so =Iron here also means not =Stone. The Black Forest, Swamp and Mountains lines
+# above already say it for one prefab of each metal; these are the second iron and silver prefabs,
+# the same rule over another drop table. Both names are off the manifest, so a "nothing containing"
+# here is THE TRAP, not the rule.
+
+printed mudpile2_frac=Iron yes
+printed rock3_silver_frac=Silver yes
+
+# ---- stone. The plain rocks and boulders, whose every drop is stone: one or two a biome, plus the
+# small MineRock_Stone. Stone is the one default named as the dropped item itself, since nothing
+# smelts it. A deposit answers to it only when it has no ore at all and nothing but stone (or
+# other named things) among its drops. These are the least certain names in this file, see the
+# second half of THE TRAP. rock4_forest_frac is the one malmr-stone.txt swings at, and the one
+# malmr-mistlands.txt puts in the Mistlands, so of these it is the one that matters most.
+
+printed Rock_3_frac=Stone yes
+printed rock4_forest_frac=Stone yes
+printed rock4_coast_frac=Stone yes
+printed rock1_mountain_frac=Stone yes
+printed rock4_heath_frac=Stone yes
+printed rock_mistlands1_frac=Stone yes
+printed MineRock_Stone=Stone yes
+
 # ---- not veins. Tin is left out of the table on purpose, and with no * entry nothing catches
-# it. Nothing smelts obsidian or stone, so neither is a vein by default either. The "=" matters:
-# in the not-veins line these names are followed by a comma instead. Each name is asserted to be
-# printed at all first, because "no" alone would also pass for a prefab that is not in the world
-# under that name, and then nothing was tested.
+# it. It is also the back door stone could have opened: tin ore smelts into Tin, which is not in
+# the table, and the old rule would then have fallen through to any stone the rock also drops. A
+# deposit with ore in it is its ore's or nobody's now, so tin stays out. Nothing smelts obsidian,
+# and it is not in the table, so an obsidian rock is not a vein either, even if its table has a
+# little stone in it. The "=" matters: in the not-veins line these names are followed by a comma
+# instead, and "=" also covers =Stone. Each name is asserted to be printed at all first, because
+# "no" alone would also pass for a prefab that is not in the world under that name, and then
+# nothing was tested.
 
 printed MineRock_Tin yes
 printed MineRock_Tin= no
 printed MineRock_Obsidian yes
 printed MineRock_Obsidian= no
-printed MineRock_Stone yes
-printed MineRock_Stone= no

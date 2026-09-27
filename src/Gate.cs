@@ -19,9 +19,10 @@ namespace Malmr
     /// standing skill bonus before anybody noticed - see Vein.EarnedLevel. A second half to the
     /// rule is a second chance for that, so the rule lives in one place.
     ///
-    /// <b>The metal, not the deposit.</b> The Mistlands rule - only the giant brains vein mine
-    /// there - is about where a deposit stands, and a metal has no place. It is asked separately,
-    /// per deposit, in Deposits.HandOnly, by the same three callers that hold a deposit.
+    /// <b>The metal, not the deposit.</b> The Mistlands rule - only the giant brains and stone
+    /// vein mine there - is about where a deposit stands, and a metal has no place. It is asked
+    /// separately, per deposit, in Deposits.HandOnly, by the same three callers that hold a
+    /// deposit.
     ///
     /// <b>Open or shut, nothing in between.</b> Until 2026-09-26 an open metal also carried a
     /// count - how many extra chunks a swing took, growing every ten levels up to a cap. The bar

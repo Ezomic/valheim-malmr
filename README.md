@@ -1,10 +1,10 @@
 # Malmr
 
-Tap Left Alt with a pickaxe out and vein mining is on. Every blow you land on an ore deposit
-then fills a bar instead of breaking the chunk you hit. When the bar reaches 100%, the whole
-deposit breaks at once and all of its ore drops, including the chunks that were still under the
-ground. Each metal opens at its own Pickaxes level, late, and once you have beaten the boss of
-its biome.
+Tap Left Alt with a pickaxe out and vein mining is on. Every blow you land on an ore deposit or a
+boulder then fills a bar instead of breaking the chunk you hit. When the bar reaches 100%, the
+whole deposit breaks at once and all of its ore drops, including the chunks that were still under
+the ground. Stone and each metal open at their own Pickaxes level, late, and once you have beaten
+the boss of their biome.
 
 *Malmr* is Old Norse for ore, and for metal. The mod is about both: you mine the ore, and it
 unlocks by the metal it smelts into.
@@ -21,10 +21,14 @@ Malmr is slower than that on purpose. The bar only fills as fast as your swings 
 broken the rock by hand, so a deposit still costs you about as many swings, as much stamina and
 as much pickaxe wear. You save the walking between chunks and the digging after the buried ones.
 
-It also opens late. Copper opens at Pickaxes 30 and bloodgold at 80, so you have mined each
-metal by hand for a while before this changes anything. A metal also waits for the boss of the
-biome it comes from. With [Vandi](https://github.com/Ezomic/valheim-vandi) installed that means
-the boss beaten at one star, and without it the boss beaten once.
+It also opens late. Stone opens at Pickaxes 20, copper at 30 and bloodgold at 80, so you have
+mined each one by hand for a while before this changes anything. Each also waits for the boss of
+the biome it comes from. With [Vandi](https://github.com/Ezomic/valheim-vandi) installed that
+means the boss beaten at one star, and without it the boss beaten once.
+
+Stone is on the list because building takes a lot of it, and a boulder is the same chore as a
+copper deposit: many chunks, some of them buried. It opens first, at 20, because stone is the
+first thing anybody mines. It waits for Eikthyr, the Meadows boss.
 
 ## How it works
 
@@ -37,8 +41,10 @@ the boss beaten at one star, and without it the boss beaten once.
 - The bar sits just under the crosshair while you look at the deposit or have just hit it. It is
   a thin gold bar with the name and the percentage under it, like "Copper vein 45%".
 - 100% is the health of every chunk still standing, buried ones included. When the bar gets
-  there, the deposit breaks. The chunks go from the top down in a fraction of a second, each
-  drops its ore where it was, and ore from under the ground pops up to the surface.
+  there, the deposit breaks. The chunks go from the top down, each drops its ore where it was,
+  and ore from under the ground pops up to the surface. An ore deposit comes down in a fraction
+  of a second. A big rock takes longer, because Malmr breaks only as much of it each frame as
+  the game can take without stuttering.
 - The bar is saved on the deposit. Walk away, switch tools or log out, and it is still there when
   you come back. A friend with vein mining on can finish it for you.
 - If somebody mines chunks off the same deposit by hand in the meantime, the total shrinks and
@@ -65,6 +71,7 @@ few swings more than by hand and some a few less.
 
 | What | Pickaxes level | Boss |
 | --- | --- | --- |
+| Stone (plain rocks and boulders) | 20 | Eikthyr |
 | Copper | 30 | The Elder |
 | Iron | 40 | Bonemass |
 | Silver | 50 | Moder |
@@ -73,6 +80,17 @@ few swings more than by hand and some a few less.
 | Bloodgold (`Gold` in the config) | 80 | Fader |
 
 Only these vein mine. Anything else is mined by hand.
+
+Stone means the rocks and boulders that drop nothing but stone. Ore deposits drop stone as well,
+but a deposit with ore in it is always that ore's, never a stone vein. A copper deposit is copper
+at 30 however much stone comes out of it, and a tin rock stays mined by hand. A rock that drops
+anything else beside its stone is not a stone vein either, unless that other thing is on the list
+too. Then the higher of the two levels applies, because a full bar hands you everything the rock
+drops.
+
+Some stone rocks are huge, and the bar covers the whole rock. With vein mining on you get no stone
+from one until the bar is full, so for a handful of stone, tap Alt to switch it off and take a few
+chunks by hand.
 
 Tin is not on the list. It comes in small rocks and there is no deposit of it worth a bar.
 `Tin:20` in `Unlocks` would add it.
@@ -92,9 +110,11 @@ Iron covers anything whose drop smelts into iron, so muddy scrap piles count.
 
 ## The Mistlands
 
-In the Mistlands only the giant brains vein mine. Copper, iron or any other ore you find there is
-mined the normal way, even when that metal is open to you. With vein mining on, the top left of
-the screen says so once per deposit and no bar shows.
+In the Mistlands only the giant brains and stone vein mine. Copper, iron or any other ore you find
+there is mined the normal way, even when that metal is open to you. With vein mining on, the top
+left of the screen says so once per deposit and no bar shows. The rule is there for the copper and
+iron scattered around the Mistlands, and a boulder there is stone like anywhere else, so stone is
+left alone.
 
 It goes by the biome the deposit stands in, the one the map shows at that spot. The `Mistlands`
 line in the config says which entries still vein mine there.
@@ -137,9 +157,15 @@ lists what it takes in and what comes out. A deposit that drops copper ore is a 
 because copper ore smelts into copper. The same goes for an ore another mod adds, as long as you
 name its metal in `Unlocks` and some station makes it.
 
+Ore always wins. If anything a deposit drops goes into a station, the deposit is that ore's vein,
+or no vein at all when the ore is not in `Unlocks`. Only a deposit with no ore in it can be a
+stone vein, and only when everything it drops is on the list. That works the same for obsidian
+or anything else you add by the name of what drops.
+
 When a world loads, the log gets one block listing every deposit in it, what it counted as and
-why, and any metal in the table that nothing matched. If a deposit comes out wrong, name it in
-`Deposits` and that wins over the drops.
+why, and any metal in the table that nothing matched. The deposits that are not veins are listed
+with what they drop, so a boulder that is not a stone vein shows what else is in it. If a deposit
+comes out wrong, name it in `Deposits` and that wins over the drops.
 
 ## Console
 
@@ -177,13 +203,14 @@ the reasoning, so the file explains itself. The ones worth knowing about:
 - `VeinToggleKey` is the key, Left Alt by default. It only listens while a pickaxe is out, so
   Jafna's Left Alt on the hoe is left alone. A tap is a short press and release, so Alt+Tab and
   Taum's Alt+E on a boar do not switch it.
-- `Unlocks` is the table above, as one line: `Copper:30, Iron:40, ...`. Add a metal, change a
+- `Unlocks` is the table above, as one line: `Stone:20, Copper:30, ...`. Add a metal, change a
   level, or set one to -1 to switch it off.
-- `Bosses` is the boss column of the table, as one line: `Copper:defeated_gdking, ...`. A metal
+- `Bosses` is the boss column of the table, as one line: `Stone:defeated_eikthyr, ...`. A metal
   left out needs no boss.
 - `BossKills` is how many kills of that boss Vandi has to have counted. 2 is the one-star kill.
   Without Vandi it is not used, and one kill is enough. 0 turns the boss half off either way.
-- `Mistlands` says which entries still vein mine in the Mistlands. `Eitr` by default, the brains.
+- `Mistlands` says which entries still vein mine in the Mistlands. `Eitr, Stone` by default, the
+  brains and stone.
 - `Names` is what the screen calls a deposit of an entry. `Eitr:Giant brain` by default.
 - `Deposits` overrides what a deposit counts as, by its prefab name.
 
@@ -218,8 +245,9 @@ runs, but nothing checks that everybody has it and each player plays by their ow
 None of it has run in game yet. That covers the bar filling, the whole deposit breaking and where
 its ore lands, the key, the marker and the bar's look, the bar surviving a logout, and two players
 on one rock. The deposit list, whether the giant brains, the Ashlands flametal and the Deep North
-bloodgold deposits are recognised, the Mistlands rule, and both ways of counting the boss also
-still have to be seen in a real session.
+bloodgold deposits are recognised, which rocks drop nothing but stone and so count as stone veins,
+how long the biggest of them take to come down, the Mistlands rule, and both ways of counting the
+boss also still have to be seen in a real session.
 
 ## Bugs and ideas
 

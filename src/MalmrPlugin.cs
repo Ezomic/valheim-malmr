@@ -34,10 +34,10 @@ namespace Malmr
     ///    health of every chunk. Stamina, pickaxe wear and the skill are charged by the swing
     ///    itself, as vanilla charges them. What it saves is the walking between chunks and the
     ///    digging after buried ones.
-    ///  - Metal by metal, late. Copper at Pickaxes 30 up to bloodgold at 80, the giant brains
-    ///    at 60, so every one has been mined by hand for a while first. Tin is not in it, and
-    ///    in the Mistlands only the brains vein mine. The level is the one you earned; a bonus
-    ///    from gear or an effect does not open a metal early.
+    ///  - Metal by metal, late. Stone at Pickaxes 20, copper at 30 up to bloodgold at 80, the
+    ///    giant brains at 60, so every one has been mined by hand for a while first. Tin is not
+    ///    in it, and in the Mistlands only the brains and stone vein mine. The level is the one
+    ///    you earned; a bonus from gear or an effect does not open a metal early.
     ///  - And the boss of the metal's biome. With Vandi, beaten at one star, which is Vandi's
     ///    count of your kills reaching two; without it, beaten once, as the game counts your
     ///    kills. See Gate for the rule and Bosses for the two counts.

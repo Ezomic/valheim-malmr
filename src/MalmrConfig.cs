@@ -31,6 +31,13 @@ namespace Malmr
     /// to copper 30 up to bloodgold 80, tin and the "*" entry left the table, the giant brains
     /// joined it at 60, and the Mistlands line and the Names line arrived. Still no cfg on any
     /// machine - the test profile had never run - so again nothing stale is out there.
+    ///
+    /// <b>And stone, on 2026-09-27</b>, Robbin's "also add stone". Three defaults moved:
+    /// Stone:20 in Unlocks, the step below copper on his ten-a-step table; Stone on
+    /// defeated_eikthyr in Bosses, the Meadows boss, by the same rule that pairs every other
+    /// entry with the boss of its biome; and Stone beside Eitr on the Mistlands line. The real
+    /// work was in Deposits.Classify, which had to stop a copper or tin deposit coming out as
+    /// stone. Checked again that day: no Malmr cfg on any profile, so no stale one to edit.
     /// </summary>
     internal static class MalmrConfig
     {
@@ -83,21 +90,35 @@ namespace Malmr
             // what a drop becomes - so naming Eitr is what makes a brain a vein, the same way
             // naming Copper makes a copper deposit one. Names below is what puts "Giant brain"
             // on the screen instead of the refinery's product.
+            //
+            // Stone is the other way round, since 2026-09-27: nothing smelts it, so it is named
+            // as the item that drops, and at 20, the step below copper, because stone is the
+            // first thing anybody mines. Ore deposits drop stone too, so naming it could have
+            // made a copper deposit, or a tin one, into a stone vein. Deposits.Classify is what
+            // stops that, and the text below says the rule in the player's words.
             Unlocks = cfg.Bind("Unlocks", "Unlocks",
-                "Copper:30, Iron:40, Silver:50, Eitr:60, Flametal:70, Gold:80",
-                "The Pickaxes level at which each metal's deposits can be vein mined. Comma "
-                + "separated Name:Level pairs. Only what is named here vein mines; everything "
-                + "else is mined by hand. The name is the smelted metal, the one that comes OUT "
-                + "of the smelter, so Iron covers muddy scrap piles and anything else whose drop "
-                + "smelts into iron. A trailing \"New\" is ignored when names are compared, so "
+                "Stone:20, Copper:30, Iron:40, Silver:50, Eitr:60, Flametal:70, Gold:80",
+                "The Pickaxes level at which each metal's deposits, and stone, can be vein "
+                + "mined. Comma separated Name:Level pairs. Only what is named here vein mines; "
+                + "everything else is mined by hand. The name is the smelted metal, the one that "
+                + "comes OUT of the smelter, so Iron covers muddy scrap piles and anything else "
+                + "whose drop smelts into iron. A trailing \"New\" is ignored when names are "
+                + "compared, so "
                 + "Flametal covers both the old meteorite flametal and the Ashlands one. Names "
                 + "are prefab names, not what the game shows: Gold is the Deep North metal the "
                 + "game calls Bloodgold, and Eitr is the Mistlands' giant brains, because what "
                 + "they drop becomes refined eitr in the eitr refinery (Names sets what the "
                 + "screen calls them). Tin is left out on purpose; Tin:20 would add it. A name "
-                + "can also be the dropped item itself: nothing smelts obsidian, so obsidian "
-                + "rocks are left out, and Obsidian:50 (silver's level, the same biome) would "
-                + "add them. A * entry, for example *:80, would give every other ore a level, "
+                + "can also be the dropped item itself, for what nothing smelts. Stone is one: "
+                + "it covers the plain rocks and boulders, the ones whose every drop is stone. A "
+                + "deposit that drops ore is never a stone vein, even though ore deposits drop "
+                + "stone as well: it is its ore's vein, or nobody's if that ore is not named "
+                + "here, which is what keeps tin out. A rock that drops anything else beside its "
+                + "stone is not a stone vein either, unless that is named here too, and then "
+                + "the higher of the two levels applies, because a full bar hands out "
+                + "everything the rock drops. Obsidian rocks are left out that way, and "
+                + "Obsidian:50 (silver's level, the same biome) would add them. A * entry, for "
+                + "example *:80, would give every other ore a level, "
                 + "meaning a drop that goes into a furnace: a station that makes one of the "
                 + "entries named here, or burns the same fuel as one that does. That is how an "
                 + "ore added by another mod could join without a new build; naming that ore "
@@ -124,20 +145,26 @@ namespace Malmr
             // when that metal is long open to you. A line rather than a rule in code, so a
             // server that sees it differently changes a word instead of waiting for a build.
             //
+            // Stone is on it too since 2026-09-27. The line exists to keep the copper and iron
+            // scattered through the Mistlands mined by hand, and stone was never what it was
+            // about: a Mistlands boulder is stone like any other, so it vein mines there as it
+            // does everywhere else.
+            //
             // Decided by the deposit's own biome, Heightmap.FindBiome at its position - the
             // ground's biome, the same one the map shows. That reads X and Z only, so a deposit
             // inside a dungeon reads the biome on the surface above it: iron in a Mistlands
             // crypt would be Mistlands iron. Nothing vanilla puts a deposit there, and it would
             // be the right answer if something did.
-            Mistlands = cfg.Bind("Unlocks", "Mistlands", "Eitr",
+            Mistlands = cfg.Bind("Unlocks", "Mistlands", "Eitr, Stone",
                 "Which Unlocks entries still vein mine when the deposit stands in the Mistlands, "
                 + "comma separated. Everything else found in the Mistlands, like copper or iron, "
                 + "is mined the normal way there even when that metal is open to you, and the "
                 + "top left of the screen says so once per deposit. The default is Eitr, the "
-                + "giant brains, which are the Mistlands' own vein. * lets every open entry vein "
-                + "mine there too. Empty means nothing vein mines in the Mistlands. The biome is "
-                + "the one on the map at the deposit's spot; everywhere else this line does "
-                + "nothing.");
+                + "giant brains, which are the Mistlands' own vein, and Stone: this line is here "
+                + "to keep the copper and iron scattered through the Mistlands mined by hand, "
+                + "and stone is stone everywhere. * lets every open entry vein mine there too. "
+                + "Empty means nothing vein mines in the Mistlands. The biome is the one on the "
+                + "map at the deposit's spot; everywhere else this line does nothing.");
 
             // What the screen calls an entry's deposits. A metal is named off its item, in the
             // player's own language - "Copper vein" - and that is right for every metal. It is
@@ -167,16 +194,22 @@ namespace Malmr
             // stay shut forever and look exactly like one that was merely waiting. That is a
             // fallback, not a choice: the world-load log lists every boss with the key it sets,
             // and the Frozen King's is read there the first time somebody looks.
+            //
+            // Stone is on Eikthyr, 2026-09-27, by that same rule: the boulders it covers stand
+            // in every biome, but stone is the Meadows' material, the first a pickaxe ever
+            // takes, and Eikthyr is the Meadows' boss. Vandi's BossBiomes has defeated_eikthyr
+            // by default, so the one-star kill can be counted.
             Bosses = cfg.Bind("Unlocks", "Bosses",
-                "Copper:defeated_gdking, Iron:defeated_bonemass, Silver:defeated_dragon, "
-                + "Obsidian:defeated_dragon, Eitr:defeated_queen, Flametal:defeated_fader, "
-                + "Gold:defeated_fader",
+                "Stone:defeated_eikthyr, Copper:defeated_gdking, Iron:defeated_bonemass, "
+                + "Silver:defeated_dragon, Obsidian:defeated_dragon, Eitr:defeated_queen, "
+                + "Flametal:defeated_fader, Gold:defeated_fader",
                 "The boss each Unlocks entry also waits for, as Name:bosskey pairs, comma "
                 + "separated. An entry opens when BOTH hold: your Pickaxes level has reached its "
                 + "Unlocks level, and you have beaten its boss (see BossKills for how that is "
                 + "counted, with Vandi and without it). The boss is the one whose biome the ore "
-                + "comes from: the Elder for copper, Bonemass for iron, Moder for silver and "
-                + "obsidian, the Queen for the giant brains (Eitr), Fader for flametal. Gold, the "
+                + "comes from: Eikthyr for stone, the Elder for copper, Bonemass for iron, Moder "
+                + "for silver and obsidian, the Queen for the giant brains (Eitr), Fader for "
+                + "flametal. Gold, the "
                 + "Deep North's bloodgold, is on Fader too until the Deep North's own boss has "
                 + "been read from a world: the log lists every boss in the world with its key "
                 + "when a world loads. The key is the boss's defeat key, the one the game sets "

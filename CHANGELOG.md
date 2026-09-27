@@ -22,25 +22,32 @@ The key is `VeinToggleKey` and stays your own on a server. It only listens while
 out, and only a short tap counts, so Jafna's Left Alt on the hoe, Taum's Alt+E and Alt+Tab do not
 switch it. `malmr vein on` and `malmr vein off` do the same from the console.
 
-What vein mines, and from which Pickaxes level: copper 30, iron 40, silver 50, the Mistlands'
-giant brains 60, flametal 70, bloodgold 80. Nothing else. Tin is left out, and so is obsidian,
-though one line in `Unlocks` adds either. The level is the one you earned. A skill bonus from
-gear, food or another mod does not open a metal early. With vein mining on and the metal still
-shut you mine the normal way, and once per deposit the top left of the screen says what is
-missing, like "Iron veins need Pickaxes 40 and Bonemass beaten at one star through Vandi".
+What vein mines, and from which Pickaxes level: stone 20, copper 30, iron 40, silver 50, the
+Mistlands' giant brains 60, flametal 70, bloodgold 80. Nothing else. Tin is left out, and so is
+obsidian, though one line in `Unlocks` adds either. The level is the one you earned. A skill
+bonus from gear, food or another mod does not open a metal early. With vein mining on and the
+metal still shut you mine the normal way, and once per deposit the top left of the screen says
+what is missing, like "Iron veins need Pickaxes 40 and Bonemass beaten at one star through
+Vandi".
 
-In the Mistlands only the giant brains vein mine. Copper, iron or anything else found there is
-mined by hand even when it is open to you, and the top left says so once per deposit. The
-`Mistlands` setting lists what still vein mines there.
+Stone means the rocks and boulders that drop nothing but stone. A deposit with any ore in it is
+that ore's vein or no vein, never a stone one, even though ore deposits drop stone too, so tin
+cannot come in through any stone it drops. A rock that drops anything else beside its stone is not a stone
+vein unless that is in `Unlocks` as well, and then the higher level of the two applies. A big
+rock comes down a little at a time once its bar is full, so breaking it does not stall the game.
 
-A metal also waits for the boss of its biome: the Elder for copper, Bonemass for iron, Moder for
-silver and obsidian, the Queen for the brains, Fader for flametal. Bloodgold is on Fader too, the
-pairing Vandi and Utangard use for the Deep North, until the Frozen King's key has been read from
-a world load. With Vandi installed the boss has to be beaten at one star, which is your second
-kill of a boss you summoned yourself. Without Vandi there are no stars, and one kill by your
-character is enough, read from the kill record the game keeps on every character. That record
-starts at the game's Call to Arms update, so a boss beaten before then has to be beaten again,
-and it counts a boss spawned with devcommands like any other. Vandi is a soft
+In the Mistlands only the giant brains and stone vein mine. Copper, iron or anything else found
+there is mined by hand even when it is open to you, and the top left says so once per deposit.
+The `Mistlands` setting lists what still vein mines there.
+
+A metal also waits for the boss of its biome: Eikthyr for stone, the Elder for copper, Bonemass
+for iron, Moder for silver and obsidian, the Queen for the brains, Fader for flametal. Bloodgold
+is on Fader too, the pairing Vandi and Utangard use for the Deep North, until the Frozen King's
+key has been read from a world load. With Vandi installed the boss has to be beaten at one star,
+which is your second kill of a boss you summoned yourself. Without Vandi there are no stars, and
+one kill by your character is enough, read from the kill record the game keeps on every
+character. That record starts at the game's Call to Arms update, so a boss beaten before then has
+to be beaten again, and it counts a boss spawned with devcommands like any other. Vandi is a soft
 dependency, not in the manifest, and the README recommends it. `Bosses` and `BossKills` are in
 the config, and `BossKills` 0 turns the boss half off.
 
@@ -52,7 +59,8 @@ A deposit's metal comes from its drops: whatever its ore smelts into at any stat
 That lets an ore from another mod work without a new build once its metal is named in `Unlocks`.
 The `Deposits` setting overrides it per deposit, and `Names` sets what the screen calls a
 deposit, which is how the brains are called giant brains. On world load the log lists every
-deposit and what it counted as, and every boss in the world with the key it sets on death.
+deposit and what it counted as, what the ones that are not veins drop, and every boss in the
+world with the key it sets on death.
 
 The `malmr` console command prints your level, whether vein mining is on, which boss count
 applies, the Mistlands line, and for each metal its level, its boss, your kills of it, whether

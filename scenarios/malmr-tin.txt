@@ -11,14 +11,21 @@
 # `hurt MineRock_Tin 1+` fails. At 30 the same build would have hidden behind a shut gate and mined
 # by hand, and passed for the wrong reason.
 #
+# Eikthyr is seeded too, since stone joined the table on 2026-09-27, so that stone is open here as
+# well. Ore deposits drop stone beside their ore, and whether the tin rock's table does is asset data
+# nobody has read. If it does, a classifier that fell through the tin to the stone would make it a
+# stone vein at Pickaxes 20. With Eikthyr's kill seeded that build also sends the tin blow into a
+# bar, and the same `hurt` fails, rather than hiding behind stone's boss.
+#
 # THE CONTROL comes first: a copper deposit, the same pickaxe, the same switch, one swing, and no
 # chunk hurt. Without it a hurt tin rock could be vein mining that never worked anywhere. Then you
 # are moved 12 metres to your right, so the tin rock stands well clear of the copper and no swing can
 # reach both.
 #
-# NEEDS VANDI for the control, like malmr-bar.txt: copper's boss half is seeded through Vandi's own
-# kill record, vandi_p_<playerid>_defeated_gdking at 2, and the key is removed at the end. A
-# character with real Vandi kills of the Elder in this world loses them.
+# NEEDS VANDI for the control, like malmr-bar.txt: copper's and stone's boss halves are seeded
+# through Vandi's own kill record, vandi_p_<playerid>_defeated_gdking and _defeated_eikthyr at 2,
+# and both keys are removed at the end. A character with real Vandi kills of the Elder or Eikthyr
+# in this world loses them.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config. Face open ground, with open ground 12
 # metres to your right as well. `biome Meadows` takes you to the Meadows if you are not there, and
@@ -27,12 +34,13 @@
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), a copper deposit with
 # one blow in its bar where you started, and a tin rock with a chunk or more knocked off where you
 # end. Both are taken down by the next run's `put`s, which reach 30 metres. Pickaxes is put back, the
-# Vandi key is removed and vein mining ends off. Devkit empties the pack when a run ends and hands
+# Vandi keys are removed and vein mining ends off. Devkit empties the pack when a run ends and hands
 # back its kit.
 #
 # What a broken build reads:
-#   - tin classed as a vein: the progress line says metal=Tin, or any metal but none, and at
-#     Pickaxes 100 the blow goes into a bar, so `hurt MineRock_Tin 1+` fails and damage is above 0.0.
+#   - tin classed as a vein: the progress line says metal=Tin, metal=Stone, or any metal but none,
+#     and at Pickaxes 100 the blow goes into a bar, so `hurt MineRock_Tin 1+` fails and damage is
+#     above 0.0.
 #   - vein mining broken outright: the copper control reads `hurt` 1 or more.
 #
 # An ANTLER pickaxe, not the black metal one the other files use. A tin rock is small, and a hard
@@ -54,8 +62,10 @@ skill Pickaxes 0
 skill Pickaxes 100
 
 key vandi_p_$player_defeated_gdking 2
+key vandi_p_$player_defeated_eikthyr 2
 wait 2
 keyis vandi_p_$player_defeated_gdking 2
+keyis vandi_p_$player_defeated_eikthyr 2
 
 give PickaxeAntler:1
 tool PickaxeAntler
@@ -68,6 +78,7 @@ biome Meadows
 console malmr
 printed bosscount=vandi yes
 printed Copper unlock=30 open=yes yes
+printed Stone unlock=20 open=yes yes
 printed Tin unlock= no
 
 console malmr vein on
@@ -111,4 +122,5 @@ printed damage=0.0 yes
 console malmr vein off
 printed malmr vein=off yes
 unkey vandi_p_$player_defeated_gdking
+unkey vandi_p_$player_defeated_eikthyr
 skill Pickaxes back

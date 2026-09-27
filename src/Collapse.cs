@@ -40,8 +40,28 @@ namespace Malmr
     /// a support check. Vanilla already survives that for a dozen chunks in one frame - a big
     /// support collapse does it - but vein mining would make that worst case the normal case,
     /// on every deposit, on whichever machine happens to own it, and a copper deposit is
-    /// dozens of chunks. Six a frame is still well under a tenth of a second for any deposit
-    /// the game ships, which reads as one break.
+    /// dozens of chunks. Six a frame is still well under a tenth of a second for any ore
+    /// deposit the game ships, which reads as one break.
+    ///
+    /// <b>And a time budget, since stone.</b> On 2026-09-27 every rock whose drops are all
+    /// stone became a vein, and the biggest of those are not boulders but pillars and cliffs,
+    /// which may be hundreds of chunks. None of that can be counted offline; the world-load log
+    /// gives every vein's chunk count. Size costs twice. More chunks, and each one dearer,
+    /// because the support check MineRock5 runs after every chunk that breaks (UpdateSupport,
+    /// read in the 1.0 assembly) boxes every chunk of the deposit three times over and, for
+    /// each neighbour of the same deposit it finds, walks the deposit's whole chunk list - so
+    /// its cost grows faster than the deposit does. Six of those a frame on a cliff could be a
+    /// stutter on every frame of its break. So six is the ceiling and BudgetMs is the real
+    /// limit: once a frame has spent that long breaking, the rest wait for the next frame, and
+    /// one chunk always goes, so the biggest deposit still finishes. An ore deposit is expected
+    /// to fit six inside the budget and break exactly as before; a big rock takes longer to
+    /// come down from the top, which is honest about its size. While it does, the bar reads
+    /// full and a blow on it adds nothing (Busy), the same as for an ore deposit's few frames.
+    ///
+    /// Every chunk still drops what it drops, so a big rock leaves a crowd of stone on the
+    /// ground at once. It is the total a hand would have taken, only sooner, and the game has
+    /// its own answer to a crowd: ItemDrop's slow update stacks neighbours of the same item
+    /// together once more than 200 drops are loaded (AutoStackItems).
     ///
     /// <b>If it is cut off</b> - the owner leaves, the deposit unloads - the job simply stops.
     /// The bar is not cleared until every chunk is gone, so what is left reads 100% on whoever
@@ -56,6 +76,14 @@ namespace Malmr
         /// gameplay choice, only a frame-time one, and the argument for six is above.
         /// </summary>
         private const int PerFrame = 6;
+
+        /// <summary>
+        /// Milliseconds of breaking a frame, per deposit, after which the rest wait for the next
+        /// frame; the first chunk of a frame goes whatever it costs. A quarter of a frame at 60,
+        /// so a big stone deposit slows its own break down rather than the game. Also a constant,
+        /// for PerFrame's reason. See the class comment for why stone needed it.
+        /// </summary>
+        private const double BudgetMs = 4.0;
 
         /// <summary>
         /// Added to each chunk's remaining health in its lethal blow. The chunk dies to its exact
@@ -181,8 +209,14 @@ namespace Malmr
 
             int budget = PerFrame;
 
+            // A timestamp rather than a Stopwatch object: nothing allocated per frame, and
+            // nothing held between frames that a scene change could leave stale.
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+
             while (budget > 0 && job.Next < job.Order.Count)
             {
+                if (budget < PerFrame && Elapsed(started) >= BudgetMs) return;
+
                 if (job.Rock == null || !job.View.IsValid() || !job.View.IsOwner())
                 {
                     job.Next = job.Order.Count;
@@ -228,6 +262,12 @@ namespace Malmr
                 if (area < after.Length && after[area] > 0f) job.Refused++;
                 else job.Broken++;
             }
+        }
+
+        private static double Elapsed(long started)
+        {
+            return (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0
+                   / System.Diagnostics.Stopwatch.Frequency;
         }
 
         private static bool Done(Job job)
