@@ -22,7 +22,8 @@ namespace Malmr
     /// <b>The metal, not the deposit.</b> The Mistlands rule - only the giant brains and stone
     /// vein mine there - is about where a deposit stands, and a metal has no place. It is asked
     /// separately, per deposit, in Deposits.HandOnly, by the same three callers that hold a
-    /// deposit.
+    /// deposit. Those three ask through For over a Kind, which is every entry a deposit answers
+    /// to rather than one.
     ///
     /// <b>Open or shut, nothing in between.</b> Until 2026-09-26 an open metal also carried a
     /// count - how many extra chunks a swing took, growing every ten levels up to a cap. The bar
@@ -78,6 +79,33 @@ namespace Malmr
             }
 
             return gate;
+        }
+
+        /// <summary>
+        /// The gate in front of a whole deposit: every entry it answers to, the one it goes by
+        /// first. The first one shut is the answer, so what the player is told is a half that is
+        /// really missing; with all of them open it is the deposit's own.
+        ///
+        /// Every entry and not only the strictest, because a full bar hands out everything the
+        /// deposit drops, and no single entry covers two others when their bosses differ: with
+        /// Stone:60 on Eikthyr and Obsidian:50 on Moder, neither gate holds the other's boss.
+        /// See Deposits.Classify. Where Entries holds one entry, which is every ore deposit and
+        /// every rock that drops nothing but stone, this is For(kind.Entry).
+        /// </summary>
+        internal static Gate For(Deposits.Kind kind, float level)
+        {
+            Gate own = For(kind.Entry, level);
+            if (!own.Open) return own;
+
+            foreach (string entry in kind.Entries)
+            {
+                if (entry == kind.Entry) continue;
+
+                Gate other = For(entry, level);
+                if (!other.Open) return other;
+            }
+
+            return own;
         }
 
         /// <summary>Switched off in Unlocks - no amount of play opens it.</summary>

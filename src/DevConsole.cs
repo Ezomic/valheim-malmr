@@ -128,10 +128,13 @@ namespace Malmr
         /// since no deposit prefab is called 20.
         ///
         /// The reach exists for malmr-mistlands.txt, which stands a giant brain eight metres out
-        /// and asks about it. Ten metres is measured from you to the deposit's pivot, height
-        /// included, so on a Mistlands slope the brain could stand six metres above or below and
-        /// read as "none" - a failure about the ground, not about Malmr. Found in review on
-        /// 2026-09-26.
+        /// and asks about it. Ten metres is measured from you to the deposit, height included,
+        /// so on a Mistlands slope the brain could stand six metres above or below and read as
+        /// "none" - a failure about the ground, not about Malmr. Found in review on 2026-09-26.
+        ///
+        /// "To the deposit" means to its nearest chunk still standing, since review on
+        /// 2026-09-27; it was the pivot, and a stone cliff's pivot can be further than ten
+        /// metres from a player at its face. See Deposits.Distance.
         /// </summary>
         private static void ProgressVerb(Terminal term, Player player, Terminal.ConsoleEventArgs args)
         {
@@ -167,7 +170,7 @@ namespace Malmr
         /// and would not be for something run every frame.
         ///
         /// The name is for scenarios that stand two deposits near each other: "nearest" alone is
-        /// a geometry tie waiting to happen, and would read whichever pivot was closer.
+        /// a geometry tie waiting to happen, and would read whichever chunk was closer.
         /// </summary>
         private static void Progress(Terminal term, Player player, string only, float reachMetres)
         {
@@ -208,8 +211,8 @@ namespace Malmr
             // Mistlands copper vein from a shut one.
             Deposits.Kind kind = Deposits.Of(nearest);
             bool vein = kind != null && kind.Entry != null;
-            bool handOnly = vein && Deposits.HandOnly(nearest, kind.Entry);
-            bool open = vein && !handOnly && Gate.For(kind.Entry, Vein.EarnedLevel(player)).Open;
+            bool handOnly = vein && Deposits.HandOnly(nearest, kind);
+            bool open = vein && !handOnly && Gate.For(kind, Vein.EarnedLevel(player)).Open;
 
             term.AddString("malmr progress prefab=" + Utils.GetPrefabName(nearest.gameObject)
                 + " metal=" + (vein ? kind.Metal : "none")
@@ -240,7 +243,7 @@ namespace Malmr
             ZNetView nview;
             if (!rock.TryGetComponent(out nview) || !nview.IsValid()) return;
 
-            float distance = Vector3.Distance(here, rock.transform.position);
+            float distance = Deposits.Distance(rock, here);
             if (distance > best) return;
 
             best = distance;

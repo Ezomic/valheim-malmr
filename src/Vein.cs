@@ -97,7 +97,7 @@ namespace Malmr
             // Where it stands before what you have earned: a copper vein in the Mistlands is
             // mined by hand however open copper is, and "you need Pickaxes 30" would be the
             // wrong thing to tell a player looking at one. See Deposits.HandOnly.
-            if (Deposits.HandOnly(rock, kind.Entry))
+            if (Deposits.HandOnly(rock, kind))
             {
                 Tell(nview, kind, Deposits.Nouns(kind.Metal) + " in the Mistlands are mined by hand",
                      "is mined by hand in the Mistlands (the Mistlands line)");
@@ -106,14 +106,18 @@ namespace Malmr
 
             // The earned level, not the buffed one the blow was rolled with - see EarnedLevel. A
             // bonus still makes each blow harder, as it does in vanilla; it does not open a metal
-            // early.
-            Gate gate = Gate.For(kind.Entry, EarnedLevel(player));
+            // early. Every entry the deposit answers to, and the message names whichever one is
+            // shut: on a rock that answers to two, that can be the one it does not go by.
+            Gate gate = Gate.For(kind, EarnedLevel(player));
             if (!gate.Open)
             {
+                string nouns = Deposits.Nouns(gate.Entry == kind.Entry ? kind.Metal : gate.Entry);
+
                 Tell(nview, kind, gate.Off
-                        ? Deposits.Nouns(kind.Metal) + " cannot be vein mined here"
-                        : Deposits.Nouns(kind.Metal) + " need " + gate.Needs(),
-                     "is shut for vein mining: " + gate.Why());
+                        ? nouns + " cannot be vein mined here"
+                        : nouns + " need " + gate.Needs(),
+                     "is shut for vein mining: "
+                     + (gate.Entry == kind.Entry ? "" : gate.Entry + ": ") + gate.Why());
                 return false;
             }
 
@@ -124,7 +128,7 @@ namespace Malmr
             int area = Array.IndexOf(Deposits.Areas(rock, true), hit.m_hitCollider);
             if (area < 0) return false;
 
-            Focus.Struck(rock);
+            Focus.Struck(rock, hit.m_point);
 
             // Everything the log line needs, taken BEFORE the send. When this machine is the
             // owner the send is handled on the spot, and if it fills the bar the deposit breaks

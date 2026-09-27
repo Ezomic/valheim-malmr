@@ -37,7 +37,9 @@ namespace Malmr
     /// defeated_eikthyr in Bosses, the Meadows boss, by the same rule that pairs every other
     /// entry with the boss of its biome; and Stone beside Eitr on the Mistlands line. The real
     /// work was in Deposits.Classify, which had to stop a copper or tin deposit coming out as
-    /// stone. Checked again that day: no Malmr cfg on any profile, so no stale one to edit.
+    /// stone. Checked again that day: no Malmr cfg on any profile, so no stale one to edit. A
+    /// review the same day changed what the Unlocks text promises for a rock with two named
+    /// drops: both entries have to be open, not the higher level of the two.
     /// </summary>
     internal static class MalmrConfig
     {
@@ -115,9 +117,14 @@ namespace Malmr
                 + "stone as well: it is its ore's vein, or nobody's if that ore is not named "
                 + "here, which is what keeps tin out. A rock that drops anything else beside its "
                 + "stone is not a stone vein either, unless that is named here too, and then "
-                + "the higher of the two levels applies, because a full bar hands out "
-                + "everything the rock drops. Obsidian rocks are left out that way, and "
-                + "Obsidian:50 (silver's level, the same biome) would add them. A * entry, for "
+                + "BOTH have to be open to you, each with its own level and its own boss, and "
+                + "both on the Mistlands line for a rock that stands there, because a full bar "
+                + "hands out everything the rock drops. So a name for a dropped item covers a "
+                + "rock only while every other drop on that rock is named here as well, at a "
+                + "level that is not -1: one drop left out or switched off keeps the whole rock "
+                + "mined by hand. Obsidian rocks are left out that way, and Obsidian:50 "
+                + "(silver's level, the same biome) would add them, as long as Stone stays in "
+                + "this list at a real level if they drop stone too. A * entry, for "
                 + "example *:80, would give every other ore a level, "
                 + "meaning a drop that goes into a furnace: a station that makes one of the "
                 + "entries named here, or burns the same fuel as one that does. That is how an "
@@ -162,7 +169,9 @@ namespace Malmr
                 + "top left of the screen says so once per deposit. The default is Eitr, the "
                 + "giant brains, which are the Mistlands' own vein, and Stone: this line is here "
                 + "to keep the copper and iron scattered through the Mistlands mined by hand, "
-                + "and stone is stone everywhere. * lets every open entry vein mine there too. "
+                + "and stone is stone everywhere. A rock that answers to two entries, like one "
+                + "dropping two things named in Unlocks, needs both here. "
+                + "* lets every open entry vein mine there too. "
                 + "Empty means nothing vein mines in the Mistlands. The biome is the one on the "
                 + "map at the deposit's spot; everywhere else this line does nothing.");
 

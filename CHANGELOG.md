@@ -32,9 +32,12 @@ Vandi".
 
 Stone means the rocks and boulders that drop nothing but stone. A deposit with any ore in it is
 that ore's vein or no vein, never a stone one, even though ore deposits drop stone too, so tin
-cannot come in through any stone it drops. A rock that drops anything else beside its stone is not a stone
-vein unless that is in `Unlocks` as well, and then the higher level of the two applies. A big
-rock comes down a little at a time once its bar is full, so breaking it does not stall the game.
+cannot come in through any stone it drops. A rock that drops anything else beside its stone is
+not a stone vein unless that is in `Unlocks` as well, and then both have to be open to you, each
+with its own level and boss. One drop left out of `Unlocks` or set to -1 keeps the whole rock by
+hand, so `Obsidian:50` needs `Stone` left on the list for an obsidian rock that drops stone too.
+A big rock comes down a little at a time once its bar is full, so breaking it does not stall the
+game.
 
 In the Mistlands only the giant brains and stone vein mine. Copper, iron or anything else found
 there is mined by hand even when it is open to you, and the top left says so once per deposit.
@@ -65,9 +68,9 @@ world with the key it sets on death.
 The `malmr` console command prints your level, whether vein mining is on, which boss count
 applies, the Mistlands line, and for each metal its level, its boss, your kills of it, whether
 it is open and what is missing, followed by the deposit list. `malmr progress` shows the bar of
-the nearest deposit within 10 metres, or of the nearest one with a given name, or further when
-given a distance, with its biome and whether the Mistlands rule leaves it to the hand. No
-devcommands needed.
+the nearest deposit within 10 metres, counted to its nearest chunk, or of the nearest one with a
+given name, or further when given a distance, with its biome and whether the Mistlands rule
+leaves it to the hand. No devcommands needed.
 
 The bar is kept on the deposit, and only whoever owns a deposit may change it, so a blow is sent
 to the owner the way a normal pickaxe hit is and the owner fills the bar and breaks the deposit.

@@ -25,13 +25,25 @@ namespace Malmr
         /// <summary>How long the bar stays on the last deposit struck once the crosshair leaves it.</summary>
         private const float Linger = 5f;
 
-        /// <summary>And only while you stay near it. A deposit's pivot is in its middle, so this is generous.</summary>
-        private const float Reach = 12f;
+        /// <summary>
+        /// And only while you stay near it: within this many metres of where your last blow
+        /// landed, which is on the rock's face and so a pickaxe's length from where you stand.
+        ///
+        /// Measured to that point and not to the deposit's pivot. Until review on 2026-09-27 it
+        /// was 12 metres to the pivot, on the grounds that a pivot sits in a deposit's middle,
+        /// and for an ore deposit a few metres across that was generous. Stone made cliffs and
+        /// pillars into veins, whose pivot can be further than that from the face a player is
+        /// working, and there the bar dropped out between blows and flickered, which is the one
+        /// thing the linger is for. Eight is roughly what twelve to the middle of an ore deposit
+        /// a few metres across left, counted from its face; no deposit's size has been measured.
+        /// </summary>
+        private const float Reach = 8f;
 
         /// <summary>How often the metal's gate is asked again for the same deposit. The numbers are read every frame.</summary>
         private const float Recheck = 0.25f;
 
         private static Component _struck;
+        private static Vector3 _struckPoint;
         private static float _struckAt;
 
         private static Component _gated;
@@ -49,10 +61,14 @@ namespace Malmr
         private static string _label = "";
         private static float _fraction;
 
-        /// <summary>From Vein, on every blow sent into a bar.</summary>
-        internal static void Struck(Component rock)
+        /// <summary>
+        /// From Vein, on every blow sent into a bar, with the point it landed: the blow's
+        /// m_point, which Attack sets on the struck chunk's collider for every melee hit.
+        /// </summary>
+        internal static void Struck(Component rock, Vector3 point)
         {
             _struck = rock;
+            _struckPoint = point;
             _struckAt = Time.time;
         }
 
@@ -76,7 +92,7 @@ namespace Malmr
             Component target = Hovered(player);
 
             if (target == null && _struck != null && Time.time - _struckAt < Linger
-                && Vector3.Distance(player.transform.position, _struck.transform.position) < Reach)
+                && Vector3.Distance(player.transform.position, _struckPoint) < Reach)
             {
                 target = _struck;
             }
@@ -96,8 +112,8 @@ namespace Malmr
                 // for the same reason a shut metal gets none.
                 Deposits.Kind kind = Deposits.Of(target);
                 _open = kind != null && kind.Entry != null
-                        && !Deposits.HandOnly(target, kind.Entry)
-                        && Gate.For(kind.Entry, Vein.EarnedLevel(player)).Open;
+                        && !Deposits.HandOnly(target, kind)
+                        && Gate.For(kind, Vein.EarnedLevel(player)).Open;
                 _noun = kind != null ? Deposits.Noun(kind.Metal) : "";
             }
 

@@ -45,12 +45,12 @@
 # biome - which is the one thing this cannot tell apart.
 #
 # The brain is asked about within 20 metres rather than the usual 10. It stands 8 metres out, and
-# 10 is measured to its pivot with the height in it, so on a Mistlands slope a brain six metres
-# above or below would read progress=none for a reason that is the ground's, not Malmr's. The
-# cost: a brain the world made, nearer than this one and more than 8 metres from where this one
-# was put (closer and `put` refuses), would be the one read. Its answers are the same, because the
-# rule is about the prefab and the biome, so that is a pass on the right rule about a different
-# brain.
+# 10 is measured to its nearest chunk with the height in it, so on a Mistlands slope a brain six
+# metres above or below would read progress=none for a reason that is the ground's, not Malmr's.
+# The cost: a brain the world made, nearer than this one and more than 8 metres from where this
+# one was put (closer and `put` refuses), would be the one read. Its answers are the same, because
+# the rule is about the prefab and the biome, so that is a pass on the right rule about a
+# different brain.
 #
 # If `put` refuses with an unmarked deposit within 8m, the world made one there: move on a little
 # and run it again. If the brain's `put` or its progress line fails with nothing found, check
@@ -129,7 +129,7 @@ swing rock4_copper_frac 1
 hurt rock4_copper_frac 1+
 
 # ---- and the brains there vein mine. Further out than the copper so the two do not overlap;
-# progress is asked by name, so which pivot is nearer does not matter, and within 20 metres for
+# progress is asked by name, so which deposit is nearer does not matter, and within 20 metres for
 # the reason in the header. The brain is not swung at: its tool tier is asset data nobody has
 # read yet, and a pickaxe too weak for it fails `swing` for a reason that is not the rule.
 
