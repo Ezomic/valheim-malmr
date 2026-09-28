@@ -14,24 +14,26 @@
 #   1. Into the bar, at stone's own line: Pickaxes 20 and Eikthyr killed twice through Vandi, the
 #      least a player needs and the place an off-by-one would show. The bar is empty before the
 #      swing and off zero after it, and no chunk is hurt.
-#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets, and up to fifty
-#      swings. The first is checked on its own to have gone into the bar. After the rest the boulder
-#      is gone, and stone came out of it: at least one, on the ground and in the pack counted
-#      together, for the reason malmr-bar.txt gives.
+#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets, and up to 140
+#      swings in four `swing` steps. The first is checked on its own to have gone into the bar.
+#      After the rest the boulder is gone, and stone came out of it: at least one, on the ground and
+#      in the pack counted together, for the reason malmr-bar.txt gives.
 #
-# WHICH BOULDER, and why block 2 is at Pickaxes 100. The swing budget is fifty: Devkit's `swing`
-# takes at most fifty a step, and a second `swing` step fails outright if the first one already
-# broke the rock, so the break has to fit in one. rock4_forest_frac, the Black Forest boulder, is
-# the same rock4 shape as the copper deposit, and the manifest has a single chunk mesh for that
-# family (models/mountain/rock4_frac.obj), so it very likely breaks into as many chunks as the
-# rock4_copper_frac that malmr-bar.txt breaks inside the same fifty black metal swings at Pickaxes
-# 100. Which mesh each prefab uses, and its chunk health, are asset data nobody has read, so that
-# is an expectation, not a measurement. The Meadows' own boulder, Rock_3_frac, would have suited
-# Eikthyr better, but nothing offline says how many chunks it is, and the big stone rocks (the
-# mountain rocks, the Plains pillars, cliffs) can be far more than fifty swings. If block 2 runs
-# out of swings with the boulder still standing, read the percent `malmr progress` printed: that is
-# a boulder bigger than fifty swings, not the rule failing, and the fix is a smaller rock here, not
-# a change to Malmr.
+# WHICH BOULDER, and why block 2 is at Pickaxes 100. rock4_forest_frac, the Black Forest boulder,
+# is the same rock4 shape as the copper deposit malmr-bar.txt breaks, and the second run on
+# 2026-09-28 measured both: 130 chunks of 50, total=6500.0 in a fresh world. This block used to
+# allow fifty swings, on the guess that the boulder fits in them, and it does not: fifty black
+# metal swings at Pickaxes 100 filled its bar to 46%, damage=3028.6, every one landed, and it stood,
+# as it should with the bar short of full. So it gets the budget malmr-bar.txt works out under HOW
+# MANY SWINGS, for the same numbers: one chunk a swing, 55 to 65 a blow, full between the 100th and
+# the 118th swing. Devkit's `swing` takes at most fifty a step and fails before it starts on a rock
+# that is already gone, so 1, 49 and 40 come first, which cannot fill the bar, and the last step's
+# fifty cannot fall short of it. The waits between them are for stamina. A smaller rock would have
+# been quicker, and the world-load survey now gives chunk counts (Rock_3_frac is 5), but not what
+# a chunk is worth, so a smaller rock would trade a measured total for a guessed one. The big stone
+# rocks - the mountain rocks, the Plains pillars, cliffs - run to hundreds of chunks and are no use
+# here at all. If the last `swing` fails with nothing to swing at, the boulder broke inside the
+# first ninety: see malmr-bar.txt for what that means.
 #
 # Every swing is a real one, and a swing only counts once it has LANDED - see malmr-bar.txt. In
 # vein mode the only thing Malmr writes on the boulder's ZDO is the bar, so a swing that lands while
@@ -50,8 +52,8 @@
 # included.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block
-# 2 is fifty swings in one step. A hungry character can run dry and fail it on stamina, which the
-# step's note names.
+# 2 is up to fifty swings in one step, four times over. A hungry character can run dry and fail it
+# on stamina, which the step's note names.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again) and the stone block 2
 # dropped. No boulder is left: the second breaks, and its `put` took the first down. Pickaxes is put
@@ -65,8 +67,7 @@
 #   - a full bar that never breaks the boulder, or breaks only part of it: progress=none fails, and
 #     the `malmr progress` step before it says the percent and the chunks left. A break slowed by
 #     the frame budget still finishes within the `wait` for any rock this size; a rock that needed
-#     longer would read as still standing, which is why the wait is five seconds here and not the
-#     one malmr-bar.txt uses.
+#     longer would read as still standing, which is why the wait before that line is five seconds.
 #
 # WHAT IT CANNOT SEE:
 #   - The bar's words, "Stone vein 45%". IMGUI, and no step reads it; by eye, against mockup A.
@@ -150,11 +151,22 @@ printed damage=0.0 yes
 swing rock4_forest_frac 1
 hurt rock4_forest_frac 0
 
-# Up to forty-nine more. `swing` stops early and passes when the boulder is gone. Gone is then asked
-# of `malmr progress`, which looks ten metres out, and you have not moved, so progress=none can only
-# mean it broke.
+# Eighty-nine more, which cannot fill the bar - see WHICH BOULDER. The `malmr progress` after them
+# judges nothing. It is there for the trace: the percent the bar reached, and progress=none if the
+# boulder broke early and the next `swing` fails for that.
 
+wait 15
 swing rock4_forest_frac 49
+wait 15
+swing rock4_forest_frac 40
+console malmr progress rock4_forest_frac
+
+# Up to fifty more, where the bar fills. `swing` stops early and passes when the boulder is gone.
+# Gone is then asked of `malmr progress`, which looks ten metres out, and you have not moved, so
+# progress=none can only mean it broke.
+
+wait 15
+swing rock4_forest_frac 50
 wait 5
 
 console malmr progress rock4_forest_frac

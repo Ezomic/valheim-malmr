@@ -120,7 +120,15 @@ hurt rock4_copper_frac 0
 
 # ---- the same copper in the Mistlands is mined by hand. Vein mining is still on, and the same
 # swing hurts at least one chunk.
+#
+# `landed` first, because the game refuses a teleport for two seconds after the last one ends, and
+# the Black Forest block above can finish inside them. In the second run, on 2026-09-28, it did:
+# the swing there landed at once, `biome Mistlands` was refused, and every Mistlands line below was
+# asked of the Black Forest. In the first run the same swing missed and took two seconds more to
+# say so, which is the only reason that run got to the Mistlands. `landed` holds until you stand on
+# the floor with the cooldown served, where a plain `wait` would be a guess.
 
+landed
 biome Mistlands
 put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
