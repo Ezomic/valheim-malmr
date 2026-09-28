@@ -425,7 +425,8 @@ namespace Malmr
         /// <summary>
         /// Boss key to the Unlocks entries waiting for it, in Unlocks order. Only entries that are
         /// in Unlocks: a Bosses pair for something nobody vein-mines, like the default's Obsidian,
-        /// is a line ready for the day somebody adds it, not a hole.
+        /// is not a hole. In 1.0 that pair answers nothing even if Obsidian is added to Unlocks,
+        /// because an obsidian rock is a single rock that Malmr does not touch.
         /// </summary>
         private static Dictionary<string, List<string>> MetalsByBoss()
         {

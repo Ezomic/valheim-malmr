@@ -656,12 +656,15 @@ namespace Malmr
         /// copper vein into a stone one". With Stone an entry that stopped being true twice over.
         /// A copper deposit drops stone beside its ore, and wherever the stone weighs more it
         /// would have come out a stone vein, open at stone's level rather than copper's. Worse,
-        /// tin, which Robbin left out on purpose ("tin doesnt need vein mining"), would have
-        /// found nothing in its tin ore and fallen through to any stone its table carries, and
-        /// vein mined at Pickaxes 20 through the back door. The first fix still read each ore as
-        /// its metal and then as itself before moving on to the next, so a station that takes
-        /// stone (a mod's crusher, say) would have made stone an ore, and a copper deposit whose
-        /// stone outweighs its ore a stone vein again. Found in review the same day, and the
+        /// as it was read then, tin, which Robbin left out on purpose ("tin doesnt need vein
+        /// mining"), would have found nothing in its tin ore and fallen through to any stone its
+        /// table carries, and vein mined at Pickaxes 20 through the back door. In 1.0 that road
+        /// turned out not to exist: a tin rock is a single rock, neither a MineRock5 nor a
+        /// MineRock, so it never reaches this method at all (the first scenario run, 2026-09-28).
+        /// The danger stands for any deposit whose ore is not named. The first fix still read each
+        /// ore as its metal and then as itself before moving on to the next, so a station that
+        /// takes stone (a mod's crusher, say) would have made stone an ore, and a copper deposit
+        /// whose stone outweighs its ore a stone vein again. Found in review the same day, and the
         /// reason the metal pass now finishes over every ore before anything is read by name.
         ///
         /// <b>Then the drops by name, and only when EVERY drop is named.</b> A deposit none of
@@ -669,23 +672,30 @@ namespace Malmr
         /// themselves, stone for a boulder, and only when every drop it has is named. An ore is
         /// named by the metal it becomes, not by itself (the cfg says a drop is named as itself
         /// for what nothing smelts), so an ore that gets this far is a drop with no name and
-        /// keeps the deposit out. That is the tin guard; the copper and iron scattered through
-        /// the Mistlands answer the metal pass before they ever get here. It is also what keeps
-        /// obsidian opt-in: a full bar hands out the whole deposit, so a rock that drops obsidian
-        /// beside its stone would otherwise give obsidian to a player who opened stone.
+        /// keeps the deposit out. That was written as the tin guard, and in 1.0 no tin rock gets
+        /// this far; it guards any deposit whose ore is not named, a mod's included. The copper
+        /// and iron scattered through the Mistlands answer the metal pass before they ever get
+        /// here. It is also what keeps an unnamed drop out of a stone vein: a full bar hands out
+        /// the whole deposit, so a rock that drops something else beside its stone would
+        /// otherwise give that away to a player who opened stone. The Ashlands cliffs are the
+        /// live case in 1.0, grausten beside their stone, and the world-load list shows them as
+        /// not veins for exactly this reason. Obsidian was the example here until 2026-09-28,
+        /// when the first scenario run showed an obsidian rock is no deposit Malmr reads.
         ///
         /// When more than one drop is named, the deposit answers to ALL of them. Kind.Entries
         /// holds each, and the swing, the bar and the console need every one open, level and boss
         /// (Gate.For over a Kind), and every one on the Mistlands line where that applies
         /// (HandOnly). The first version compared the levels alone and asked only the higher
         /// entry's boss, so Stone:60 beside Obsidian:50 would have handed obsidian out on Eikthyr
-        /// to a player who had never beaten Moder. Found in review on 2026-09-27. It follows that
-        /// one switched-off drop keeps the whole rock by hand: Stone:-1 shuts an obsidian rock
-        /// that drops stone, whatever Obsidian says. That is on purpose, because the other way
-        /// round, Obsidian:-1 on a stone boulder that drops obsidian, is the case the rule exists
-        /// for, and a rule that let a switched-off drop through could not tell the two apart. The
-        /// name the deposit goes by is the strictest of its entries, switched off first and then
-        /// the highest level, since that is the likeliest one to be holding it shut.
+        /// to a player who had never beaten Moder, on a rock dropping both. Found in review on
+        /// 2026-09-27; 1.0 turned out to have no such rock, and the rule is the same for the
+        /// Ashlands cliffs' grausten and stone. It follows that one switched-off drop keeps the
+        /// whole rock by hand: Stone:-1 shuts a cliff that drops grausten beside its stone,
+        /// whatever Grausten says. That is on purpose, because the other way round, Grausten:-1 on
+        /// the same cliff, is the case the rule exists for, and a rule that let a switched-off drop
+        /// through could not tell the two apart. The name the deposit goes by is the strictest of
+        /// its entries, switched off first and then the highest level, since that is the likeliest
+        /// one to be holding it shut.
         ///
         /// <b>Then "*"</b>, for a drop a furnace takes (OreStations says which stations are
         /// furnaces), after the names, as it always came after a drop read as itself. A deposit

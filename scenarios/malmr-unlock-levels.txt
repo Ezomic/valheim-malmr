@@ -109,7 +109,7 @@ printed mistlands=Eitr,Stone yes
 centre nothing malmr ever says no
 
 # ---- one below stone. Nothing is open, it is the level that is missing, and the table holds
-# only what Robbin listed: no tin, no catch-all, obsidian still opt-in. The "no" lines are safe
+# only what Robbin listed: no tin, no catch-all, no obsidian. The "no" lines are safe
 # to trust because the `yes` lines above them prove the report printed.
 
 skill Pickaxes 19

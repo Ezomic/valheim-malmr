@@ -36,8 +36,9 @@ namespace Malmr
     /// Stone:20 in Unlocks, the step below copper on his ten-a-step table; Stone on
     /// defeated_eikthyr in Bosses, the Meadows boss, by the same rule that pairs every other
     /// entry with the boss of its biome; and Stone beside Eitr on the Mistlands line. The real
-    /// work was in Deposits.Classify, which had to stop a copper or tin deposit coming out as
-    /// stone. Checked again that day: no Malmr cfg on any profile, so no stale one to edit. A
+    /// work was in Deposits.Classify, which had to stop a copper deposit coming out as stone
+    /// (and a tin one, it was thought then; in 1.0 no tin rock reaches Classify, see Unlocks
+    /// below). Checked again that day: no Malmr cfg on any profile, so no stale one to edit. A
     /// review the same day changed what the Unlocks text promises for a rock with two named
     /// drops: both entries have to be open, not the higher level of the two.
     /// </summary>
@@ -83,6 +84,14 @@ namespace Malmr
             // Tin is not in it, his words: "tin doesnt need vein mining". Tin comes in small
             // rocks by the shore, a few swings each, and there is no deposit worth a bar.
             //
+            // Naming it would do nothing anyway, and the same goes for obsidian. In 1.0 a tin
+            // rock and an obsidian rock are each a single rock, neither a MineRock5 nor a
+            // MineRock, and Malmr hooks only MineRock5.Damage and MineRock.Damage. The first
+            // scenario run found it on 2026-09-28: neither prefab is in the world-load list of
+            // deposits, which holds everything carrying either component, and Devkit's `hurt`
+            // called a MineRock_Tin "not a MineRock5 or a MineRock". Until then the text below
+            // promised that Tin:20 and Obsidian:50 would add them.
+            //
             // The "*" entry went with the same change, so only what is named here vein mines.
             // The code for it stays, because a mod's ore is exactly what it is for, and the text
             // below says how to put it back.
@@ -96,8 +105,8 @@ namespace Malmr
             // Stone is the other way round, since 2026-09-27: nothing smelts it, so it is named
             // as the item that drops, and at 20, the step below copper, because stone is the
             // first thing anybody mines. Ore deposits drop stone too, so naming it could have
-            // made a copper deposit, or a tin one, into a stone vein. Deposits.Classify is what
-            // stops that, and the text below says the rule in the player's words.
+            // made a copper deposit into a stone vein. Deposits.Classify is what stops that,
+            // and the text below says the rule in the player's words.
             Unlocks = cfg.Bind("Unlocks", "Unlocks",
                 "Stone:20, Copper:30, Iron:40, Silver:50, Eitr:60, Flametal:70, Gold:80",
                 "The Pickaxes level at which each metal's deposits, and stone, can be vein "
@@ -110,23 +119,23 @@ namespace Malmr
                 + "are prefab names, not what the game shows: Gold is the Deep North metal the "
                 + "game calls Bloodgold, and Eitr is the Mistlands' giant brains, because what "
                 + "they drop becomes refined eitr in the eitr refinery (Names sets what the "
-                + "screen calls them). Tin is left out on purpose; Tin:20 would add it. A name "
-                + "can also be the dropped item itself, for what nothing smelts. Stone is one: "
-                + "it covers the plain rocks and boulders, the ones whose every drop is stone. A "
-                + "deposit that drops ore is never a stone vein, even though ore deposits drop "
-                + "stone as well: it is its ore's vein, or nobody's if that ore is not named "
-                + "here, which is what keeps tin out. A rock that drops anything else beside its "
-                + "stone is not a stone vein either, unless that is named here too, and then "
+                + "screen calls them). Tin and obsidian are not here, and naming them does "
+                + "nothing: in Valheim 1.0 a tin rock and an obsidian rock are each a single "
+                + "rock, not a deposit of chunks, and Malmr does not touch them, so they are "
+                + "mined by hand whatever this line says. A name can also be the dropped item "
+                + "itself, for what nothing smelts. Stone is one: it covers the plain rocks and "
+                + "boulders, the ones whose every drop is stone. A deposit that drops ore is "
+                + "never a stone vein, even though ore deposits drop stone as well: it is its "
+                + "ore's vein, or nobody's if that ore is not named here. A rock that drops "
+                + "anything else beside its stone is not a stone vein either, unless that is "
+                + "named here too, and then "
                 + "BOTH have to be open to you, each with its own level and its own boss, and "
                 + "both on the Mistlands line for a rock that stands there, because a full bar "
                 + "hands out everything the rock drops. So a name for a dropped item covers a "
                 + "rock only while every other drop on that rock is named here as well, at a "
                 + "level that is not -1: one drop left out or switched off keeps the whole rock "
-                + "mined by hand. Obsidian rocks are left out that way, and Obsidian:50 "
-                + "(silver's level, the same biome) would add them, as long as Stone stays in "
-                + "this list at a real level if they drop stone too. A * entry, for "
-                + "example *:80, would give every other ore a level, "
-                + "meaning a drop that goes into a furnace: a station that makes one of the "
+                + "mined by hand. A * entry, for example *:80, would give every other ore a "
+                + "level, meaning a drop that goes into a furnace: a station that makes one of the "
                 + "entries named here, or burns the same fuel as one that does. That is how an "
                 + "ore added by another mod could join without a new build; naming that ore "
                 + "here is the better way, because it gets its own level. A level of -1 "
@@ -140,11 +149,14 @@ namespace Malmr
             // station takes, or one a player simply wants to class differently.
             Deposits = cfg.Bind("Unlocks", "Deposits", "",
                 "Overrides, as Prefab:Name pairs, comma separated, e.g. "
-                + "\"MineRock_Obsidian:Obsidian, goldvein_frac:Gold\". The prefab is the "
+                + "\"rock4_copper_frac:none, goldvein_frac:Gold\". The prefab is the "
                 + "deposit's own name as the log lists it on world load, and the Name is looked "
                 + "up in Unlocks like any other. Empty is the normal state: every deposit is "
                 + "classed by what it drops, and the log says what each one came out as. Use a "
-                + "Name that is not in Unlocks (for example none) to rule a deposit out.");
+                + "Name that is not in Unlocks (for example none) to rule a deposit out. Only a "
+                + "deposit in that list can be overridden. A rock that is not in it, like tin "
+                + "or obsidian in 1.0, is one Malmr does not touch, and naming it here does "
+                + "nothing.");
 
             // Robbin's answer of 2026-09-26 to "how does it work with the iron and copper you
             // can find in the Mistlands": it doesn't. In the Mistlands only the giant brains vein
@@ -217,13 +229,16 @@ namespace Malmr
                 + "Unlocks level, and you have beaten its boss (see BossKills for how that is "
                 + "counted, with Vandi and without it). The boss is the one whose biome the ore "
                 + "comes from: Eikthyr for stone, the Elder for copper, Bonemass for iron, Moder "
-                + "for silver and obsidian, the Queen for the giant brains (Eitr), Fader for "
+                + "for silver, the Queen for the giant brains (Eitr), Fader for "
                 + "flametal. Gold, the "
                 + "Deep North's bloodgold, is on Fader too until the Deep North's own boss has "
                 + "been read from a world: the log lists every boss in the world with its key "
                 + "when a world loads. The key is the boss's defeat key, the one the game sets "
                 + "when it dies. Names match Unlocks the same way, so Flametal covers both "
-                + "flametals. An entry not in this list needs no boss, only the level. With "
+                + "flametals. An entry not in this list needs no boss, only the level. A pair "
+                + "whose name is not in Unlocks does nothing. The default's Obsidian pair is one, "
+                + "and adding Obsidian to Unlocks would not wake it: in 1.0 obsidian rocks are "
+                + "single rocks that Malmr does not touch. With "
                 + "Vandi installed, only a boss in Vandi's BossBiomes can ever be met, and the log "
                 + "says so when a world loads.");
 

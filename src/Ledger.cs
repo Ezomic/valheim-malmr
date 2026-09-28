@@ -27,8 +27,8 @@ namespace Malmr
     ///    hit has no string at all, and every chunk is at the health Awake gave it, world level
     ///    included. A string shorter than the chunk list leaves the rest at that too, which is
     ///    what LoadHealth does.
-    ///  - MineRock (tin and the small rocks): one float per chunk, "Health" + index, defaulting
-    ///    to GetHealth() - RPC_Hit and AllDestroyed.
+    ///  - MineRock (the small rocks; not tin in 1.0, whose rock is neither shape): one float per
+    ///    chunk, "Health" + index, defaulting to GetHealth() (RPC_Hit and AllDestroyed).
     ///
     /// The stored progress is Malmr's own float on the same ZDO. Only the owner writes it, from
     /// Owner, and it rides the ZDO everywhere the deposit goes: a logout, a friend finishing the

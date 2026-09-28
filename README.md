@@ -83,24 +83,21 @@ Only these vein mine. Anything else is mined by hand.
 
 Stone means the rocks and boulders that drop nothing but stone. Ore deposits drop stone as well,
 but a deposit with ore in it is always that ore's, never a stone vein. A copper deposit is copper
-at 30 however much stone comes out of it, and a tin rock stays mined by hand. A rock that drops
-anything else beside its stone is not a stone vein either, unless that other thing is on the list
-too. Then both have to be open to you, each with its own level and its own boss, because a full
-bar hands you everything the rock drops. It works the other way round as well: a rock only counts
-while every drop on it is on the list at a real level, so one drop that is left out or set to -1
-keeps the whole rock mined by hand.
+at 30 however much stone comes out of it. A rock that drops anything else beside its stone is not a
+stone vein either, unless that other thing is on the list too. Then both have to be open to you,
+each with its own level and its own boss, because a full bar hands you everything the rock drops.
+It works the other way round as well: a rock only counts while every drop on it is on the list at a
+real level, so one drop that is left out or set to -1 keeps the whole rock mined by hand.
 
 Some stone rocks are huge, and the bar covers the whole rock. With vein mining on you get no stone
 from one until the bar is full, so for a handful of stone, tap Alt to switch it off and take a few
 chunks by hand.
 
-Tin is not on the list. It comes in small rocks and there is no deposit of it worth a bar.
-`Tin:20` in `Unlocks` would add it.
-
-Obsidian is not on the list either, because nothing smelts it. `Obsidian:50` in `Unlocks` adds it,
-at silver's level since it is the same biome, and it already has Moder as its boss. If an obsidian
-rock drops stone as well, it also needs stone open, so leave `Stone` on the list at a real level
-for `Obsidian:50` to work there.
+Tin and obsidian are not on the list, and adding them does nothing. In Valheim 1.0 a tin rock and
+an obsidian rock are each a single rock, not a deposit of chunks, and Malmr does not touch them:
+they are mined by hand whatever `Unlocks` says, so `Tin:20` or `Obsidian:50` there changes
+nothing. Tin was left out on purpose anyway, since it comes in small rocks and there is no deposit
+of it worth a bar.
 
 The giant brains in the Mistlands are in the table as `Eitr`. A brain drops soft tissue and the
 eitr refinery turns that into refined eitr, which is how Malmr recognises a brain. On screen they
@@ -165,8 +162,8 @@ name its metal in `Unlocks` and some station makes it.
 Ore always wins. If anything a deposit drops smelts into a metal on the list, the deposit is that
 metal's vein, whatever else it drops and however much of it. An ore whose metal is not on the list
 makes the deposit no vein at all. Only a deposit with no such ore can be a stone vein, and only
-when everything it drops is on the list. That works the same for obsidian or anything else you add
-by the name of what drops.
+when everything it drops is on the list. That works the same for anything else you add by the
+name of what drops.
 
 When a world loads, the log gets one block listing every deposit in it, what it counted as and
 why, and any metal in the table that nothing matched. The deposits that are not veins are listed

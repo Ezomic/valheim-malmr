@@ -24,28 +24,26 @@ Jafna's Left Alt on the hoe, Taum's Alt+E and Alt+Tab, out of the game or back i
 switch it. `malmr vein on` and `malmr vein off` do the same from the console.
 
 What vein mines, and from which Pickaxes level: stone 20, copper 30, iron 40, silver 50, the
-Mistlands' giant brains 60, flametal 70, bloodgold 80. Nothing else. Tin is left out, and so is
-obsidian, though one line in `Unlocks` adds either. The level is the one you earned. A skill
-bonus from gear, food or another mod does not open a metal early. With vein mining on and the
-metal still shut you mine the normal way, and once per deposit the top left of the screen says
-what is missing, like "Iron veins need Pickaxes 40 and Bonemass beaten at one star through
-Vandi".
+Mistlands' giant brains 60, flametal 70, bloodgold 80. Nothing else. Tin and obsidian are left
+out, and naming them in `Unlocks` does nothing: in 1.0 both are single rocks that Malmr does not
+touch. The level is the one you earned. A skill bonus from gear, food or another mod does not
+open a metal early. With vein mining on and the metal still shut you mine the normal way, and
+once per deposit the top left of the screen says what is missing, like "Iron veins need Pickaxes
+40 and Bonemass beaten at one star through Vandi".
 
 Stone means the rocks and boulders that drop nothing but stone. A deposit with any ore in it is
-that ore's vein or no vein, never a stone one, even though ore deposits drop stone too, so tin
-cannot come in through any stone it drops. A rock that drops anything else beside its stone is
-not a stone vein unless that is in `Unlocks` as well, and then both have to be open to you, each
-with its own level and boss. One drop left out of `Unlocks` or set to -1 keeps the whole rock by
-hand, so `Obsidian:50` needs `Stone` left on the list for an obsidian rock that drops stone too.
-A big rock comes down a little at a time once its bar is full, so breaking it does not stall the
-game.
+that ore's vein or no vein, never a stone one, even though ore deposits drop stone too. A rock
+that drops anything else beside its stone is not a stone vein unless that is in `Unlocks` as
+well, and then both have to be open to you, each with its own level and boss. One drop left out
+of `Unlocks` or set to -1 keeps the whole rock by hand. A big rock comes down a little at a time
+once its bar is full, so breaking it does not stall the game.
 
 In the Mistlands only the giant brains and stone vein mine. Copper, iron or anything else found
 there is mined by hand even when it is open to you, and the top left says so once per deposit.
 The `Mistlands` setting lists what still vein mines there.
 
 A metal also waits for the boss of its biome: Eikthyr for stone, the Elder for copper, Bonemass
-for iron, Moder for silver and obsidian, the Queen for the brains, Fader for flametal. Bloodgold
+for iron, Moder for silver, the Queen for the brains, Fader for flametal. Bloodgold
 is on Fader too, the pairing Vandi and Utangard use for the Deep North, until the Frozen King's
 key has been read from a world load. With Vandi installed the boss has to be beaten at one star,
 which is your second kill of a boss you summoned yourself. Without Vandi there are no stars, and
