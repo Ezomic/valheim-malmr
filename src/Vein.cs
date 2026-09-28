@@ -138,7 +138,7 @@ namespace Malmr
             // rock that no longer existed. Found in review on 2026-09-26; only with Verbose on.
             string verbose = null;
             if (MalmrConfig.Verbose.Value)
-                verbose = "Sent a vein mining blow on " + Utils.GetPrefabName(rock.gameObject)
+                verbose = "Sent a vein mining blow on " + Deposits.PrefabName(rock)
                     + " (" + kind.Metal + ") chunk " + area + " to "
                     + (nview.IsOwner() ? "this machine" : "peer " + nview.GetZDO().GetOwner()) + ".";
 

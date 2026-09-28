@@ -142,7 +142,7 @@ namespace Malmr
                 Rock = rock,
                 View = nview,
                 Template = template,
-                Prefab = Utils.GetPrefabName(rock.gameObject),
+                Prefab = Deposits.PrefabName(rock),
             };
 
             Collider[] areas = Deposits.Areas(rock, true);

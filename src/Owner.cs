@@ -66,7 +66,7 @@ namespace Malmr
                 if (_duplicateSaid) return;
                 _duplicateSaid = true;
                 MalmrPlugin.Log.LogWarning(Rpc + " was already registered on "
-                    + Utils.GetPrefabName(rock.gameObject) + "; kept the first. Said once per session.");
+                    + Deposits.PrefabName(rock) + "; kept the first. Said once per session.");
             }
         }
 
@@ -134,7 +134,7 @@ namespace Malmr
             {
                 // "Missing hit area" in vanilla, and logged there too.
                 MalmrPlugin.Log.LogWarning("A vein mining blow named chunk " + area + " of "
-                    + Utils.GetPrefabName(rock.gameObject) + ", which has " + areas.Length + ".");
+                    + Deposits.PrefabName(rock) + ", which has " + areas.Length + ".");
                 return false;
             }
 
@@ -176,7 +176,7 @@ namespace Malmr
             Ledger.SetProgress(nview, progress, before.Total);
 
             if (MalmrConfig.Verbose.Value)
-                MalmrPlugin.Log.LogInfo(Utils.GetPrefabName(rock.gameObject) + ": +"
+                MalmrPlugin.Log.LogInfo(Deposits.PrefabName(rock) + ": +"
                     + damage.ToString("0.0") + " from peer " + sender + ", "
                     + progress.ToString("0.0") + " of " + before.Total.ToString("0.0")
                     + " across " + before.Standing + " chunk(s)"

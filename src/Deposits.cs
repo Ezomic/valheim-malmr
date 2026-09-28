@@ -128,7 +128,7 @@ namespace Malmr
 
             Refresh();
 
-            string prefab = Utils.GetPrefabName(rock.gameObject);
+            string prefab = PrefabName(rock);
 
             Kind kind;
             if (ByPrefab.TryGetValue(prefab, out kind)) return kind;
@@ -136,6 +136,42 @@ namespace Malmr
             kind = Classify(prefab, DropsOf(rock));
             ByPrefab[prefab] = kind;
             return kind;
+        }
+
+        /// <summary>
+        /// A live deposit's prefab name, read off its ZDO and not off its GameObject.
+        ///
+        /// <b>Every live MineRock5 is called "___MineRock5 m_meshFilter".</b> Its Awake adds a
+        /// MeshFilter to the deposit's own GameObject and names it that, and a component's name is
+        /// its GameObject's name, so the deposit itself is renamed. Utils.GetPrefabName on one
+        /// answers "___MineRock5" for a copper vein, a silver vein and every fractured boulder
+        /// alike. The first Devkit run of the scenarios found it on 2026-09-28: `malmr progress
+        /// rock4_copper_frac` answered "none" standing at the copper it had just put down, and
+        /// the same command without a name printed prefab=___MineRock5. Worse, Of cached what a
+        /// deposit is under that one shared name, so the first MineRock5 struck in a session
+        /// decided what every other one was until the world changed - a silver vein after a
+        /// copper one came out copper, opened at copper's level and called a copper vein on the
+        /// bar, and a Deposits override named for a MineRock5 prefab never applied at all.
+        ///
+        /// The ZDO holds the hash of the name the object had when ZNetView.Awake ran, which is
+        /// before the deposit's own Awake renames it: MineRock5.Awake reads that ZDO to register
+        /// its messages, and Owner.Listen does the same right after it, so the bar could not work
+        /// at all were it the other way round. ZNetScene turns the hash back into the prefab. The
+        /// GameObject's own name is the fallback for a rock with no live ZDO, which nothing here
+        /// classifies - every caller asks IsValid first.
+        /// </summary>
+        internal static string PrefabName(Component rock)
+        {
+            if (rock == null) return "";
+
+            ZNetView nview;
+            if (ZNetScene.instance != null && rock.TryGetComponent(out nview) && nview.IsValid())
+            {
+                GameObject prefab = ZNetScene.instance.GetPrefab(nview.GetZDO().GetPrefab());
+                if (prefab != null) return prefab.name;
+            }
+
+            return Utils.GetPrefabName(rock.gameObject);
         }
 
         /// <summary>

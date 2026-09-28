@@ -214,7 +214,7 @@ namespace Malmr
             bool handOnly = vein && Deposits.HandOnly(nearest, kind);
             bool open = vein && !handOnly && Gate.For(kind, Vein.EarnedLevel(player)).Open;
 
-            term.AddString("malmr progress prefab=" + Utils.GetPrefabName(nearest.gameObject)
+            term.AddString("malmr progress prefab=" + Deposits.PrefabName(nearest)
                 + " metal=" + (vein ? kind.Metal : "none")
                 + " open=" + (open ? "yes" : "no")
                 + " biome=" + Deposits.BiomeOf(nearest)
@@ -232,16 +232,21 @@ namespace Malmr
                 + reach);
         }
 
+        /// <summary>
+        /// The name is the ZDO's, through Deposits.PrefabName. It was the GameObject's until
+        /// 2026-09-28, and every live MineRock5 renames its GameObject in Awake, so asking for
+        /// rock4_copper_frac by name found nothing even standing at one - see PrefabName.
+        /// </summary>
         private static void Consider(Component rock, Vector3 here, string only, ref Component nearest, ref float best)
         {
             if (rock == null) return;
 
-            if (!string.IsNullOrEmpty(only)
-                && !string.Equals(Utils.GetPrefabName(rock.gameObject), only, System.StringComparison.OrdinalIgnoreCase))
-                return;
-
             ZNetView nview;
             if (!rock.TryGetComponent(out nview) || !nview.IsValid()) return;
+
+            if (!string.IsNullOrEmpty(only)
+                && !string.Equals(Deposits.PrefabName(rock), only, System.StringComparison.OrdinalIgnoreCase))
+                return;
 
             float distance = Deposits.Distance(rock, here);
             if (distance > best) return;
