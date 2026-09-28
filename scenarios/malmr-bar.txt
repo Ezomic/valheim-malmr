@@ -13,12 +13,16 @@
 # (malmr-wear.txt) had you 2.5 metres above its foot on a steeper slope, eye above its box, swinging
 # down onto a top that must be wide to be within reach there. 4.5 is inferred from that run, not
 # measured. If the swings still miss, read distance= on the `malmr progress` line after the `put`:
-# the metres from your feet to its nearest chunk, 0.0 when you are standing in it.
+# the metres from your feet to its nearest chunk, 0.0 when you are standing in it. Since Devkit
+# 1b48353 the `put` note also says outright when you are standing inside what it made, and a
+# missed `swing` gives the distance from the blow's origin to the nearest face, not from your eye
+# to the box round every chunk.
 #
 # That run also stood every deposit after the first ON the one before it, 3 metres up: Devkit's
-# `put` found no earlier copy to take down, because it looks for them by GameObject name, and a
-# live MineRock5 renames its GameObject in Awake. That is Devkit's to fix. Until it is, blocks 2
-# and 3 swing at a deposit floating on the last one, and fail for that.
+# `put` found no earlier copy to take down, because it looked for them by GameObject name, and a
+# live MineRock5 renames its GameObject in Awake. Devkit 1b48353 fixed that: it finds them by the
+# ZDO's prefab and takes them down before it measures the ground. A Devkit older than that still
+# stands blocks 2 and 3 on a deposit floating on the last one, and they fail for that.
 #
 #   1. By hand. Vein mining off, Pickaxes 30, the Elder killed twice through Vandi. One swing
 #      leaves at least one chunk below full health, and the bar stays at damage=0.0.
