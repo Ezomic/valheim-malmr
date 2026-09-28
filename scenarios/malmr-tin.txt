@@ -26,20 +26,31 @@
 # swing can reach both. The tin rock is put 2 metres out: at 3, in the first run, its nearest edge
 # was 1.9 metres from your eye, and the antler pickaxe reaches 1.8.
 #
+# BEFORE EITHER, you are moved 20 metres to your right and the ground there is levelled round you.
+# The move is for the file before this one: malmr-stone.txt ends where it stood, and a boulder it
+# failed to break stands 4.5 metres in front of you. `put` takes down only its own prefab's earlier
+# copies, so in the third run, on 2026-09-28, this file's copper was put straight onto that boulder,
+# 3.4 metres up (the boulder at 68.5, the copper at 71.9, the same spot on the map), and the
+# control's one swing changed nothing on the copper: "0 landed", then damage=0.0, which read like
+# vein mining broken. The levelling is malmr-bar.txt's FLAT GROUND, so the copper's foot is level
+# with yours and the swing reaches it.
+#
 # NEEDS VANDI for the control, like malmr-bar.txt: copper's and stone's boss halves are seeded
 # through Vandi's own kill record, vandi_p_<playerid>_defeated_gdking and _defeated_eikthyr at 2,
 # and both keys are removed at the end. A character with real Vandi kills of the Elder or Eikthyr
 # in this world loses them.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config. Face open, flat ground, with open, flat
-# ground 12 metres to your right as well. `biome Meadows` takes you to the Meadows if you are not
-# there, and leaves you where you stand if you are.
+# SINGLEPLAYER, in a TEST WORLD, with the default config. Face open, with open ground 20 metres to
+# your right that `flatten` can level (not a cliff edge, not in water), and open ground 12 metres
+# further right again. `biome Meadows` takes you to the Meadows if you are not there, and leaves you
+# where you stand if you are.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), a copper deposit with
-# one blow in its bar where you started, and a tin rock with one blow in it where you end. Both are
-# taken down by the next run's `put`s, which reach 30 metres. Pickaxes is put back, the Vandi keys
-# are removed and vein mining ends off. Devkit empties the pack when a run ends and hands back its
-# kit.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground,
+# a copper deposit with one blow in its bar where the control stood, and a tin rock with one blow in
+# it 2 metres in front of where you end. A copper `put` within 30 metres takes the copper down; the
+# tin rock stays until a later `put MineRock_Tin`, which is why malmr-wear.txt moves clear of it
+# first. Pickaxes is put back, the Vandi keys are removed and vein mining ends off. Devkit empties
+# the pack when the scenario ends and hands back its kit.
 #
 # What a broken build reads:
 #   - tin read as a deposit at all: `malmr progress MineRock_Tin` prints a line instead of
@@ -72,6 +83,14 @@ tool PickaxeAntler
 
 biome Meadows
 
+# Twenty metres right, clear of whatever malmr-stone.txt left in front of you, and the ground there
+# levelled once you stand on it. See BEFORE EITHER.
+
+landed
+move 0 20
+landed
+flatten 0 0 10
+
 # Copper is open, and the table has no tin in it at all. The "no" is safe to trust because the lines
 # above it prove the report printed.
 
@@ -99,10 +118,11 @@ printed prefab=rock4_copper_frac yes
 printed damage=0.0 no
 
 # ---- tin. Twelve metres to the right, a tin rock 2 metres ahead. Malmr has no deposit of that name
-# to read, and the one swing lands on the rock itself. The wait is the game's two seconds between
-# teleports, in case `biome` moved you only a moment ago.
+# to read, and the one swing lands on the rock itself. `landed` serves the game's two seconds
+# between teleports, counted from the move at the top; it was a `wait 2`, the guess malmr-stone.txt
+# explains the trouble with.
 
-wait 2
+landed
 move 0 12
 
 put MineRock_Tin 2

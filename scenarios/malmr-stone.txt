@@ -14,8 +14,8 @@
 #   1. Into the bar, at stone's own line: Pickaxes 20 and Eikthyr killed twice through Vandi, the
 #      least a player needs and the place an off-by-one would show. The bar is empty before the
 #      swing and off zero after it, and no chunk is hurt.
-#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets, and up to 140
-#      swings in four `swing` steps. The first is checked on its own to have gone into the bar.
+#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets, and up to 180
+#      swings in five `swing` steps. The first is checked on its own to have gone into the bar.
 #      After the rest the boulder is gone, and stone came out of it: at least one, on the ground and
 #      in the pack counted together, for the reason malmr-bar.txt gives.
 #
@@ -24,16 +24,31 @@
 # 2026-09-28 measured both: 130 chunks of 50, total=6500.0 in a fresh world. This block used to
 # allow fifty swings, on the guess that the boulder fits in them, and it does not: fifty black
 # metal swings at Pickaxes 100 filled its bar to 46%, damage=3028.6, every one landed, and it stood,
-# as it should with the bar short of full. So it gets the budget malmr-bar.txt works out under HOW
-# MANY SWINGS, for the same numbers: one chunk a swing, 55 to 65 a blow, full between the 100th and
-# the 118th swing. Devkit's `swing` takes at most fifty a step and fails before it starts on a rock
-# that is already gone, so 1, 49 and 40 come first, which cannot fill the bar, and the last step's
-# fifty cannot fall short of it. The waits between them are for stamina. A smaller rock would have
-# been quicker, and the world-load survey now gives chunk counts (Rock_3_frac is 5), but not what
-# a chunk is worth, so a smaller rock would trade a measured total for a guessed one. The big stone
-# rocks - the mountain rocks, the Plains pillars, cliffs - run to hundreds of chunks and are no use
-# here at all. If the last `swing` fails with nothing to swing at, the boulder broke inside the
-# first ninety: see malmr-bar.txt for what that means.
+# as it should with the bar short of full. The third run, the same day, allowed 140 and they fell
+# short too: 90 swings filled 3604.0 and fifty more 2014.1, 40.0 and 40.3 a swing, and the boulder
+# stood at 86%. Two thirds of the second run's 60.6, which is Attack.DoMeleeAttack dividing a
+# swing's damage when it strikes the ground as well as one chunk; malmr-bar.txt has the arithmetic
+# under HOW MANY SWINGS, and why Devkit b42b3b5 standing you on the floor brought the ground in.
+#
+# So it gets the budget malmr-bar.txt works out there, for the same rock and the same swing: 1, 49,
+# 40 and 40 first, 130, which cannot fill the bar below 50 a swing, and the last step's fifty, 180 in
+# all, which cannot fall short of it above 36.1. Devkit's `swing` takes at most fifty a step and fails
+# before it starts on a rock that is already gone, which is why the break has to land in that last
+# step. The waits between them are for stamina. The two `malmr progress` lines before the last step
+# give the rate if a later run lands outside that window. The black metal pickaxe's 210 durability
+# covers the 181 swings this file makes, one a swing, and Devkit hands every scenario a fresh one.
+#
+# A smaller rock would have been quicker, and the world-load survey now gives chunk counts
+# (Rock_3_frac is 5), but not what a chunk is worth, so a smaller rock would trade a measured total
+# for a guessed one. The big stone rocks (the mountain rocks, the Plains pillars, cliffs) run to
+# hundreds of chunks and are no use here at all. If the last `swing` fails with nothing to swing at,
+# the boulder broke inside the first 130: see malmr-bar.txt for what that means.
+#
+# When this boulder does not break it stays where it stood, and `put` takes down only its own
+# prefab's earlier copies. In the third run the copper control of malmr-tin.txt, the next file, was
+# put straight onto it, 3.4 metres up, and its swing struck this boulder instead. malmr-tin.txt now
+# moves clear first, but a boulder left here is still the first thing to look for when a Malmr file
+# after this one misses.
 #
 # Every swing is a real one, and a swing only counts once it has LANDED - see malmr-bar.txt. In
 # vein mode the only thing Malmr writes on the boulder's ZDO is the bar, so a swing that lands while
@@ -46,19 +61,22 @@
 # fails first.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). Face
-# open, flat ground, with open, flat ground 20 metres to your right, where it moves you first (see
-# there for why). `biome Meadows` takes you to the Meadows if you are not there, and leaves you where
-# you stand if you are. Anywhere would do, since stone vein mines in every biome, the Mistlands
-# included.
+# open, with open ground 20 metres to your right that `flatten` can level (not a cliff edge, not in
+# water), where it moves you first (see there for why). The ground there is levelled round you
+# before either boulder is put, for the reasons malmr-bar.txt gives under FLAT GROUND: the 4.5
+# metres and the swing budget both assume the boulder's foot is level with yours. `biome Meadows`
+# takes you to the Meadows if you are not there, and leaves you where you stand if you are.
+# Anywhere would do, since stone vein mines in every biome, the Mistlands included.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block
-# 2 is up to fifty swings in one step, four times over. A hungry character can run dry and fail it
+# 2 is up to fifty swings in one step, five times over. A hungry character can run dry and fail it
 # on stamina, which the step's note names.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again) and the stone block 2
-# dropped. No boulder is left: the second breaks, and its `put` took the first down. Pickaxes is put
-# back, the Vandi key is removed and vein mining ends off. Devkit empties the pack when a run ends
-# and hands back its kit, so the pickaxe and any stone you picked up go with it.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground
+# and the stone block 2 dropped. No boulder is left: the second breaks, and its `put` took the first
+# down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit empties the
+# pack when the scenario ends and hands back its kit, so the pickaxe and any stone you picked up go
+# with it.
 #
 # What a broken build reads:
 #   - stone not a vein at all (the table before stone, or a classifier that never reads a drop as
@@ -105,9 +123,14 @@ biome Meadows
 # starts in the frame `biome` ends, and the game counts its two seconds in 0.02 s physics steps
 # that reach 2 in single precision only on the hundred and first, so right after a teleport the
 # `move` behind a plain `wait 2` is often refused.
+#
+# Then the ground there levelled round you, once you are standing on it after the move, since
+# `flatten` refuses while you are still above the ground.
 
 landed
 move 0 20
+landed
+flatten 0 0 10
 
 console malmr
 printed bosscount=vandi yes
@@ -155,12 +178,16 @@ printed damage=0.0 yes
 swing rock4_forest_frac 1
 hurt rock4_forest_frac 0
 
-# Eighty-nine more, which cannot fill the bar - see WHICH BOULDER. The `malmr progress` after them
-# judges nothing. It is there for the trace: the percent the bar reached, and progress=none if the
-# boulder broke early and the next `swing` fails for that.
+# A hundred and twenty-nine more, which cannot fill the bar: see WHICH BOULDER. The two `malmr
+# progress` lines judge nothing. They are there for the trace: the bar after 90 and after 130
+# swings, which is the rate, and progress=none if the boulder broke early and the next `swing`
+# fails for that.
 
 wait 15
 swing rock4_forest_frac 49
+wait 15
+swing rock4_forest_frac 40
+console malmr progress rock4_forest_frac
 wait 15
 swing rock4_forest_frac 40
 console malmr progress rock4_forest_frac

@@ -294,6 +294,13 @@ namespace Malmr
         /// 2026-09-27 include cliffs and pillars, and a player at the face of one of those can
         /// stand well over ten metres from its pivot, where `malmr progress` would have read
         /// "none" at the rock the player was swinging at. Found in review the same day.
+        ///
+        /// A box is loose, and that is fine for finding the nearest rock but not for anything
+        /// finer. A rock4 deposit's 130 chunk boxes overlap and reach well past its faces, so
+        /// `malmr progress` reads distance=0.0 from a metre or two off the rock as readily as from
+        /// inside it: the third scenario run on 2026-09-28 read 0.0 with the nearest face 2.0
+        /// metres from the swing, out of reach. Whether a player stands in a rock, or can reach
+        /// it, is Devkit's `put` and `swing` notes to answer, which measure the faces.
         /// </summary>
         internal static float Distance(Component rock, Vector3 from)
         {

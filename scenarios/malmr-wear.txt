@@ -37,23 +37,42 @@
 # Vandi kills of the Elder in this world loses them.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config and the default world modifiers, because a
-# world set to another durability rate changes every number below. Face open, flat ground: both
-# deposits are put 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES. `biome
-# Meadows` takes you to the Meadows if you are not there, and leaves you where you stand if you are.
+# world set to another durability rate changes every number below. Face open, with open ground 20
+# metres to your right that `flatten` can level (not a cliff edge, not in water). Both deposits are
+# put 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES, on ground levelled
+# round you first, for the reason under FLAT GROUND there. `biome Meadows` takes you to the Meadows
+# if you are not there, and leaves you where you stand if you are.
+#
+# Twenty metres right before anything, because malmr-tin.txt, the file before this one, leaves its
+# tin rock 2 metres in front of where you stand and nothing here takes it down. The third run, on
+# 2026-09-28, started there without moving, on a slope 3.4 metres above the ground where both
+# deposits landed (you at 73, their feet at 69.6 and 69.4). The third hand swing and all three vein
+# swings missed, 1.9 and 2.0 metres from the blow's origin to the nearest face against the black
+# metal pickaxe's 1.8, so the vein rounds' `durability` read the untouched sliver and the bar ended
+# at damage=0.0. Nothing about vein wear was measured there: the two hand rounds that landed read
+# -1 each, and the second run's three vein rounds, which landed, read -1 each too, which is the rule
+# holding.
 #
 # The first run, on 2026-09-28, shows why a `durability` pass says nothing without the `swing` before
 # it. Its second deposit stood on the first (the Devkit trouble malmr-bar.txt describes), every vein
 # swing missed it, and every vein round still read -1: the swing had struck something, most likely
-# the deposit underneath, and Attack takes its wear from any swing that strikes anything.
+# the deposit underneath, and Attack takes its wear from any swing that strikes anything. The third
+# run's third hand round is the same case: 0 landed on the deposit, and -1 all the same, most
+# likely from the ground.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the ore the hand
-# swings knocked loose, and the second deposit 4.5 metres in front of you with three blows in its bar
-# until the next run's `put` takes it down. The pickaxe ends broken, and Devkit empties the pack when
-# a run ends, so it goes with the rest. Pickaxes is put back, the Vandi key is removed and vein
-# mining ends off.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground,
+# the ore the hand swings knocked loose, and the second deposit 4.5 metres in front of you with three
+# blows in its bar until the next copper `put` takes it down. The pickaxe ends broken, and Devkit
+# empties the pack when the scenario ends, so it goes with the rest. That is also why no pickaxe
+# reaches this file worn by another: every file's `give` is a fresh one, and the third run's `strip`
+# here found no black metal pickaxe to take out after four Malmr files had each given one. Pickaxes
+# is put back, the Vandi key is removed and vein mining ends off.
 #
-# What a broken build reads: a vein round's `durability` outside -1 give or take 0.05. A swing that
-# lost its wear reads the sliver, just above zero. One that paid extra reads below -1.05.
+# What a broken build reads: a vein round's `durability` outside -1 give or take 0.05, after a
+# `swing` that landed. A swing that lost its wear reads the sliver, which Devkit prints as "0 of
+# 210", the same as a pickaxe worn out; the `swing` line above it says which. One that paid extra
+# reads below -1.05. A `durability` failure after a `swing` that failed with "0 landed" is a miss,
+# and says nothing about Malmr.
 #
 # If a `durability` line fails with "not carrying any", the pickaxe was destroyed when it broke.
 # Vanilla pickaxes are not, so something else in the profile is doing that.
@@ -83,6 +102,15 @@ give PickaxeBlackMetal:1
 tool PickaxeBlackMetal
 
 biome Meadows
+
+# Twenty metres right, clear of malmr-tin.txt's tin rock, and the ground there levelled once you
+# stand on it. `landed` before each, for the game's two seconds between teleports and because
+# `flatten` refuses while you are above the ground.
+
+landed
+move 0 20
+landed
+flatten 0 0 10
 
 console malmr
 printed bosscount=vandi yes
