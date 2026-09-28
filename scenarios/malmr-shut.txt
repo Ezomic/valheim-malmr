@@ -20,11 +20,14 @@
 # because the game's own tally reads kills=0/1.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking, BossKills
-# 2). Face open ground. `biome Meadows` takes you to the Meadows if you are not there, and leaves you
-# where you stand if you are.
+# 2). Face open, flat ground: each deposit is put 4.5 metres out, for the reason malmr-bar.txt gives
+# under WHY 4.5 METRES, which assumes its foot is level with yours. In the first run, at 3, the
+# level block's deposit took no blow, and the two after it stood on the one before, which is the
+# Devkit trouble malmr-bar.txt describes there too. `biome Meadows` takes you to the Meadows if you
+# are not there, and leaves you where you stand if you are.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the ore the two hand
-# swings knocked loose, and the third deposit 3 metres in front of you with one blow in its bar. The
+# swings knocked loose, and the third deposit 4.5 metres in front of you with one blow in its bar. The
 # `put`s took the first two down, and the next run's first `put` takes the third. Pickaxes is put
 # back, the Vandi key is removed and vein mining ends off. Devkit empties the pack when a run ends
 # and hands back its kit.
@@ -76,7 +79,7 @@ printed bosscount=vandi yes
 printed pickaxes=29 yes
 printed Copper unlock=30 open=no boss=defeated_gdking kills=2/2 missing=level yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=no yes
 printed handonly=no yes
@@ -101,7 +104,7 @@ console malmr
 printed pickaxes=30 yes
 printed Copper unlock=30 open=no boss=defeated_gdking kills=1/2 missing=boss yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=no yes
 printed damage=0.0 yes
@@ -123,7 +126,7 @@ keyis vandi_p_$player_defeated_gdking 2
 console malmr
 printed Copper unlock=30 open=yes boss=defeated_gdking kills=2/2 missing=none yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=yes yes
 printed damage=0.0 yes

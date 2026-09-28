@@ -37,11 +37,17 @@
 # Vandi kills of the Elder in this world loses them.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config and the default world modifiers, because a
-# world set to another durability rate changes every number below. Face open ground. `biome Meadows`
-# takes you to the Meadows if you are not there, and leaves you where you stand if you are.
+# world set to another durability rate changes every number below. Face open, flat ground: both
+# deposits are put 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES. `biome
+# Meadows` takes you to the Meadows if you are not there, and leaves you where you stand if you are.
+#
+# The first run, on 2026-09-28, shows why a `durability` pass says nothing without the `swing` before
+# it. Its second deposit stood on the first (the Devkit trouble malmr-bar.txt describes), every vein
+# swing missed it, and every vein round still read -1: the swing had struck something, most likely
+# the deposit underneath, and Attack takes its wear from any swing that strikes anything.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the ore the hand
-# swings knocked loose, and the second deposit 3 metres in front of you with three blows in its bar
+# swings knocked loose, and the second deposit 4.5 metres in front of you with three blows in its bar
 # until the next run's `put` takes it down. The pickaxe ends broken, and Devkit empties the pack when
 # a run ends, so it goes with the rest. Pickaxes is put back, the Vandi key is removed and vein
 # mining ends off.
@@ -88,7 +94,7 @@ printed Copper unlock=30 open=yes yes
 console malmr vein off
 printed malmr vein=off yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 
 wear PickaxeBlackMetal 0.001
 tool PickaxeBlackMetal
@@ -116,7 +122,7 @@ durability PickaxeBlackMetal -1.05 -0.95
 console malmr vein on
 printed malmr vein=on yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=yes yes
 printed damage=0.0 yes

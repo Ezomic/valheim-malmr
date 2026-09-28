@@ -2,8 +2,23 @@
 # knocks rock off the chunk it struck, as it always has. On, it goes into the deposit's bar and
 # every chunk stays whole. Enough blows into the bar take the whole deposit down at once.
 #
-# Three blocks, each on its own deposit that `put` stands 3 metres in front of you. Each `put`
+# Three blocks, each on its own deposit that `put` stands 4.5 metres in front of you. Each `put`
 # takes the one before it down, so no two deposits ever stand at once.
+#
+# WHY 4.5 METRES. `put` measures to the deposit's pivot, and a rock4 deposit is broad: 3 metres, what
+# this file used first, stood it around you. In the first run, on 2026-09-28, every copper deposit
+# put 3 metres out at the height of your feet took no blow at all - three of three, in the Meadows,
+# the Black Forest and the Mistlands - and nor did one put 2.7 metres out below you on a slope. Each
+# time Devkit put your eye inside the box of its chunks. The only one that took blows from 3 metres
+# (malmr-wear.txt) had you 2.5 metres above its foot on a steeper slope, eye above its box, swinging
+# down onto a top that must be wide to be within reach there. 4.5 is inferred from that run, not
+# measured. If the swings still miss, read distance= on the `malmr progress` line after the `put`:
+# the metres from your feet to its nearest chunk, 0.0 when you are standing in it.
+#
+# That run also stood every deposit after the first ON the one before it, 3 metres up: Devkit's
+# `put` found no earlier copy to take down, because it looks for them by GameObject name, and a
+# live MineRock5 renames its GameObject in Awake. That is Devkit's to fix. Until it is, blocks 2
+# and 3 swing at a deposit floating on the last one, and fail for that.
 #
 #   1. By hand. Vein mining off, Pickaxes 30, the Elder killed twice through Vandi. One swing
 #      leaves at least one chunk below full health, and the bar stays at damage=0.0.
@@ -29,9 +44,10 @@
 # them. Without Vandi `printed bosscount=vandi` fails first, and copper reads shut, because the
 # game's own tally would want a real kill.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). Face open
-# ground. `biome Meadows` takes you to the Meadows if you are not there, and leaves you where you
-# stand if you are. Anywhere but the Mistlands would do, since only there is copper left to the hand.
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). Face open,
+# flat ground, since the 4.5 metres assume the deposit's foot is level with yours. `biome Meadows`
+# takes you to the Meadows if you are not there, and leaves you where you stand if you are. Anywhere
+# but the Mistlands would do, since only there is copper left to the hand.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block 3
 # is fifty swings in one step. A hungry character can run dry and fail it on stamina, which the
@@ -47,6 +63,10 @@
 #     above 0.0.
 #   - 2: a build that lets the blow through to the chunk reads `hurt` 1 or more. A build whose owner
 #     never counts the blow writes nothing, so `swing` fails with "none of them changed".
+#   - every block: a build that reads a deposit's name off its GameObject answers
+#     "malmr progress=none" to every `malmr progress rock4_copper_frac`, standing right at one,
+#     because a live MineRock5 renames its GameObject in Awake. That was the first run - see
+#     Deposits.PrefabName.
 #   - 3: a full bar that never breaks the deposit, or breaks only part of it, leaves it standing,
 #     so `malmr progress` prints its line and progress=none fails. The note carries its percent and
 #     how many chunks are left. A build that mined it out by hand instead is caught earlier, by the
@@ -101,7 +121,7 @@ printed Copper unlock=30 open=yes boss=defeated_gdking kills=2/2 missing=none ye
 console malmr vein off
 printed malmr vein=off yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 swing rock4_copper_frac 1
 hurt rock4_copper_frac 1+
 
@@ -120,7 +140,7 @@ printed damage=0.0 yes
 console malmr vein on
 printed malmr vein=on yes
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=yes yes
 printed handonly=no yes
@@ -149,7 +169,7 @@ strip CopperOre
 dropped CopperOre 0
 carrying CopperOre 0
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=yes yes
 printed damage=0.0 yes

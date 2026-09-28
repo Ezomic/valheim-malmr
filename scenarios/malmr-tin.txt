@@ -1,56 +1,56 @@
 # Malmr: tin is never vein mined. With vein mining on and copper open, a pickaxe blow on a tin rock
-# knocks rock off it the ordinary way, while the same blow on copper goes into copper's bar.
+# lands on the rock the ordinary way, while the same blow on copper goes into copper's bar.
 #
 # Tin was left out of the Unlocks table on purpose, Robbin's call of 2026-09-26 ("tin doesnt need
-# vein mining"), and with no * entry nothing else catches it. `malmr progress` reads the tin rock as
-# metal=none open=no, and one real swing shows the rule acting rather than only answering.
+# vein mining"), and with no * entry nothing else catches it.
 #
-# Pickaxes 100 and not 30, so that any tin entry a broken build still carried would be open here.
-# The old defaults had Tin at 40 and * at 90, and a * entry catches tin because tin ore goes into the
-# smelter. Neither has a boss. So a build like that sends the tin blow into a bar at this level, and
-# `hurt MineRock_Tin 1+` fails. At 30 the same build would have hidden behind a shut gate and mined
-# by hand, and passed for the wrong reason.
+# IN 1.0 A TIN ROCK IS NOT A DEPOSIT MALMR READS AT ALL. The first run, on 2026-09-28, put a
+# MineRock_Tin down and Devkit's `hurt` answered "not a MineRock5 or a MineRock", and Malmr's own
+# deposit list, which names every prefab carrying one of the two, has never named it (see
+# malmr-deposits-by-their-drops.txt). Malmr's only ways into a blow are MineRock5.Damage and
+# MineRock.Damage, so a blow on a tin rock never reaches it, whatever the table says. The tin half
+# therefore asks two things: `malmr progress MineRock_Tin` finds no deposit of that name, and one
+# real swing lands - the rock's own ZDO changed, which is the ordinary blow. It used to read
+# metal=none open=no and count a hurt chunk, which is the right test for a tin rock that is a
+# MineRock, and `hurt` cannot count one that is not. If progress=none starts failing, a game update
+# has made tin a MineRock again, and those checks belong back here.
 #
-# Eikthyr is seeded too, since stone joined the table on 2026-09-27, so that stone is open here as
-# well. Ore deposits drop stone beside their ore, and whether the tin rock's table does is asset data
-# nobody has read. If it does, a classifier that fell through the tin to the stone would make it a
-# stone vein at Pickaxes 20. With Eikthyr's kill seeded that build also sends the tin blow into a
-# bar, and the same `hurt` fails, rather than hiding behind stone's boss.
+# Pickaxes 100 and not 30, so that any tin entry a broken build still carried would be open, and
+# Eikthyr seeded so that stone is open as well. The old defaults had Tin at 40 and * at 90, and a
+# rock whose tin fell through to its stone would be a stone vein at 20. Neither can reach a tin rock
+# that is not a MineRock, but both would be open the day it is one again.
 #
 # THE CONTROL comes first: a copper deposit, the same pickaxe, the same switch, one swing, and no
-# chunk hurt. Without it a hurt tin rock could be vein mining that never worked anywhere. Then you
-# are moved 12 metres to your right, so the tin rock stands well clear of the copper and no swing can
-# reach both.
+# chunk hurt. It stands 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES.
+# Then you are moved 12 metres to your right, so the tin rock stands well clear of the copper and no
+# swing can reach both. The tin rock is put 2 metres out: at 3, in the first run, its nearest edge
+# was 1.9 metres from your eye, and the antler pickaxe reaches 1.8.
 #
 # NEEDS VANDI for the control, like malmr-bar.txt: copper's and stone's boss halves are seeded
 # through Vandi's own kill record, vandi_p_<playerid>_defeated_gdking and _defeated_eikthyr at 2,
 # and both keys are removed at the end. A character with real Vandi kills of the Elder or Eikthyr
 # in this world loses them.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config. Face open ground, with open ground 12
-# metres to your right as well. `biome Meadows` takes you to the Meadows if you are not there, and
-# leaves you where you stand if you are.
+# SINGLEPLAYER, in a TEST WORLD, with the default config. Face open, flat ground, with open, flat
+# ground 12 metres to your right as well. `biome Meadows` takes you to the Meadows if you are not
+# there, and leaves you where you stand if you are.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), a copper deposit with
-# one blow in its bar where you started, and a tin rock with a chunk or more knocked off where you
-# end. Both are taken down by the next run's `put`s, which reach 30 metres. Pickaxes is put back, the
-# Vandi keys are removed and vein mining ends off. Devkit empties the pack when a run ends and hands
-# back its kit.
+# one blow in its bar where you started, and a tin rock with one blow in it where you end. Both are
+# taken down by the next run's `put`s, which reach 30 metres. Pickaxes is put back, the Vandi keys
+# are removed and vein mining ends off. Devkit empties the pack when a run ends and hands back its
+# kit.
 #
 # What a broken build reads:
-#   - tin classed as a vein: the progress line says metal=Tin, metal=Stone, or any metal but none,
-#     and at Pickaxes 100 the blow goes into a bar, so `hurt MineRock_Tin 1+` fails and damage is
-#     above 0.0.
+#   - tin read as a deposit at all: `malmr progress MineRock_Tin` prints a line instead of
+#     progress=none.
 #   - vein mining broken outright: the copper control reads `hurt` 1 or more.
 #
-# An ANTLER pickaxe, not the black metal one the other files use. A tin rock is small, and a hard
-# enough swing could take every chunk it has at once. Gone is what a broken build filling a tin bar
-# would leave too, so `hurt` could not tell the two apart. The antler pickaxe is the one a player
-# first mines copper and tin with, and its swing takes far less than black metal's. If
-# `hurt MineRock_Tin` still fails because the rock is gone, the swing half of this file has not been
-# answered either way, and the progress line before it still stands. If `swing` fails naming the
-# tool tiers instead, the antler pickaxe is below one of the two rocks, and PickaxeBronze is the
-# next one up.
+# An ANTLER pickaxe, not the black metal one the other files use: the one a player first mines copper
+# and tin with. If the copper `swing` fails naming the tool tiers, the antler pickaxe is below
+# copper's, and PickaxeBronze is the next one up. If the tin `swing` fails with nothing changed, read
+# its distance first; `swing` names tool tiers only for a MineRock5 or a MineRock, so a tin rock too
+# hard for antler would say nothing about it.
 
 god
 ghost
@@ -86,7 +86,7 @@ printed malmr vein=on yes
 
 # ---- the control. Copper vein mines here: one swing lands and no chunk is hurt.
 
-put rock4_copper_frac 3
+put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper open=yes yes
 printed damage=0.0 yes
@@ -98,24 +98,18 @@ console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac yes
 printed damage=0.0 no
 
-# ---- tin. Twelve metres to the right, a tin rock 3 metres ahead. It is not a vein at all, so the
-# blow goes to the rock, and nothing is stored on it. The wait is the game's two seconds between
+# ---- tin. Twelve metres to the right, a tin rock 2 metres ahead. Malmr has no deposit of that name
+# to read, and the one swing lands on the rock itself. The wait is the game's two seconds between
 # teleports, in case `biome` moved you only a moment ago.
 
 wait 2
 move 0 12
 
-put MineRock_Tin 3
+put MineRock_Tin 2
 console malmr progress MineRock_Tin
-printed prefab=MineRock_Tin metal=none open=no yes
-printed damage=0.0 yes
+printed progress=none yes
 
 swing MineRock_Tin 1
-hurt MineRock_Tin 1+
-
-console malmr progress MineRock_Tin
-printed prefab=MineRock_Tin yes
-printed damage=0.0 yes
 
 # ---- put back what can be put back.
 

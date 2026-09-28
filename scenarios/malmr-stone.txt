@@ -3,8 +3,13 @@
 # the whole boulder down at once, stone and all.
 #
 # Stone joined the table on 2026-09-27, Robbin's "also add stone": Pickaxes 20, on Eikthyr. Two
-# blocks, each on its own boulder that `put` stands 3 metres in front of you. The second `put` takes
-# the first boulder down, so no two ever stand at once.
+# blocks, each on its own boulder that `put` stands 4.5 metres in front of you. The second `put` takes
+# the first boulder down, so no two ever stand at once. 4.5 and not 3 for the reason malmr-bar.txt
+# gives under WHY 4.5 METRES; this is the same rock4 shape. In the first run, at 3, the first boulder
+# landed on top of copper deposits malmr-shut.txt had left on the spot, seven metres above your feet,
+# and block 2's swings mostly broke those coppers by hand instead (copper was shut by then). The
+# stone `found` counted came off them, and progress=none passed only because Malmr could not find a
+# MineRock5 by name at all. Both were passes for the wrong reason.
 #
 #   1. Into the bar, at stone's own line: Pickaxes 20 and Eikthyr killed twice through Vandi, the
 #      least a player needs and the place an off-by-one would show. The bar is empty before the
@@ -39,7 +44,8 @@
 # fails first.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). Face
-# open ground. `biome Meadows` takes you to the Meadows if you are not there, and leaves you where
+# open, flat ground, with open, flat ground 20 metres to your right, where it moves you first (see
+# there for why). `biome Meadows` takes you to the Meadows if you are not there, and leaves you where
 # you stand if you are. Anywhere would do, since stone vein mines in every biome, the Mistlands
 # included.
 #
@@ -89,6 +95,15 @@ tool PickaxeBlackMetal
 
 biome Meadows
 
+# Twenty metres to your right first, clear of any copper deposit another Malmr file left 4.5 metres
+# in front of where it stood - malmr-shut.txt, malmr-tin.txt and malmr-wear.txt each leave one, and
+# `biome` leaves you where they ended. `put` takes down only its own prefab's earlier copies, so a
+# boulder put onto that spot lands on the copper, which is what the first run did. The wait is the
+# game's two seconds between teleports, in case `biome` moved you only a moment ago.
+
+wait 2
+move 0 20
+
 console malmr
 printed bosscount=vandi yes
 printed Stone unlock=20 open=yes boss=defeated_eikthyr kills=2/2 missing=none yes
@@ -100,7 +115,7 @@ printed malmr vein=on yes
 # chunk is below full health, and the bar is off zero. owner=self says this machine owns the
 # boulder, so the blow took the on-the-spot road through the owner's handler.
 
-put rock4_forest_frac 3
+put rock4_forest_frac 4.5
 console malmr progress rock4_forest_frac
 printed prefab=rock4_forest_frac metal=Stone open=yes yes
 printed handonly=no yes
@@ -125,7 +140,7 @@ strip Stone
 dropped Stone 0
 carrying Stone 0
 
-put rock4_forest_frac 3
+put rock4_forest_frac 4.5
 console malmr progress rock4_forest_frac
 printed prefab=rock4_forest_frac metal=Stone open=yes yes
 printed damage=0.0 yes
