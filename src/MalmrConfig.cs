@@ -84,13 +84,16 @@ namespace Malmr
             // Tin is not in it, his words: "tin doesnt need vein mining". Tin comes in small
             // rocks by the shore, a few swings each, and there is no deposit worth a bar.
             //
-            // Naming it would do nothing anyway, and the same goes for obsidian. In 1.0 a tin
-            // rock and an obsidian rock are each a single rock, neither a MineRock5 nor a
+            // Naming it would vein mine nothing anyway, and the same goes for obsidian. In 1.0 a
+            // tin rock and an obsidian rock are each a single rock, neither a MineRock5 nor a
             // MineRock, and Malmr hooks only MineRock5.Damage and MineRock.Damage. The first
             // scenario run found it on 2026-09-28: neither prefab is in the world-load list of
             // deposits, which holds everything carrying either component, and Devkit's `hurt`
             // called a MineRock_Tin "not a MineRock5 or a MineRock". Until then the text below
-            // promised that Tin:20 and Obsidian:50 would add them.
+            // promised that Tin:20 and Obsidian:50 would add them. Named anyway, the entry is not
+            // silent: Opened announces it, the console lists it and the world-load log says no
+            // deposit resolves to it, all for veins that never come. So the text says to leave
+            // them out rather than that naming them changes nothing.
             //
             // The "*" entry went with the same change, so only what is named here vein mines.
             // The code for it stays, because a mod's ore is exactly what it is for, and the text
@@ -119,10 +122,14 @@ namespace Malmr
                 + "are prefab names, not what the game shows: Gold is the Deep North metal the "
                 + "game calls Bloodgold, and Eitr is the Mistlands' giant brains, because what "
                 + "they drop becomes refined eitr in the eitr refinery (Names sets what the "
-                + "screen calls them). Tin and obsidian are not here, and naming them does "
-                + "nothing: in Valheim 1.0 a tin rock and an obsidian rock are each a single "
-                + "rock, not a deposit of chunks, and Malmr does not touch them, so they are "
-                + "mined by hand whatever this line says. A name can also be the dropped item "
+                + "screen calls them). Tin and obsidian are not here, and naming them vein "
+                + "mines nothing: in Valheim 1.0 a tin rock and an obsidian rock are each a "
+                + "single rock, not a deposit of chunks, and Malmr does not touch them, so they "
+                + "are mined by hand whatever this line says. Named here they still get an "
+                + "unlock message and a console line for veins that never come, and the log "
+                + "says no deposit resolves to them, so leave them out; naming a rock in "
+                + "Deposits, which that log line suggests, cannot help for them either. A name "
+                + "can also be the dropped item "
                 + "itself, for what nothing smelts. Stone is one: it covers the plain rocks and "
                 + "boulders, the ones whose every drop is stone. A deposit that drops ore is "
                 + "never a stone vein, even though ore deposits drop stone as well: it is its "
@@ -236,9 +243,10 @@ namespace Malmr
                 + "when a world loads. The key is the boss's defeat key, the one the game sets "
                 + "when it dies. Names match Unlocks the same way, so Flametal covers both "
                 + "flametals. An entry not in this list needs no boss, only the level. A pair "
-                + "whose name is not in Unlocks does nothing. The default's Obsidian pair is one, "
-                + "and adding Obsidian to Unlocks would not wake it: in 1.0 obsidian rocks are "
-                + "single rocks that Malmr does not touch. With "
+                + "whose name is not in Unlocks does nothing. The default's Obsidian pair is one. "
+                + "Add Obsidian to Unlocks and the pair is read, so its entry waits for Moder, "
+                + "but in 1.0 obsidian rocks are single rocks that Malmr does not touch, so "
+                + "Moder's kill opens nothing for it but a message. With "
                 + "Vandi installed, only a boss in Vandi's BossBiomes can ever be met, and the log "
                 + "says so when a world loads.");
 

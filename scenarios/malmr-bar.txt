@@ -100,6 +100,9 @@
 #      by Alt+Tab, back by clicking the game's window.
 #   3. Hold Left Alt, press and let go of W, then let go of Alt, all inside half a second. Expected:
 #      no Vein, and vein=off. Then the same with E.
+#   4. Tap Left Alt twice, as fast as you can. Expected: no Vein a moment later, and vein=off. Two
+#      taps are two switches, however close together; a Vein here means the second tap swallowed
+#      the first.
 # A Vein after step 2 is the bug of the first run, on 2026-09-28: Alt+Tab switched vein mining on
 # and it stayed on for the rest of the session. See VeinMode for the rule that closes it.
 #

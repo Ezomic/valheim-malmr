@@ -25,8 +25,9 @@ switch it. `malmr vein on` and `malmr vein off` do the same from the console.
 
 What vein mines, and from which Pickaxes level: stone 20, copper 30, iron 40, silver 50, the
 Mistlands' giant brains 60, flametal 70, bloodgold 80. Nothing else. Tin and obsidian are left
-out, and naming them in `Unlocks` does nothing: in 1.0 both are single rocks that Malmr does not
-touch. The level is the one you earned. A skill bonus from gear, food or another mod does not
+out, and naming them in `Unlocks` vein mines nothing: in 1.0 both are single rocks that Malmr does
+not touch. Such an entry would still get an unlock message and a console line for veins that never
+come, so leave them out. The level is the one you earned. A skill bonus from gear, food or another mod does not
 open a metal early. With vein mining on and the metal still shut you mine the normal way, and
 once per deposit the top left of the screen says what is missing, like "Iron veins need Pickaxes
 40 and Bonemass beaten at one star through Vandi".

@@ -93,11 +93,14 @@ Some stone rocks are huge, and the bar covers the whole rock. With vein mining o
 from one until the bar is full, so for a handful of stone, tap Alt to switch it off and take a few
 chunks by hand.
 
-Tin and obsidian are not on the list, and adding them does nothing. In Valheim 1.0 a tin rock and
-an obsidian rock are each a single rock, not a deposit of chunks, and Malmr does not touch them:
-they are mined by hand whatever `Unlocks` says, so `Tin:20` or `Obsidian:50` there changes
-nothing. Tin was left out on purpose anyway, since it comes in small rocks and there is no deposit
-of it worth a bar.
+Tin and obsidian are not on the list, and adding them vein mines nothing. In Valheim 1.0 a tin
+rock and an obsidian rock are each a single rock, not a deposit of chunks, and Malmr does not touch
+them: they are mined by hand whatever `Unlocks` says. `Tin:20` or `Obsidian:50` there is still read
+as an entry, though, so it gets its own "veins open to you now" message and its own line in the
+`malmr` console, both for veins that never come. The world-load log then says no deposit resolves
+to it and suggests naming one in `Deposits`, which cannot help, because there is no tin or obsidian
+deposit to name. Leave them out. Tin was left out on purpose anyway, since it comes in small rocks
+and there is no deposit of it worth a bar.
 
 The giant brains in the Mistlands are in the table as `Eitr`. A brain drops soft tissue and the
 eitr refinery turns that into refined eitr, which is how Malmr recognises a brain. On screen they

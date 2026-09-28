@@ -176,7 +176,15 @@ namespace Malmr
             Player player = Player.m_localPlayer;
             if (player == null || !PickaxeOut(player)) return;
 
-            _pending = true;
+            // A tap released while the one before it is still settling cancels it, since two
+            // switches are no switch. Setting pending again and restamping instead would push the
+            // first tap's settle out past the second's and then apply one switch for both, so a
+            // quick on-then-off double tap left vein mining on (a review of 2026-09-28, before
+            // anything ran). Only a tap that leaves a switch pending is stamped, so the one that
+            // cancels never vouches for the one it cancelled.
+            _pending = !_pending;
+            if (!_pending) return;
+
             _upAt = Time.unscaledTime;
             _upFrame = Time.frameCount;
             _upFocusChanges = _downFocusChanges;
@@ -188,6 +196,8 @@ namespace Malmr
         /// not being in front now, drops the tap instead. The count compared is the one taken at
         /// its press, kept apart from the next press's, since the tap is only good if nothing
         /// changed from its press onwards and a quick second tap must not vouch for the first.
+        /// A second tap released before this has run does not wait in line behind the first:
+        /// Tick cancels the pair, so taps settle by how many there were, not by the last one.
         /// </summary>
         private static void Settle(bool focused)
         {
