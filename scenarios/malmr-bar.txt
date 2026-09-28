@@ -43,9 +43,9 @@
 #      leaves at least one chunk below full health, and the bar stays at damage=0.0.
 #   2. Into the bar. The same fixture with vein mining on. The bar is empty before the first
 #      swing and off zero after it, and after each of two swings no chunk is hurt.
-#   3. The whole deposit. Pickaxes 100, which makes every blow as hard as it gets, and up to 180
-#      swings in five `swing` steps (see HOW MANY SWINGS). The first is checked on its own to have
-#      gone into the bar. After the rest the deposit is gone, and copper ore came out of it: at
+#   3. The whole deposit. Pickaxes 100, which makes every blow as hard as it gets. One swing is
+#      checked on its own to have gone into the bar, then up to 200 more in a single `swing` step
+#      (see HOW MANY SWINGS). After them the deposit is gone, and copper ore came out of it: at
 #      least one, on the ground and in the pack counted together (see WHAT IT CANNOT SEE for why
 #      together).
 #
@@ -57,32 +57,30 @@
 #     45.4 and 45.2 a swing, and after 140 the bar stood at 97% with the deposit whole, as it should
 #     be short of full. The budget ran out, not the mod.
 #   - the third run's malmr-stone.txt, the same rock4 shape: 40.0 and 40.3 a swing.
-# The reason is Attack.DoMeleeAttack (read with ilspycmd). When a swing strikes more than one thing,
-# each struck thing's damage is divided by 0.75 times how many there were, and the ground is one of
-# them though it takes nothing: 60.3 / 1.5 = 40.2, the stone run to the decimal. Devkit b42b3b5
-# stands you on the floor after every teleport, and from there the swing's lower rays reach the
-# ground in front of the rock; in the second run they did not. Copper's extra five is most likely
-# some swings striking two chunks as well as the ground. A swing by hand divides the same way, so
-# the bar still takes exactly what the same swings would have dealt: this is the game, not Malmr.
+# The reason is Attack.DoMeleeAttack (read with ilspycmd). A pickaxe on a deposit counts every chunk
+# collider its rays strike as one thing struck, and the ground as one more, and when there is more
+# than one, each takes its damage divided by 0.75 times how many there were. The ground takes
+# nothing and still counts: one chunk and the ground is 60.3 / 1.5 = 40.2, the stone run to the
+# decimal. Two chunks and no ground is 80 between them, two chunks and the ground 54. So the rate is
+# set by what the swing's rays happen to cross, which the ground, where you stand and how the rock
+# sits all move, and the third run's `put` notes had you standing inside the deposit's outer chunks
+# every time. A swing by hand divides the same way, so the bar still takes exactly what the same
+# swings would have dealt: this is the game, not Malmr.
 #
-# So the budget is set for a swing from the floor on flat ground (see FLAT GROUND): 40 to 45 a
-# swing, which fills the bar between the 144th and the 162nd. Devkit's `swing` takes at most fifty
-# a step, and a `swing` whose deposit is already gone fails before it starts, so the break has to
-# land in the LAST step. 1, 49, 40 and 40 make 130, which cannot fill the bar below 50 a swing (6500
-# / 130); the last step's fifty more make 180, which cannot fall short of it above 36.1 a swing
-# (6500 / 180). Both measured rates sit about a tenth inside that window, one on each side. The
-# second run's 60 is outside it: a Devkit older than b42b3b5 breaks the deposit inside the fourth
-# step, the `malmr progress` after it says progress=none, and the last `swing` fails with nothing to
-# swing at. If a later run lands outside the window either way, the two `malmr progress` lines
-# before the last step give the rate: damage over the swings so far (90, then 130).
-# The waits between the steps are for stamina, which does not come back while a swing is in the
-# air, and `swing` starts the next the moment the last one ends.
+# So block 3 does not guess a rate. Since Devkit 686ff58 one `swing` step takes up to 300 swings,
+# stops to let the stamina bar fill instead of failing when it runs dry, and passes when the deposit
+# is gone part-way. Before that it took fifty, and a `swing` whose deposit is already gone fails
+# before it starts, so the second and third runs split the deposit into fifty-swing steps that had to
+# put the break in the last one: 140 fell short at 45 a swing, and 130 then 180 would have broken it
+# a step early at the second run's 60. One step of 200 covers any rate down to 32.5 a swing, below
+# the 40.2 of one chunk and the ground. Its note says how many swings the deposit took ("swung N of
+# 200 ... gone after that"), and 6500 over N is the rate.
 #
 # The black metal pickaxe is 210 durability and loses one a swing however many chunks it strikes
-# (DoMeleeAttack takes it once per swing that struck anything, after all of its hits), so 183
-# swings leave it whole. Devkit empties the
-# pack at the end of EVERY scenario, not only of a Run all (Report calls TidyPack), and `give` makes
-# a fresh pickaxe, so nothing another file did to one reaches this one.
+# (DoMeleeAttack takes it once per swing that struck anything, after all of its hits), so the 204
+# swings this file can make leave it whole. Devkit empties the pack at the end of EVERY scenario,
+# not only of a Run all (Report calls TidyPack), and `give` makes a fresh pickaxe, so nothing another
+# file did to one reaches this one.
 #
 # Blocks 1 and 2 stand exactly on copper's line, Pickaxes 30 with two kills, because that is the
 # least a player needs and the place an off-by-one would show.
@@ -100,14 +98,15 @@
 # game's own tally would want a real kill.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). Face open,
-# somewhere `flatten` can level (not a cliff edge, not in water), since the 4.5 metres and the swing
-# budget both assume the deposit's foot is level with yours. `biome Meadows` takes you to the
-# Meadows if you are not there, and leaves you where you stand if you are. Anywhere but the
-# Mistlands would do, since only there is copper left to the hand.
+# somewhere `flatten` can level (not a cliff edge, not in water), since the 4.5 metres assume the
+# deposit's foot is level with yours. `biome Meadows` takes you to the Meadows if you are not there,
+# and leaves you where you stand if you are. Anywhere but the Mistlands would do, since only there
+# is copper left to the hand.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block 3
-# is up to fifty swings in one step, five times over. A hungry character can run dry and fail it on
-# stamina, which the step's note names.
+# is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
+# hungry character only takes longer, and the note counts the stops. It fails the step by name when
+# the bar stops coming back: encumbered, or something draining it.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground
 # and the ore block 3 dropped. No deposit is left: the third breaks, and the `put`s took the first
@@ -127,7 +126,7 @@
 #   - 3: a full bar that never breaks the deposit, or breaks only part of it, leaves it standing,
 #     so `malmr progress` prints its line and progress=none fails. The note carries its percent and
 #     how many chunks are left. A build that mined it out by hand instead is caught earlier, by the
-#     `hurt 0` after the first swing, since 180 hand swings at Pickaxes 100 could also empty it.
+#     `hurt 0` after the first swing, since 200 hand swings at Pickaxes 100 could also empty it.
 #
 # WHAT IT CANNOT SEE:
 #   - How MUCH ore came out. The drop table rolls, so the check is at least one, not a number. And
@@ -159,11 +158,11 @@
 # A Vein after step 2 is the bug of the first run, on 2026-09-28: Alt+Tab switched vein mining on
 # and it stayed on for the rest of the session. See VeinMode for the rule that closes it.
 #
-# If block 3 runs out of swings with the deposit still standing, read the percent on the failing
-# line and the rate the two `malmr progress` lines before it give. A bar at 100% over a standing
-# deposit is a break that never finished. A bar short of full is either a rate below the window in
-# HOW MANY SWINGS, which that section's arithmetic answers, or the bar counting less than each blow
-# dealt, which reads as a rate well below 40 on flat ground.
+# If block 3 runs out of swings with the deposit still standing, the `swing` note reads "swung 200 of
+# 200", and the failing `malmr progress` line gives the percent and damage=, which over 201 swings is
+# the rate. A bar at 100% over a standing deposit is a break that never finished. A bar short of full
+# is the bar counting less than each blow dealt, since swings that reach the rock average 40 or more
+# (see HOW MANY SWINGS) unless their rays also cross something else, a bush or another rock.
 #
 # The `logged` lines are a backstop, not the proof. Malmr says each of those warnings once per
 # session, so one already said before this run would not be said again.
@@ -260,27 +259,13 @@ printed damage=0.0 yes
 swing rock4_copper_frac 1
 hurt rock4_copper_frac 0
 
-# A hundred and twenty-nine more, which cannot fill the bar - see HOW MANY SWINGS in the header.
-# The two `malmr progress` lines judge nothing. They are there for the trace: the bar after 90 and
-# after 130 swings, which is the rate, and progress=none if the deposit broke early and the next
-# `swing` fails for that.
+# The rest in one step, up to two hundred more, which cover any rate the game can deal here: see HOW
+# MANY SWINGS in the header. `swing` rests for stamina on its own, and stops early and passes when
+# the deposit is gone. Gone is then asked of `malmr progress`, which looks ten metres out, and you
+# have not moved, so progress=none can only mean it broke. The five seconds before it are for a
+# break still coming down a few chunks a frame when the last swing ends, malmr-stone.txt's reason.
 
-wait 15
-swing rock4_copper_frac 49
-wait 15
-swing rock4_copper_frac 40
-console malmr progress rock4_copper_frac
-wait 15
-swing rock4_copper_frac 40
-console malmr progress rock4_copper_frac
-
-# Up to fifty more, where the bar fills. `swing` stops early and passes when the deposit is gone.
-# Gone is then asked of `malmr progress`, which looks ten metres out, and you have not moved, so
-# progress=none can only mean it broke. The five seconds before it are for a break still coming
-# down a few chunks a frame when the last swing ends - malmr-stone.txt's reason.
-
-wait 15
-swing rock4_copper_frac 50
+swing rock4_copper_frac 200
 wait 5
 
 console malmr progress rock4_copper_frac

@@ -14,10 +14,10 @@
 #   1. Into the bar, at stone's own line: Pickaxes 20 and Eikthyr killed twice through Vandi, the
 #      least a player needs and the place an off-by-one would show. The bar is empty before the
 #      swing and off zero after it, and no chunk is hurt.
-#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets, and up to 180
-#      swings in five `swing` steps. The first is checked on its own to have gone into the bar.
-#      After the rest the boulder is gone, and stone came out of it: at least one, on the ground and
-#      in the pack counted together, for the reason malmr-bar.txt gives.
+#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets. One swing is
+#      checked on its own to have gone into the bar, then up to 200 more in a single `swing` step.
+#      After them the boulder is gone, and stone came out of it: at least one, on the ground and in
+#      the pack counted together, for the reason malmr-bar.txt gives.
 #
 # WHICH BOULDER, and why block 2 is at Pickaxes 100. rock4_forest_frac, the Black Forest boulder,
 # is the same rock4 shape as the copper deposit malmr-bar.txt breaks, and the second run on
@@ -28,21 +28,18 @@
 # short too: 90 swings filled 3604.0 and fifty more 2014.1, 40.0 and 40.3 a swing, and the boulder
 # stood at 86%. Two thirds of the second run's 60.6, which is Attack.DoMeleeAttack dividing a
 # swing's damage when it strikes the ground as well as one chunk; malmr-bar.txt has the arithmetic
-# under HOW MANY SWINGS, and why Devkit b42b3b5 standing you on the floor brought the ground in.
+# under HOW MANY SWINGS, and why the rate moves with what a swing's rays happen to cross.
 #
-# So it gets the budget malmr-bar.txt works out there, for the same rock and the same swing: 1, 49,
-# 40 and 40 first, 130, which cannot fill the bar below 50 a swing, and the last step's fifty, 180 in
-# all, which cannot fall short of it above 36.1. Devkit's `swing` takes at most fifty a step and fails
-# before it starts on a rock that is already gone, which is why the break has to land in that last
-# step. The waits between them are for stamina. The two `malmr progress` lines before the last step
-# give the rate if a later run lands outside that window. The black metal pickaxe's 210 durability
-# covers the 181 swings this file makes, one a swing, and Devkit hands every scenario a fresh one.
+# So it does what malmr-bar.txt does there, for the same rock and the same swing: no guessed rate,
+# and one `swing` step of up to 200, which Devkit 686ff58 allows, resting for stamina on its own and
+# passing when the boulder is gone part-way. That covers any rate down to 32.5 a swing, and its note
+# says how many swings the boulder took. The black metal pickaxe's 210 durability covers the 202
+# swings this file can make, one a swing, and Devkit hands every scenario a fresh one.
 #
 # A smaller rock would have been quicker, and the world-load survey now gives chunk counts
 # (Rock_3_frac is 5), but not what a chunk is worth, so a smaller rock would trade a measured total
 # for a guessed one. The big stone rocks (the mountain rocks, the Plains pillars, cliffs) run to
-# hundreds of chunks and are no use here at all. If the last `swing` fails with nothing to swing at,
-# the boulder broke inside the first 130: see malmr-bar.txt for what that means.
+# hundreds of chunks and are no use here at all.
 #
 # When this boulder does not break it stays where it stood, and `put` takes down only its own
 # prefab's earlier copies. In the third run the copper control of malmr-tin.txt, the next file, was
@@ -64,13 +61,13 @@
 # open, with open ground 20 metres to your right that `flatten` can level (not a cliff edge, not in
 # water), where it moves you first (see there for why). The ground there is levelled round you
 # before either boulder is put, for the reasons malmr-bar.txt gives under FLAT GROUND: the 4.5
-# metres and the swing budget both assume the boulder's foot is level with yours. `biome Meadows`
-# takes you to the Meadows if you are not there, and leaves you where you stand if you are.
-# Anywhere would do, since stone vein mines in every biome, the Mistlands included.
+# metres assume the boulder's foot is level with yours. `biome Meadows` takes you to the Meadows if
+# you are not there, and leaves you where you stand if you are. Anywhere would do, since stone vein
+# mines in every biome, the Mistlands included.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block
-# 2 is up to fifty swings in one step, five times over. A hungry character can run dry and fail it
-# on stamina, which the step's note names.
+# 2 is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
+# hungry character only takes longer, and it fails the step by name when the bar stops coming back.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground
 # and the stone block 2 dropped. No boulder is left: the second breaks, and its `put` took the first
@@ -178,26 +175,11 @@ printed damage=0.0 yes
 swing rock4_forest_frac 1
 hurt rock4_forest_frac 0
 
-# A hundred and twenty-nine more, which cannot fill the bar: see WHICH BOULDER. The two `malmr
-# progress` lines judge nothing. They are there for the trace: the bar after 90 and after 130
-# swings, which is the rate, and progress=none if the boulder broke early and the next `swing`
-# fails for that.
+# The rest in one step, up to two hundred more: see WHICH BOULDER. `swing` rests for stamina on its
+# own, and stops early and passes when the boulder is gone. Gone is then asked of `malmr progress`,
+# which looks ten metres out, and you have not moved, so progress=none can only mean it broke.
 
-wait 15
-swing rock4_forest_frac 49
-wait 15
-swing rock4_forest_frac 40
-console malmr progress rock4_forest_frac
-wait 15
-swing rock4_forest_frac 40
-console malmr progress rock4_forest_frac
-
-# Up to fifty more, where the bar fills. `swing` stops early and passes when the boulder is gone.
-# Gone is then asked of `malmr progress`, which looks ten metres out, and you have not moved, so
-# progress=none can only mean it broke.
-
-wait 15
-swing rock4_forest_frac 50
+swing rock4_forest_frac 200
 wait 5
 
 console malmr progress rock4_forest_frac

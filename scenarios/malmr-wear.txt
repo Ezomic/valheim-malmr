@@ -69,10 +69,10 @@
 # is put back, the Vandi key is removed and vein mining ends off.
 #
 # What a broken build reads: a vein round's `durability` outside -1 give or take 0.05, after a
-# `swing` that landed. A swing that lost its wear reads the sliver, which Devkit prints as "0 of
-# 210", the same as a pickaxe worn out; the `swing` line above it says which. One that paid extra
-# reads below -1.05. A `durability` failure after a `swing` that failed with "0 landed" is a miss,
-# and says nothing about Malmr.
+# `swing` that landed. A swing that lost its wear reads the sliver, "0.0021 of 210" (a Devkit older
+# than 686ff58 rounded that to "0 of 210", the same words as a pickaxe worn out, which is how the
+# third run's misses were first read). One that paid extra reads below -1.05. A `durability`
+# failure after a `swing` that failed with "0 landed" is a miss, and says nothing about Malmr.
 #
 # If a `durability` line fails with "not carrying any", the pickaxe was destroyed when it broke.
 # Vanilla pickaxes are not, so something else in the profile is doing that.
