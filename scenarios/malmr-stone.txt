@@ -99,10 +99,14 @@ biome Meadows
 # Twenty metres to your right first, clear of any copper deposit another Malmr file left 4.5 metres
 # in front of where it stood - malmr-shut.txt, malmr-tin.txt and malmr-wear.txt each leave one, and
 # `biome` leaves you where they ended. `put` takes down only its own prefab's earlier copies, so a
-# boulder put onto that spot lands on the copper, which is what the first run did. The wait is the
-# game's two seconds between teleports, in case `biome` moved you only a moment ago.
+# boulder put onto that spot lands on the copper, which is what the first run did. `landed` holds
+# out the game's two seconds between teleports, in case `biome` moved you only a moment ago. It
+# used to be `wait 2`, which is the same guess malmr-mistlands.txt paid for and shorter still: it
+# starts in the frame `biome` ends, and the game counts its two seconds in 0.02 s physics steps
+# that reach 2 in single precision only on the hundred and first, so right after a teleport the
+# `move` behind a plain `wait 2` is often refused.
 
-wait 2
+landed
 move 0 20
 
 console malmr
