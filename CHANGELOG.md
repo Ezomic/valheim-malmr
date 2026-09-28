@@ -19,7 +19,8 @@ vanilla, so a deposit costs about the swings it would by hand. The bar is saved 
 and survives a logout, and another player with vein mining on can finish it.
 
 The key is `VeinToggleKey` and stays your own on a server. It only listens while a pickaxe is
-out, and only a short tap counts, so Jafna's Left Alt on the hoe, Taum's Alt+E and Alt+Tab do not
+out, and only a short tap of the key on its own counts, with the game in front the whole time, so
+Jafna's Left Alt on the hoe, Taum's Alt+E and Alt+Tab, out of the game or back into it, do not
 switch it. `malmr vein on` and `malmr vein off` do the same from the console.
 
 What vein mines, and from which Pickaxes level: stone 20, copper 30, iron 40, silver 50, the

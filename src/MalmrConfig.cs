@@ -258,17 +258,19 @@ namespace Malmr
             // Left Alt because Robbin asked for Alt. Two other mods in this suite read it: Jafna's
             // height hold is Left Alt with a hoe out, and Taum's follow toggle is Alt held with E
             // on a boar. This only listens with a pickaxe out, which keeps it off Jafna's, and a
-            // tap that has E pressed inside it does not count, which keeps it off Taum's - see
-            // VeinMode.
+            // tap with any other key pressed inside it, E included, does not count, which keeps it
+            // off Taum's. Alt+Tab is the third, in both directions, and VeinMode says how.
             VeinToggleKey = cfg.Bind("Controls", "VeinToggleKey", KeyCode.LeftAlt,
                 "Tap this with a pickaxe out to switch vein mining on, and tap it again to switch "
                 + "it off. It stays on across swings, tool changes and deposits until you tap it "
                 + "again; a small gold Vein above the crosshair says it is on while a pickaxe is out. "
                 + "While it is on, your pickaxe blows on a deposit of an open metal fill a bar "
                 + "instead of breaking chunks, and when the bar is full the whole deposit breaks "
-                + "at once. A tap is a short press and release: holding it, pressing E during it, "
-                + "or leaving the game with Alt+Tab does not switch anything. With any other tool "
-                + "in hand the key does nothing here. None switches the key off.");
+                + "at once. A tap is a short press and release of this key on its own, with the "
+                + "game in front the whole time: holding it, pressing any other key during it (E on "
+                + "a boar, say), or Alt+Tab, out of the game or back into it, does not switch "
+                + "anything. With any other tool in hand the key does nothing here. None switches "
+                + "the key off.");
 
             AnnounceUnlocks = cfg.Bind("Display", "AnnounceUnlocks", true,
                 "Say so in the middle of the screen when a metal's veins open for you, whichever "

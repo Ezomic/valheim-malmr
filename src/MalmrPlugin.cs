@@ -171,6 +171,16 @@ namespace Malmr
             Step("vein bar drawing", Focus.Draw);
         }
 
+        /// <summary>
+        /// Every time the game gains or loses focus, for the vein mode key: a tap that spans a
+        /// focus change is an Alt+Tab, not a tap. Heard here as well as polled in VeinMode.Tick,
+        /// because a game that stops running frames in the background never polls the loss.
+        /// </summary>
+        private void OnApplicationFocus(bool focused)
+        {
+            VeinMode.FocusChanged();
+        }
+
         private static readonly HashSet<string> Failed = new HashSet<string>();
 
         private static void Step(string what, Action step)

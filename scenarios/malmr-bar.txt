@@ -88,6 +88,20 @@
 #     cannot tell from a miss, so it fails and names the tool tiers. The black metal pickaxe is well
 #     above copper's for that reason.
 #   - Two players on one deposit. That needs two clients.
+#   - The key itself. The run switches vein mining only from the console, because no step can
+#     press a key or take the window's focus away. See THE KEY, BY HAND below.
+#
+# THE KEY, BY HAND, after the run or on its own. Any world, a pickaxe in hand. `malmr` in the
+# console prints vein=on or vein=off, and each step starts from `malmr vein off`.
+#   1. Tap Left Alt once, quickly. Expected: a moment after you let go, the gold Vein shows above
+#      the crosshair and `malmr` reads vein=on. Tap it again: Vein goes, and vein=off.
+#   2. Alt+Tab to another window and Alt+Tab straight back. Expected: no Vein, and vein=off. Do it
+#      three times: quickly both ways; holding Alt on the switcher for a second both ways; and out
+#      by Alt+Tab, back by clicking the game's window.
+#   3. Hold Left Alt, press and let go of W, then let go of Alt, all inside half a second. Expected:
+#      no Vein, and vein=off. Then the same with E.
+# A Vein after step 2 is the bug of the first run, on 2026-09-28: Alt+Tab switched vein mining on
+# and it stayed on for the rest of the session. See VeinMode for the rule that closes it.
 #
 # If block 3 runs out of swings with the deposit still standing, read the percent on the failing
 # line. That would be a deposit bigger than fifty black metal swings at Pickaxes 100, not the rule

@@ -208,8 +208,9 @@ The file is `BepInEx/config/ezomic.valheim.malmr.cfg`. Every setting has a comme
 the reasoning, so the file explains itself. The ones worth knowing about:
 
 - `VeinToggleKey` is the key, Left Alt by default. It only listens while a pickaxe is out, so
-  Jafna's Left Alt on the hoe is left alone. A tap is a short press and release, so Alt+Tab and
-  Taum's Alt+E on a boar do not switch it.
+  Jafna's Left Alt on the hoe is left alone. A tap is a short press and release of the key on its
+  own, with the game in front the whole time, so Alt+Tab (out of the game or back into it) and
+  Taum's Alt+E on a boar do not switch it. Nor does a tap with any other key pressed during it.
 - `Unlocks` is the table above, as one line: `Stone:20, Copper:30, ...`. Add a metal, change a
   level, or set one to -1 to switch it off.
 - `Bosses` is the boss column of the table, as one line: `Stone:defeated_eikthyr, ...`. A metal
