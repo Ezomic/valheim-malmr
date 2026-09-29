@@ -44,8 +44,8 @@
 # When this boulder does not break it stays where it stood, and `put` takes down only its own
 # prefab's earlier copies. In the third run the copper control of malmr-tin.txt, the next file, was
 # put straight onto it, 3.4 metres up, and its swing struck this boulder instead. malmr-tin.txt now
-# moves clear first, but a boulder left here is still the first thing to look for when a Malmr file
-# after this one misses.
+# opens with a `wipe`, which takes it down, but a boulder left here is still the first thing to
+# look for when a Malmr file after this one misses.
 #
 # Every swing is a real one, and a swing only counts once it has LANDED - see malmr-bar.txt. In
 # vein mode the only thing Malmr writes on the boulder's ZDO is the bar, so a swing that lands while
@@ -57,13 +57,13 @@
 # them. Vandi's BossBiomes has defeated_eikthyr by default. Without Vandi `printed bosscount=vandi`
 # fails first.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). Face
-# open, with open ground 20 metres to your right that `flatten` can level (not a cliff edge, not in
-# water), where it moves you first (see there for why). The ground there is levelled round you
-# before either boulder is put, for the reasons malmr-bar.txt gives under FLAT GROUND: the 4.5
-# metres assume the boulder's foot is level with yours. `biome Meadows` takes you to the Meadows if
-# you are not there, and leaves you where you stand if you are. Anywhere would do, since stone vein
-# mines in every biome, the Mistlands included.
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). Stand on
+# open ground that `flatten` can level: not a cliff edge, not in water, not on anything built. The
+# ground is levelled round you before either boulder is put, for the reasons malmr-bar.txt gives
+# under FLAT GROUND: the 4.5 metres assume the boulder's foot is level with yours. `biome Meadows`
+# takes you to the Meadows if you are not there, and leaves you where you stand if you are.
+# Anywhere would do, since stone vein mines in every biome, the Mistlands included. `wipe 12` takes
+# down every piece within 12 metres of you as well as what `put` left there, so not beside a base.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block
 # 2 is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
@@ -111,21 +111,23 @@ tool PickaxeBlackMetal
 
 biome Meadows
 
-# Twenty metres to your right first, clear of any copper deposit another Malmr file left 4.5 metres
-# in front of where it stood - malmr-shut.txt, malmr-tin.txt and malmr-wear.txt each leave one, and
-# `biome` leaves you where they ended. `put` takes down only its own prefab's earlier copies, so a
-# boulder put onto that spot lands on the copper, which is what the first run did. `landed` holds
-# out the game's two seconds between teleports, in case `biome` moved you only a moment ago. It
-# used to be `wait 2`, which is the same guess malmr-mistlands.txt paid for and shorter still: it
-# starts in the frame `biome` ends, and the game counts its two seconds in 0.02 s physics steps
-# that reach 2 in single precision only on the hundred and first, so right after a teleport the
-# `move` behind a plain `wait 2` is often refused.
+# Any copper deposit another Malmr file left 4.5 metres in front of where it stood taken down
+# first: malmr-shut.txt and malmr-wear.txt each leave one, and `biome` leaves you where they ended.
+# `put` takes down only its own prefab's earlier copies, so a boulder put onto that spot lands on
+# the copper, which is what the first run did. Devkit 686ff58's `wipe` takes down what `put` left
+# as well as pieces.
 #
-# Then the ground there levelled round you, once you are standing on it after the move, since
-# `flatten` refuses while you are still above the ground.
+# This used to be `move 0 20`, and the fourth run, on 2026-09-29, showed what that costs.
+# malmr-tin.txt's identical move stood you 8.7 metres above the ground, on the first thing a ray
+# from 200 metres up met at the spot, most likely a tree in a Meadows forest patch; see NO `move`
+# there. This file's own move that run was into the same kind of forest and happened to find the
+# ground. Staying where you are keeps you on it: `biome` lands you at the height the world
+# generated, and the file before left you standing.
+#
+# Then `landed`, in case `biome` moved you only a moment ago or the wipe took down something you
+# were standing on, since `flatten` refuses while you are still above the ground.
 
-landed
-move 0 20
+wipe 12
 landed
 flatten 0 0 10
 

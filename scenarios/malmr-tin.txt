@@ -22,35 +22,47 @@
 #
 # THE CONTROL comes first: a copper deposit, the same pickaxe, the same switch, one swing, and no
 # chunk hurt. It stands 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES.
-# Then you are moved 12 metres to your right, so the tin rock stands well clear of the copper and no
-# swing can reach both. The tin rock is put 2 metres out: at 3, in the first run, its nearest edge
-# was 1.9 metres from your eye, and the antler pickaxe reaches 1.8.
+# Then `wipe` takes the copper down and `malmr progress` checks that it is gone, so no swing can
+# reach both, and the tin rock is put on the same levelled ground, 2 metres out: at 3, in the first
+# run, its nearest edge was 1.9 metres from your eye, and the antler pickaxe reaches 1.8.
 #
-# BEFORE EITHER, you are moved 20 metres to your right and the ground there is levelled round you.
-# The move is for the file before this one: malmr-stone.txt ends where it stood, and a boulder it
-# failed to break stands 4.5 metres in front of you. `put` takes down only its own prefab's earlier
-# copies, so in the third run, on 2026-09-28, this file's copper was put straight onto that boulder,
-# 3.4 metres up (the boulder at 68.5, the copper at 71.9, the same spot on the map), and the
-# control's one swing changed nothing on the copper: "0 landed", then damage=0.0, which read like
-# vein mining broken. The levelling is malmr-bar.txt's FLAT GROUND, so the copper's foot is level
-# with yours and the swing reaches it.
+# BEFORE EITHER, `wipe` takes down whatever a `put` left round you and the ground is levelled where
+# you stand. The wipe is for the file before this one: malmr-stone.txt ends where it stood, and a
+# boulder it failed to break stands 4.5 metres in front of you. `put` takes down only its own
+# prefab's earlier copies, so in the third run, on 2026-09-28, this file's copper was put straight
+# onto that boulder, 3.4 metres up (the boulder at 68.5, the copper at 71.9, the same spot on the
+# map), and the control's one swing changed nothing on the copper: "0 landed", then damage=0.0,
+# which read like vein mining broken. Devkit 686ff58's `wipe` takes down what `put` left as well
+# as pieces. The levelling is malmr-bar.txt's FLAT GROUND, so the copper's foot is level with yours
+# and the swing reaches it.
+#
+# NO `move`, since the fourth run. This file used to step 20 metres to the right to get clear of
+# that boulder, and 12 more before the tin. But `move` stands you on the first thing a ray from 200
+# metres up meets at the spot, trees and rocks included, and on 2026-09-29 the 20 metres ended 8.7
+# metres above the ground, at about (-1942, 52.8, -4289). Not a leftover: `biome` had just taken you
+# 64 metres west, more than 50 metres from anything a `put` made that run, and malmr-stone.txt's
+# boulder had broken. The spot is inside a Meadows forest patch by the world's own forest mask, so
+# most likely a tree; the log does not name it. `flatten` refused ("you are 8.7m above the ground
+# under you"), `put` stood the copper on the ground below you, and the control's swing ended 6.4
+# metres from its nearest face: 0 landed, damage=0.0, and nothing about Malmr in any of it. `biome`
+# lands you at the height the world generated, and standing still keeps you where the file before
+# levelled, so both keep you on the ground, and `wipe` does what the moves were there for.
 #
 # NEEDS VANDI for the control, like malmr-bar.txt: copper's and stone's boss halves are seeded
 # through Vandi's own kill record, vandi_p_<playerid>_defeated_gdking and _defeated_eikthyr at 2,
 # and both keys are removed at the end. A character with real Vandi kills of the Elder or Eikthyr
 # in this world loses them.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config. Face open, with open ground 20 metres to
-# your right that `flatten` can level (not a cliff edge, not in water), and open ground 12 metres
-# further right again. `biome Meadows` takes you to the Meadows if you are not there, and leaves you
-# where you stand if you are.
+# SINGLEPLAYER, in a TEST WORLD, with the default config. Stand on open ground that `flatten` can
+# level: not a cliff edge, not in water, not on anything built. `biome Meadows` takes you to the
+# Meadows if you are not there, and leaves you where you stand if you are. `wipe 12` takes down
+# every piece within 12 metres of you as well as what `put` left there, so not beside a base.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground,
-# a copper deposit with one blow in its bar where the control stood, and a tin rock with one blow in
-# it 2 metres in front of where you end. A copper `put` within 30 metres takes the copper down; the
-# tin rock stays until a later `put MineRock_Tin`, which is why malmr-wear.txt moves clear of it
-# first. Pickaxes is put back, the Vandi keys are removed and vein mining ends off. Devkit empties
-# the pack when the scenario ends and hands back its kit.
+# and a tin rock with one blow in it 2 metres in front of where you end. The copper is gone already.
+# The tin rock stays until a `wipe` or a later `put MineRock_Tin`, which is why malmr-wear.txt opens
+# with a `wipe`. Pickaxes is put back, the Vandi keys are removed and vein mining ends off. Devkit
+# empties the pack when the scenario ends and hands back its kit.
 #
 # What a broken build reads:
 #   - tin read as a deposit at all: `malmr progress MineRock_Tin` prints a line instead of
@@ -83,11 +95,11 @@ tool PickaxeAntler
 
 biome Meadows
 
-# Twenty metres right, clear of whatever malmr-stone.txt left in front of you, and the ground there
-# levelled once you stand on it. See BEFORE EITHER.
+# Whatever malmr-stone.txt's `put` left in front of you taken down, and the ground levelled where
+# you stand. See BEFORE EITHER, and NO `move` for why you stay put. `landed` in case `biome` moved
+# you a moment ago, or the wipe took down something you were standing on.
 
-landed
-move 0 20
+wipe 12
 landed
 flatten 0 0 10
 
@@ -117,13 +129,13 @@ console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac yes
 printed damage=0.0 no
 
-# ---- tin. Twelve metres to the right, a tin rock 2 metres ahead. Malmr has no deposit of that name
-# to read, and the one swing lands on the rock itself. `landed` serves the game's two seconds
-# between teleports, counted from the move at the top; it was a `wait 2`, the guess malmr-stone.txt
-# explains the trouble with.
+# ---- tin. The copper taken down first, and checked gone, so the one swing below cannot reach it.
+# Then a tin rock 2 metres ahead on the same levelled ground. Malmr has no deposit of that name to
+# read, and the one swing lands on the rock itself. This used to be `move 0 12`: see NO `move`.
 
-landed
-move 0 12
+wipe 12
+console malmr progress rock4_copper_frac
+printed progress=none yes
 
 put MineRock_Tin 2
 console malmr progress MineRock_Tin
