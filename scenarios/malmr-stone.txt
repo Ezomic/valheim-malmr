@@ -43,9 +43,10 @@
 #
 # When this boulder does not break it stays where it stood, and `put` takes down only its own
 # prefab's earlier copies. In the third run the copper control of malmr-tin.txt, the next file, was
-# put straight onto it, 3.4 metres up, and its swing struck this boulder instead. malmr-tin.txt now
-# opens with a `wipe`, which takes it down, but a boulder left here is still the first thing to
-# look for when a Malmr file after this one misses.
+# put straight onto it, 3.4 metres up, and its swing struck this boulder instead. Devkit's automatic
+# stage before malmr-tin.txt's first step now takes it down where this file ends, and malmr-tin.txt
+# stages again after its `biome`, but a boulder left here is still the first thing to look for when
+# a Malmr file after this one misses.
 #
 # Every swing is a real one, and a swing only counts once it has LANDED - see malmr-bar.txt. In
 # vein mode the only thing Malmr writes on the boulder's ZDO is the bar, so a swing that lands while
@@ -57,23 +58,25 @@
 # them. Vandi's BossBiomes has defeated_eikthyr by default. Without Vandi `printed bosscount=vandi`
 # fails first.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). Stand on
-# open ground that `flatten` can level: not a cliff edge, not in water, not on anything built. The
-# ground is levelled round you before either boulder is put, for the reasons malmr-bar.txt gives
-# under FLAT GROUND: the 4.5 metres assume the boulder's foot is level with yours. `biome Meadows`
-# takes you to the Meadows if you are not there, and leaves you where you stand if you are.
-# Anywhere would do, since stone vein mines in every biome, the Mistlands included. `wipe 12` takes
-# down every piece within 12 metres of you as well as what `put` left there, so not beside a base.
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). The
+# ground is cleared and levelled round you before either boulder is put, for the reasons
+# malmr-bar.txt gives under FLAT GROUND: the 4.5 metres assume the boulder's foot is level with
+# yours. The `stage` does that, to the ground under your feet, and the game keeps every point within
+# 8 metres of its own height, so start not at a cliff edge and not in water. `biome Meadows` takes
+# you to the Meadows if you are not there, and leaves you where you stand if you are. Anywhere would
+# do, since stone vein mines in every biome, the Mistlands included. The stage takes down every
+# piece within thirty metres of you, what `put` left there and the world's own trees, rocks and
+# deposits included, so not beside a base, and the world's own are gone for good.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block
 # 2 is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
 # hungry character only takes longer, and it fails the step by name when the bar stops coming back.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground
-# and the stone block 2 dropped. No boulder is left: the second breaks, and its `put` took the first
-# down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit empties the
-# pack when the scenario ends and hands back its kit, so the pickaxe and any stone you picked up go
-# with it.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground and the stone block 2 dropped. No boulder is left: the second breaks, and its `put` took
+# the first down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit
+# empties the pack when the scenario ends and hands back its kit, so the pickaxe and any stone you
+# picked up go with it.
 #
 # What a broken build reads:
 #   - stone not a vein at all (the table before stone, or a classifier that never reads a drop as
@@ -114,8 +117,10 @@ biome Meadows
 # Any copper deposit another Malmr file left 4.5 metres in front of where it stood taken down
 # first: malmr-shut.txt and malmr-wear.txt each leave one, and `biome` leaves you where they ended.
 # `put` takes down only its own prefab's earlier copies, so a boulder put onto that spot lands on
-# the copper, which is what the first run did. Devkit 686ff58's `wipe` takes down what `put` left
-# as well as pieces.
+# the copper, which is what the first run did. The `stage` takes down what `put` left, with every
+# piece, drop, tree, rock and deposit round it, and then levels the ground for FLAT GROUND. It
+# replaces the `wipe 12` and `flatten 0 0 10` that stood here: those cleared and levelled less of
+# the same ground to the same height, so after the stage they would change nothing.
 #
 # This used to be `move 0 20`, and the fourth run, on 2026-09-29, showed what that costs.
 # malmr-tin.txt's identical move stood you 8.7 metres above the ground, on the first thing a ray
@@ -124,12 +129,10 @@ biome Meadows
 # ground. Staying where you are keeps you on it: `biome` lands you at the height the world
 # generated, and the file before left you standing.
 #
-# Then `landed`, in case `biome` moved you only a moment ago or the wipe took down something you
-# were standing on, since `flatten` refuses while you are still above the ground.
+# `landed` first, in case `biome` moved you only a moment ago.
 
-wipe 12
 landed
-flatten 0 0 10
+stage
 
 console malmr
 printed bosscount=vandi yes

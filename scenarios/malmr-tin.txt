@@ -26,15 +26,15 @@
 # reach both, and the tin rock is put on the same levelled ground, 2 metres out: at 3, in the first
 # run, its nearest edge was 1.9 metres from your eye, and the antler pickaxe reaches 1.8.
 #
-# BEFORE EITHER, `wipe` takes down whatever a `put` left round you and the ground is levelled where
-# you stand. The wipe is for the file before this one: malmr-stone.txt ends where it stood, and a
-# boulder it failed to break stands 4.5 metres in front of you. `put` takes down only its own
-# prefab's earlier copies, so in the third run, on 2026-09-28, this file's copper was put straight
-# onto that boulder, 3.4 metres up (the boulder at 68.5, the copper at 71.9, the same spot on the
-# map), and the control's one swing changed nothing on the copper: "0 landed", then damage=0.0,
-# which read like vein mining broken. Devkit 686ff58's `wipe` takes down what `put` left as well
-# as pieces. The levelling is malmr-bar.txt's FLAT GROUND, so the copper's foot is level with yours
-# and the swing reaches it.
+# BEFORE EITHER, `stage` takes down whatever a `put` left round you, with every piece, drop, tree,
+# rock and deposit, and levels the ground where you stand. The clearing is for the file before this
+# one: malmr-stone.txt ends where it stood, and a boulder it failed to break stands 4.5 metres in
+# front of you. `put` takes down only its own prefab's earlier copies, so in the third run, on
+# 2026-09-28, this file's copper was put straight onto that boulder, 3.4 metres up (the boulder at
+# 68.5, the copper at 71.9, the same spot on the map), and the control's one swing changed nothing
+# on the copper: "0 landed", then damage=0.0, which read like vein mining broken. The levelling is
+# malmr-bar.txt's FLAT GROUND, so the copper's foot is level with yours and the swing reaches it.
+# The stage replaces the `wipe 12` and `flatten 0 0 10` that did both before it.
 #
 # NO `move`, since the fourth run. This file used to step 20 metres to the right to get clear of
 # that boulder, and 12 more before the tin. But `move` stands you on the first thing a ray from 200
@@ -46,23 +46,25 @@
 # under you"), `put` stood the copper on the ground below you, and the control's swing ended 6.4
 # metres from its nearest face: 0 landed, damage=0.0, and nothing about Malmr in any of it. `biome`
 # lands you at the height the world generated, and standing still keeps you where the file before
-# levelled, so both keep you on the ground, and `wipe` does what the moves were there for.
+# levelled, so both keep you on the ground, and `stage` does what the moves were there for.
 #
 # NEEDS VANDI for the control, like malmr-bar.txt: copper's and stone's boss halves are seeded
 # through Vandi's own kill record, vandi_p_<playerid>_defeated_gdking and _defeated_eikthyr at 2,
 # and both keys are removed at the end. A character with real Vandi kills of the Elder or Eikthyr
 # in this world loses them.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config. Stand on open ground that `flatten` can
-# level: not a cliff edge, not in water, not on anything built. `biome Meadows` takes you to the
-# Meadows if you are not there, and leaves you where you stand if you are. `wipe 12` takes down
-# every piece within 12 metres of you as well as what `put` left there, so not beside a base.
+# SINGLEPLAYER, in a TEST WORLD, with the default config. Not at a cliff edge and not in water: the
+# stage levels to the ground under your feet, and the game keeps every point within 8 metres of its
+# own height. `biome Meadows` takes you to the Meadows if you are not there, and leaves you where you
+# stand if you are. The `stage` takes down every piece within thirty metres of you, what `put` left
+# there and the world's own trees, rocks and deposits included, so not beside a base, and the
+# world's own are gone for good.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground,
-# and a tin rock with one blow in it 2 metres in front of where you end. The copper is gone already.
-# The tin rock stays until a `wipe` or a later `put MineRock_Tin`, which is why malmr-wear.txt opens
-# with a `wipe`. Pickaxes is put back, the Vandi keys are removed and vein mining ends off. Devkit
-# empties the pack when the scenario ends and hands back its kit.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground, and a tin rock with one blow in it 2 metres in front of where you end. The copper is gone
+# already. The tin rock stays until a `wipe`, a `stage` or a later `put MineRock_Tin`, which is why
+# malmr-wear.txt opens with a `stage`. Pickaxes is put back, the Vandi keys are removed and vein
+# mining ends off. Devkit empties the pack when the scenario ends and hands back its kit.
 #
 # What a broken build reads:
 #   - tin read as a deposit at all: `malmr progress MineRock_Tin` prints a line instead of
@@ -97,11 +99,10 @@ biome Meadows
 
 # Whatever malmr-stone.txt's `put` left in front of you taken down, and the ground levelled where
 # you stand. See BEFORE EITHER, and NO `move` for why you stay put. `landed` in case `biome` moved
-# you a moment ago, or the wipe took down something you were standing on.
+# you a moment ago.
 
-wipe 12
 landed
-flatten 0 0 10
+stage
 
 # Copper is open, and the table has no tin in it at all. The "no" is safe to trust because the lines
 # above it prove the report printed.

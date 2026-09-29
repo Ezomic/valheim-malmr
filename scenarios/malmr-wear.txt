@@ -37,14 +37,16 @@
 # Vandi kills of the Elder in this world loses them.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config and the default world modifiers, because a
-# world set to another durability rate changes every number below. Stand on open ground that
-# `flatten` can level: not a cliff edge, not in water, not on anything built. Both deposits are put
-# 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES, on ground levelled round
-# you first, for the reason under FLAT GROUND there. `biome Meadows` takes you to the Meadows if you
-# are not there, and leaves you where you stand if you are. `wipe 12` takes down every piece within
-# 12 metres of you as well as what `put` left there, so not beside a base.
+# world set to another durability rate changes every number below. Both deposits are put 4.5 metres
+# out, for the reason malmr-bar.txt gives under WHY 4.5 METRES, on ground levelled round you first,
+# for the reason under FLAT GROUND there. The `stage` does that, to the ground under your feet, and
+# the game keeps every point within 8 metres of its own height, so start not at a cliff edge and not
+# in water. `biome Meadows` takes you to the Meadows if you are not there, and leaves you where you
+# stand if you are. The stage takes down every piece within thirty metres of you, what `put` left
+# there and the world's own trees, rocks and deposits included, so not beside a base, and the
+# world's own are gone for good.
 #
-# A `wipe` before anything, because malmr-tin.txt, the file before this one, leaves its tin rock 2
+# A `stage` before anything, because malmr-tin.txt, the file before this one, leaves its tin rock 2
 # metres in front of where you stand. The third run, on 2026-09-28, started there without levelling,
 # 3.4 metres above the ground where both deposits landed (you at 73, their feet at 69.6 and 69.4).
 # The third hand swing and all three vein swings missed, 1.9 and 2.0 metres from the blow's origin
@@ -56,7 +58,8 @@
 # It used to step 20 metres to the right instead, clear of the tin rock, and in the fourth run, on
 # 2026-09-29, malmr-tin.txt's identical `move` stood you 8.7 metres above the ground on the first
 # thing a ray from 200 metres up met there, most likely a tree; see NO `move` in that file. Staying
-# where you are keeps you on the ground, and Devkit 686ff58's `wipe` takes down what `put` left.
+# where you are keeps you on the ground, and the `stage` takes down what `put` left. It replaces the
+# `wipe 12` and `flatten 0 0 10` that stood before the first `put`.
 #
 # The first run, on 2026-09-28, shows why a `durability` pass says nothing without the `swing` before
 # it. Its second deposit stood on the first (the Devkit trouble malmr-bar.txt describes), every vein
@@ -65,13 +68,13 @@
 # run's third hand round is the same case: 0 landed on the deposit, and -1 all the same, most
 # likely from the ground.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground,
-# the ore the hand swings knocked loose, and the second deposit 4.5 metres in front of you with three
-# blows in its bar until a `wipe` or the next copper `put` takes it down. The pickaxe ends broken,
-# and Devkit empties the pack when the scenario ends, so it goes with the rest. That is also why no
-# pickaxe reaches this file worn by another: every file's `give` is a fresh one, and the third run's
-# `strip` here found no black metal pickaxe to take out after four Malmr files had each given one.
-# Pickaxes is put back, the Vandi key is removed and vein mining ends off.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground, the ore the hand swings knocked loose, and the second deposit 4.5 metres in front of you
+# with three blows in its bar until a `wipe`, a `stage` or the next copper `put` takes it down. The
+# pickaxe ends broken, and Devkit empties the pack when the scenario ends, so it goes with the rest.
+# That is also why no pickaxe reaches this file worn by another: every file's `give` is a fresh
+# one, and the third run's `strip` here found no black metal pickaxe to take out after four Malmr
+# files had each given one. Pickaxes is put back, the Vandi key is removed and vein mining ends off.
 #
 # What a broken build reads: a vein round's `durability` outside -1 give or take 0.05, after a
 # `swing` that landed. A swing that lost its wear reads the sliver, "0.0021 of 210" (a Devkit older
@@ -109,12 +112,10 @@ tool PickaxeBlackMetal
 biome Meadows
 
 # malmr-tin.txt's tin rock taken down, and the ground levelled where you stand. `landed` in case
-# `biome` moved you a moment ago or the wipe took down something you were standing on, because
-# `flatten` refuses while you are above the ground.
+# `biome` moved you a moment ago.
 
-wipe 12
 landed
-flatten 0 0 10
+stage
 
 console malmr
 printed bosscount=vandi yes

@@ -22,14 +22,18 @@
 # SINGLEPLAYER, in a TEST WORLD. It travels: `biome` teleports to the nearest dry Black Forest
 # and then the nearest dry Mistlands, which is far and loads slowly the first time. God mode and
 # ghost mode are switched on first so nothing kills or chases the character on the way, and
-# Devkit cannot switch them off again, so they stay on.
+# Devkit cannot switch them off again, so they stay on. Each landing is staged: every piece, drop,
+# tree, rock and deposit within thirty metres taken down, the world's own for good, and the ground
+# levelled to the height under your feet, so each copper's foot is level with yours (WHY 4.5 METRES
+# in malmr-bar.txt). Devkit's automatic stage before the first step cannot do that here, because it
+# stages where the file before left you, and both `biome`s move you away from it.
 #
 # It LEAVES BEHIND: a copper deposit where it stood in the Black Forest, and a copper deposit, a
 # giant brain and a stone boulder where it stood in the Mistlands, the two coppers with one swing's
-# worth of damage in them or in their bar. `put` marks what it makes and takes its own earlier
-# copies down on the next run within 30m, so a rerun from the same spot tidies up after the last
-# one. Devkit empties the pack when a run ends and hands back its kit, so the black metal pickaxe
-# does not stay. Pickaxes is put back and vein mode ends off.
+# worth of damage in them or in their bar, all on cleared, levelled ground. `put` marks what it
+# makes and takes its own earlier copies down on the next run within 30m, so a rerun from the same
+# spot tidies up after the last one. Devkit empties the pack when a run ends and hands back its
+# kit, so the black metal pickaxe does not stay. Pickaxes is put back and vein mode ends off.
 #
 # THE CONTROL: the Black Forest copper. Without it, open=no in the Mistlands could be a copper
 # gate that never opened at all, and a hurt chunk there could be vein mining that never worked
@@ -50,14 +54,16 @@
 # The cost: a brain the world made, nearer than this one and more than 8 metres from where this
 # one was put (closer and `put` refuses), would be the one read. Its answers are the same, because
 # the rule is about the prefab and the biome, so that is a pass on the right rule about a
-# different brain.
+# different brain. Since the `stage` after each `biome` that brain would also have to stand past
+# the thirty metres the stage takes the world's own deposits down in, and still be the nearer one.
 #
 # The copper stands 4.5 metres out, not the 3 this file used first, for the reason malmr-bar.txt
 # gives under WHY 4.5 METRES: at 3 both copper swings here took no blow, in either biome. The brain
 # moved from 8 to 12 and the boulder from 16 to 22 with it, so neither lands on the copper's edge.
 #
-# If `put` refuses with an unmarked deposit within 8m, the world made one there: move on a little
-# and run it again. If the brain's `put` or its progress line fails with nothing found, check
+# `put` refuses when an unmarked deposit, one the world made, stands within 8m of its spot. The
+# answer used to be to move on a little and run it again; the `stage` after each `biome` now takes
+# those down first. If the brain's `put` or its progress line fails with nothing found, check
 # malmr-deposits-by-their-drops.txt for the brain's real prefab name.
 #
 # The boulder is rock4_forest_frac, a Black Forest rock, put down in the Mistlands the way the
@@ -108,6 +114,11 @@ printed malmr vein=on yes
 # because the blow went into the bar.
 
 biome BlackForest
+
+# Cleared and level where `biome` landed you, so the copper's foot is level with yours and no
+# deposit the world made stands in `put`'s way: see SINGLEPLAYER in the header.
+
+stage
 put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper yes
@@ -130,6 +141,11 @@ hurt rock4_copper_frac 0
 
 landed
 biome Mistlands
+
+# Cleared and level here too, for the same reasons. The brain and the boulder are put after it, 12
+# and 22 metres out on the ground it cleared, so it cannot take them down.
+
+stage
 put rock4_copper_frac 4.5
 console malmr progress rock4_copper_frac
 printed prefab=rock4_copper_frac metal=Copper yes

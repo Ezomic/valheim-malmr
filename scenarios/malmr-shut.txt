@@ -20,17 +20,20 @@
 # because the game's own tally reads kills=0/1.
 #
 # SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking, BossKills
-# 2). Face open, flat ground: each deposit is put 4.5 metres out, for the reason malmr-bar.txt gives
-# under WHY 4.5 METRES, which assumes its foot is level with yours. In the first run, at 3, the
-# level block's deposit took no blow, and the two after it stood on the one before, which is the
-# Devkit trouble malmr-bar.txt describes there too. `biome Meadows` takes you to the Meadows if you
-# are not there, and leaves you where you stand if you are.
+# 2). Each deposit is put 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES,
+# which assumes its foot is level with yours. In the first run, at 3, the level block's deposit took
+# no blow, and the two after it stood on the one before, which is the Devkit trouble malmr-bar.txt
+# describes there too. `biome Meadows` takes you to the Meadows if you are not there, and leaves you
+# where you stand if you are. The `stage` after it clears and levels thirty metres round you wherever
+# that is, for the reasons malmr-bar.txt gives under FLAT GROUND; this file used to ask for open,
+# flat ground in words and level nothing. The stage destroys the world's own trees, rocks and
+# deposits there for good, which is one more reason for a test world.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the ore the two hand
-# swings knocked loose, and the third deposit 4.5 metres in front of you with one blow in its bar. The
-# `put`s took the first two down, and the next run's first `put` takes the third. Pickaxes is put
-# back, the Vandi key is removed and vein mining ends off. Devkit empties the pack when a run ends
-# and hands back its kit.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground, the ore the two hand swings knocked loose, and the third deposit 4.5 metres in front of
+# you with one blow in its bar. The `put`s took the first two down, and the next scenario's stage,
+# or the next run's first `put`, takes the third. Pickaxes is put back, the Vandi key is removed and
+# vein mining ends off. Devkit empties the pack when a run ends and hands back its kit.
 #
 # What a broken build reads:
 #   - a gate the swing does not ask, or one that reads only the boss: the level block's swing goes
@@ -68,6 +71,11 @@ give PickaxeBlackMetal:1
 tool PickaxeBlackMetal
 
 biome Meadows
+
+# Cleared and level ground where `biome` left you, so each deposit's foot is level with yours: see
+# SINGLEPLAYER above.
+
+stage
 
 console malmr vein on
 printed malmr vein=on yes

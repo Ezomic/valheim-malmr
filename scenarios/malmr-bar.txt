@@ -26,12 +26,14 @@
 # used to call it "0.0 when you are standing in it", which sent the third run's reading of the logs
 # the wrong way.
 #
-# FLAT GROUND, since the third run. `flatten 0 0 10` levels ten metres round you to the ground under
-# your feet before anything is put, so every deposit's foot is level with yours. The file used to
+# FLAT GROUND, since the third run. Every deposit's foot has to be level with yours. The file used to
 # ask for flat ground in words and take whatever the file before it left you on, and what a swing
 # puts into the bar turned out to depend on that (see HOW MANY SWINGS), as does whether it reaches
-# at all: the third run's malmr-wear.txt stood 3.4 metres above its deposit's foot and missed.
-# `landed` first, because `flatten` refuses while you are still above the ground after a teleport.
+# at all: the third run's malmr-wear.txt stood 3.4 metres above its deposit's foot and missed. From
+# the third run `flatten 0 0 10` levelled ten metres round you. Now a `stage` after `biome` does it:
+# every piece, drop, tree, rock and deposit within thirty metres taken down, and the ground levelled
+# to the height under your feet. Devkit's automatic stage before the first step is not enough on its
+# own, because it stages where the file before left you, and `biome` may have moved you since.
 #
 # The first run also stood every deposit after the first ON the one before it, 3 metres up: Devkit's
 # `put` found no earlier copy to take down, because it looked for them by GameObject name, and a
@@ -97,22 +99,24 @@
 # them. Without Vandi `printed bosscount=vandi` fails first, and copper reads shut, because the
 # game's own tally would want a real kill.
 #
-# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). Face open,
-# somewhere `flatten` can level (not a cliff edge, not in water), since the 4.5 metres assume the
-# deposit's foot is level with yours. `biome Meadows` takes you to the Meadows if you are not there,
-# and leaves you where you stand if you are. Anywhere but the Mistlands would do, since only there
-# is copper left to the hand.
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). A test
+# world also because the stage destroys the world's own trees, rocks and deposits round you for good.
+# Not at a cliff edge and not in water: the stage levels to the ground under your feet, and the game
+# keeps every point within 8 metres of its own height, so the 4.5 metres, which assume the deposit's
+# foot is level with yours, still want ground the stage can level. `biome Meadows` takes you to the
+# Meadows if you are not there, and leaves you where you stand if you are. Anywhere but the
+# Mistlands would do, since only there is copper left to the hand.
 #
 # FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block 3
 # is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
 # hungry character only takes longer, and the note counts the stops. It fails the step by name when
 # the bar stops coming back: encumbered, or something draining it.
 #
-# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the levelled ground
-# and the ore block 3 dropped. No deposit is left: the third breaks, and the `put`s took the first
-# two down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit empties
-# the pack when the scenario ends and hands back its kit, so the pickaxe and any ore you picked up
-# go with it.
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground and the ore block 3 dropped. No deposit is left: the third breaks, and the `put`s took the
+# first two down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit
+# empties the pack when the scenario ends and hands back its kit, so the pickaxe and any ore you
+# picked up go with it.
 #
 # What a broken build reads, block by block:
 #   - 1: a build that sends blows to the bar whatever the switch says reads `hurt` 0, and damage
@@ -186,10 +190,12 @@ tool PickaxeBlackMetal
 
 biome Meadows
 
-# Flat ground under every deposit this file puts, for the reasons under FLAT GROUND.
+# Cleared, flat ground under every deposit this file puts, for the reasons under FLAT GROUND. The
+# stage replaces the `flatten 0 0 10` that stood here: that levelled less of the same ground to the
+# same height, so after the stage it would change nothing.
 
 landed
-flatten 0 0 10
+stage
 
 console malmr
 printed bosscount=vandi yes
