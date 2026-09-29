@@ -46,9 +46,10 @@
 # there and the world's own trees, rocks and deposits included, so not beside a base, and the
 # world's own are gone for good.
 #
-# A `stage` before anything, because malmr-tin.txt, the file before this one, leaves its tin rock 2
-# metres in front of where you stand. The third run, on 2026-09-28, started there without levelling,
-# 3.4 metres above the ground where both deposits landed (you at 73, their feet at 69.6 and 69.4).
+# A `stage` before anything, because malmr-tin.txt, the file before this one, leaves its tin rock
+# 1.25 metres in front of where you stand. The third run, on 2026-09-28, started there without
+# levelling, 3.4 metres above the ground where both deposits landed (you at 73, their feet at 69.6
+# and 69.4).
 # The third hand swing and all three vein swings missed, 1.9 and 2.0 metres from the blow's origin
 # to the nearest face against the black metal pickaxe's 1.8, so the vein rounds' `durability` read
 # the untouched sliver and the bar ended at damage=0.0. Nothing about vein wear was measured there:

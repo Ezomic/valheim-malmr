@@ -30,18 +30,22 @@
 # the target's colliders and nothing else, so nothing stood in the way. Put 2 metres out, that face
 # read 1.5, 1.6 and 1.6 metres from the swing's origin in the second, third and fourth runs, and
 # each swing landed. In the fifth, on 2026-09-29, it read 2.1 against the antler pickaxe's 1.8, and
-# the swing landed nothing. Same prefab, same distance, turned the same way, so the difference is
-# the ground. The three that landed stood where `move 0 12` had put them, on ground nobody levelled,
-# and in the second and third runs it rose ahead of you (the copper, 4.5 metres out, stood 2.3 to
-# 4.4 metres above where `biome` reported you), which lifts the rock towards the blow. The fifth was the first
-# on `stage`'s level ground, and every run has that now, so 2.1 at 2 metres is the only reading
-# that describes it. The blow starts above a rock that low, so bringing the rock 0.75 metres closer
-# takes less than 0.75 off: between about 0.55 and 0.75, depending on how far below the blow its
-# face sits, which should put the face at 1.35 to 1.55, where the landed runs were. That is
-# inferred from one level reading, not measured. The `swing` note gives the distance whether or not
-# it lands, so the next run says what it really is: over 1.8 wants the rock closer still, and a
-# `put` note saying you stand inside the rock wants it further out. No `put` in five runs has said
-# that of the tin at 2 or 3 metres.
+# the swing landed nothing. Same prefab, same distance, turned the same way, so what changed is how
+# high you stood against the rock's foot. In the third and fourth runs malmr-wear.txt's `biome`,
+# before anything moved you, found you at 73 and 48 with the tin's foot at 72.9 and 48.0: level with
+# you, to the half metre that report rounds to. In the fifth it found you at 49, here and in
+# malmr-wear.txt alike, over ground `stage` had levelled to 48.25, with the tin's foot at 48.2, so
+# the rock stood between a quarter of a metre and a metre and a third below you. Why you stood above
+# the levelled ground is not in the log. A rock lower against the blow is further from it along the
+# swing, which fits 2.1 against 1.6. The blow starts above the rock, so bringing it 0.75 metres
+# closer takes less than 0.75 off, and how much less depends on how far below the blow the face
+# sits. Holding the face where it was, the swing still reaches it unless the face is more than about
+# 1.75 metres below where the blow starts, and closer in the nearest face moves up the rock, which
+# only shortens it; 1.4 metres below would read about 1.6, where the landed runs were. That is
+# inferred from these readings, not measured. The `swing` note gives the distance whether or not it
+# lands, so the next run says what it really is: over 1.8 wants the rock closer still, and a `put`
+# note saying you stand inside the rock wants it further out. No `put` in five runs has said that
+# of the tin at 2 or 3 metres.
 #
 # BEFORE EITHER, `stage` takes down whatever a `put` left round you, with every piece, drop, tree,
 # rock and deposit, and levels the ground where you stand. The clearing is for the file before this
