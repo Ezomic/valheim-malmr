@@ -23,8 +23,25 @@
 # THE CONTROL comes first: a copper deposit, the same pickaxe, the same switch, one swing, and no
 # chunk hurt. It stands 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES.
 # Then `wipe` takes the copper down and `malmr progress` checks that it is gone, so no swing can
-# reach both, and the tin rock is put on the same levelled ground, 2 metres out: at 3, in the first
-# run, its nearest edge was 1.9 metres from your eye, and the antler pickaxe reaches 1.8.
+# reach both, and the tin rock is put on the same levelled ground, 1.25 metres out.
+#
+# WHY 1.25 METRES, since the fifth run. `put` measures to the rock's pivot, and what the blow has to
+# reach is the nearest face of its collider, Rock_4 (1), which is the tin rock's own: Devkit measures
+# the target's colliders and nothing else, so nothing stood in the way. Put 2 metres out, that face
+# read 1.5, 1.6 and 1.6 metres from the swing's origin in the second, third and fourth runs, and
+# each swing landed. In the fifth, on 2026-09-29, it read 2.1 against the antler pickaxe's 1.8, and
+# the swing landed nothing. Same prefab, same distance, turned the same way, so the difference is
+# the ground. The three that landed stood where `move 0 12` had put them, on ground nobody levelled,
+# and in the second and third runs it rose ahead of you (the copper, 4.5 metres out, stood 2.3 to
+# 4.4 metres above where `biome` reported you), which lifts the rock towards the blow. The fifth was the first
+# on `stage`'s level ground, and every run has that now, so 2.1 at 2 metres is the only reading
+# that describes it. The blow starts above a rock that low, so bringing the rock 0.75 metres closer
+# takes less than 0.75 off: between about 0.55 and 0.75, depending on how far below the blow its
+# face sits, which should put the face at 1.35 to 1.55, where the landed runs were. That is
+# inferred from one level reading, not measured. The `swing` note gives the distance whether or not
+# it lands, so the next run says what it really is: over 1.8 wants the rock closer still, and a
+# `put` note saying you stand inside the rock wants it further out. No `put` in five runs has said
+# that of the tin at 2 or 3 metres.
 #
 # BEFORE EITHER, `stage` takes down whatever a `put` left round you, with every piece, drop, tree,
 # rock and deposit, and levels the ground where you stand. The clearing is for the file before this
@@ -61,7 +78,7 @@
 # world's own are gone for good.
 #
 # It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
-# ground, and a tin rock with one blow in it 2 metres in front of where you end. The copper is gone
+# ground, and a tin rock with one blow in it 1.25 metres in front of where you end. The copper is gone
 # already. The tin rock stays until a `wipe`, a `stage` or a later `put MineRock_Tin`, which is why
 # malmr-wear.txt opens with a `stage`. Pickaxes is put back, the Vandi keys are removed and vein
 # mining ends off. Devkit empties the pack when the scenario ends and hands back its kit.
@@ -74,8 +91,9 @@
 # An ANTLER pickaxe, not the black metal one the other files use: the one a player first mines copper
 # and tin with. If the copper `swing` fails naming the tool tiers, the antler pickaxe is below
 # copper's, and PickaxeBronze is the next one up. If the tin `swing` fails with nothing changed, read
-# its distance first; `swing` names tool tiers only for a MineRock5 or a MineRock, so a tin rock too
-# hard for antler would say nothing about it.
+# its distance first. `swing` reads a Destructible's tier as well now, and in the fifth run said the
+# tin rock needs tier 0 and the antler pickaxe is tier 0, so a tin swing that changes nothing is
+# out of reach, not too weak.
 
 god
 ghost
@@ -131,14 +149,15 @@ printed prefab=rock4_copper_frac yes
 printed damage=0.0 no
 
 # ---- tin. The copper taken down first, and checked gone, so the one swing below cannot reach it.
-# Then a tin rock 2 metres ahead on the same levelled ground. Malmr has no deposit of that name to
-# read, and the one swing lands on the rock itself. This used to be `move 0 12`: see NO `move`.
+# Then a tin rock 1.25 metres ahead on the same levelled ground, for the reason under WHY 1.25
+# METRES. Malmr has no deposit of that name to read, and the one swing lands on the rock itself.
+# This used to be `move 0 12`: see NO `move`.
 
 wipe 12
 console malmr progress rock4_copper_frac
 printed progress=none yes
 
-put MineRock_Tin 2
+put MineRock_Tin 1.25
 console malmr progress MineRock_Tin
 printed progress=none yes
 
