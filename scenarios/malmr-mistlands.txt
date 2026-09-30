@@ -1,0 +1,190 @@
+# Malmr: in the Mistlands only the giant brains and stone vein mine. A copper deposit there is
+# mined by hand even with copper open to you and vein mining on, and the same copper deposit
+# elsewhere is not. A stone boulder there vein mines, because the rule is about the ore scattered
+# through the Mistlands and stone is stone everywhere.
+#
+# The rule is decided per deposit by the biome under it, and `malmr progress <prefab>` answers
+# the swing's own three questions for the nearest deposit of that name: is it a vein (metal=),
+# does its biome leave it to the hand (handonly=), and would the swing fill a bar (open=). The
+# bar and the swing ask the same Deposits.HandOnly, so this is the rule they act on. Then each
+# copper deposit takes one real swing with vein mining on, and `hurt` says whether the blow went
+# into the bar (no chunk hurt) or into the rock (a chunk hurt) - the rule acting, not only
+# answering.
+#
+# Runs against the DEFAULT config: Stone at 20 on defeated_eikthyr, Copper at 30 on
+# defeated_gdking, Eitr (the brains) at 60 on defeated_queen, and the Mistlands line at
+# Eitr, Stone.
+#
+# NEEDS VANDI, like malmr-unlock-levels.txt: the boss half is seeded through Vandi's own kill
+# record, and the scenario removes those three keys at the end. A character with real Vandi kills
+# of Eikthyr, the Elder or the Queen in this world loses them.
+#
+# SINGLEPLAYER, in a TEST WORLD. It travels: `biome` teleports to the nearest dry Black Forest
+# and then the nearest dry Mistlands, which is far and loads slowly the first time. God mode and
+# ghost mode are switched on first so nothing kills or chases the character on the way, and
+# Devkit cannot switch them off again, so they stay on. Each landing is staged: every piece, drop,
+# tree, rock and deposit within thirty metres taken down, the world's own for good, and the ground
+# levelled to the height under your feet, so each copper's foot is level with yours (WHY 4.5 METRES
+# in malmr-bar.txt). Devkit's automatic stage before the first step cannot do that here, because it
+# stages where the file before left you, and both `biome`s move you away from it.
+#
+# It LEAVES BEHIND: a copper deposit where it stood in the Black Forest, and a copper deposit, a
+# giant brain and a stone boulder where it stood in the Mistlands, the two coppers with one swing's
+# worth of damage in them or in their bar, all on cleared, levelled ground. `put` marks what it
+# makes and takes its own earlier copies down on the next run within 30m, so a rerun from the same
+# spot tidies up after the last one. Devkit empties the pack when a run ends and hands back its
+# kit, so the black metal pickaxe does not stay. Pickaxes is put back and vein mode ends off.
+#
+# THE CONTROL: the Black Forest copper. Without it, open=no in the Mistlands could be a copper
+# gate that never opened at all, and a hurt chunk there could be vein mining that never worked
+# anywhere. The same prefab, the same level, the same kills and the same swing, reading open=yes
+# handonly=no and leaving every chunk whole one biome over, is what makes the Mistlands answer
+# mean the biome.
+#
+# What a broken build reads: a build without the rule reads the Mistlands copper as open=yes
+# handonly=no, and its swing leaves every chunk whole (`hurt 1+` fails). A build that applied it to
+# everything reads the brain as handonly=yes open=no. A build on the old default, the brains alone,
+# reads the boulder the same way, and prints mistlands=Eitr without the Stone. A build that read
+# the player's biome instead of the deposit's would still pass here - the two stand in the same
+# biome - which is the one thing this cannot tell apart.
+#
+# The brain is asked about within 20 metres rather than the usual 10. It stands 12 metres out, and
+# 10 is measured to its nearest chunk with the height in it, so on a Mistlands slope a brain six
+# metres above or below would read progress=none for a reason that is the ground's, not Malmr's.
+# The cost: a brain the world made, nearer than this one and more than 8 metres from where this
+# one was put (closer and `put` refuses), would be the one read. Its answers are the same, because
+# the rule is about the prefab and the biome, so that is a pass on the right rule about a
+# different brain. Since the `stage` after each `biome` that brain would also have to stand past
+# the thirty metres the stage takes the world's own deposits down in, and still be the nearer one.
+#
+# The copper stands 4.5 metres out, not the 3 this file used first, for the reason malmr-bar.txt
+# gives under WHY 4.5 METRES: at 3 both copper swings here took no blow, in either biome. The brain
+# moved from 8 to 12 and the boulder from 16 to 22 with it, so neither lands on the copper's edge.
+#
+# `put` refuses when an unmarked deposit, one the world made, stands within 8m of its spot. The
+# answer used to be to move on a little and run it again; the `stage` after each `biome` now takes
+# those down first. If the brain's `put` or its progress line fails with nothing found, check
+# malmr-deposits-by-their-drops.txt for the brain's real prefab name.
+#
+# The boulder is rock4_forest_frac, a Black Forest rock, put down in the Mistlands the way the
+# copper is: the rule is about the entry and the biome, and one prefab that
+# malmr-deposits-by-their-drops.txt and malmr-stone.txt already lean on keeps the names this file
+# depends on to the fewest. It stands 22 metres out, past the brain, so the brain is not under the
+# spot `put` drops it on, and it is asked about within 30 metres for the brain's reason. Not swung
+# at: the copper swings already show the rule acting, and a swing needs the rock within reach.
+
+god
+ghost
+
+# ---- through zero first, for the reason malmr-unlock-levels.txt gives, and then the brains'
+# level, which is above copper's and stone's, so all three are open by the level.
+
+skill Pickaxes 0
+skill Pickaxes 60
+
+key vandi_p_$player_defeated_eikthyr 2
+key vandi_p_$player_defeated_gdking 2
+key vandi_p_$player_defeated_queen 2
+wait 2
+keyis vandi_p_$player_defeated_eikthyr 2
+keyis vandi_p_$player_defeated_gdking 2
+keyis vandi_p_$player_defeated_queen 2
+
+# A black metal pickaxe, whose tool tier is well above copper's, so the one swing on each
+# deposit below is never refused as too hard.
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+# The metal half is open for all three, everywhere, so what changes below is only the biome. The
+# Mistlands line whole, because `printed` matches a substring and mistlands=Eitr alone would pass
+# on the old default too.
+
+console malmr
+printed bosscount=vandi yes
+printed mistlands=Eitr,Stone yes
+printed Stone unlock=20 open=yes yes
+printed Copper unlock=30 open=yes yes
+printed Eitr unlock=60 open=yes yes
+
+console malmr vein on
+printed malmr vein=on yes
+
+# ---- the control: copper in the Black Forest vein mines. One swing lands and no chunk is hurt,
+# because the blow went into the bar.
+
+biome BlackForest
+
+# Cleared and level where `biome` landed you, so the copper's foot is level with yours and no
+# deposit the world made stands in `put`'s way: see SINGLEPLAYER in the header.
+
+stage
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper yes
+printed biome=BlackForest yes
+printed handonly=no yes
+printed open=yes yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+# ---- the same copper in the Mistlands is mined by hand. Vein mining is still on, and the same
+# swing hurts at least one chunk.
+#
+# `landed` first, because the game refuses a teleport for two seconds after the last one ends, and
+# the Black Forest block above can finish inside them. In the second run, on 2026-09-28, it did:
+# the swing there landed at once, `biome Mistlands` was refused, and every Mistlands line below was
+# asked of the Black Forest. In the first run the same swing missed and took two seconds more to
+# say so, which is the only reason that run got to the Mistlands. `landed` holds until you stand on
+# the floor with the cooldown served, where a plain `wait` would be a guess.
+
+landed
+biome Mistlands
+
+# Cleared and level here too, for the same reasons. The brain and the boulder are put after it, 12
+# and 22 metres out on the ground it cleared, so it cannot take them down.
+
+stage
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper yes
+printed biome=Mistlands yes
+printed handonly=yes yes
+printed open=no yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 1+
+
+# ---- and the brains there vein mine. Further out than the copper so the two do not overlap;
+# progress is asked by name, so which deposit is nearer does not matter, and within 20 metres for
+# the reason in the header. The brain is not swung at: its tool tier is asset data nobody has
+# read yet, and a pickaxe too weak for it fails `swing` for a reason that is not the rule.
+
+put giant_brain_frac 12
+console malmr progress giant_brain_frac 20
+printed prefab=giant_brain_frac metal=Eitr yes
+printed biome=Mistlands yes
+printed handonly=no yes
+printed open=yes yes
+printed reach=20 yes
+
+# ---- and stone there vein mines too: the Mistlands line lets it, so the biome leaves it to the
+# bar rather than the hand.
+
+put rock4_forest_frac 22
+console malmr progress rock4_forest_frac 30
+printed prefab=rock4_forest_frac metal=Stone yes
+printed biome=Mistlands yes
+printed handonly=no yes
+printed open=yes yes
+printed reach=30 yes
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_eikthyr
+unkey vandi_p_$player_defeated_gdking
+unkey vandi_p_$player_defeated_queen
+skill Pickaxes back

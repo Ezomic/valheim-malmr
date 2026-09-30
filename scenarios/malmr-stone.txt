@@ -1,0 +1,208 @@
+# Malmr: a stone boulder vein mines like an ore deposit. With stone open to you and vein mining on,
+# a pickaxe blow on a boulder goes into its bar and leaves every chunk whole, and enough blows take
+# the whole boulder down at once, stone and all.
+#
+# Stone joined the table on 2026-09-27, Robbin's "also add stone": Pickaxes 20, on Eikthyr. Two
+# blocks, each on its own boulder that `put` stands 4.5 metres in front of you. The second `put` takes
+# the first boulder down, so no two ever stand at once. 4.5 and not 3 for the reason malmr-bar.txt
+# gives under WHY 4.5 METRES; this is the same rock4 shape. In the first run, at 3, the first boulder
+# landed on top of copper deposits malmr-shut.txt had left on the spot, seven metres above your feet,
+# and block 2's swings mostly broke those coppers by hand instead (copper was shut by then). The
+# stone `found` counted came off them, and progress=none passed only because Malmr could not find a
+# MineRock5 by name at all. Both were passes for the wrong reason.
+#
+#   1. Into the bar, at stone's own line: Pickaxes 20 and Eikthyr killed twice through Vandi, the
+#      least a player needs and the place an off-by-one would show. The bar is empty before the
+#      swing and off zero after it, and no chunk is hurt.
+#   2. The whole boulder. Pickaxes 100, which makes every blow as hard as it gets. One swing is
+#      checked on its own to have gone into the bar, then up to 200 more in a single `swing` step.
+#      After them the boulder is gone, and stone came out of it: at least one, on the ground and in
+#      the pack counted together, for the reason malmr-bar.txt gives.
+#
+# WHICH BOULDER, and why block 2 is at Pickaxes 100. rock4_forest_frac, the Black Forest boulder,
+# is the same rock4 shape as the copper deposit malmr-bar.txt breaks, and the second run on
+# 2026-09-28 measured both: 130 chunks of 50, total=6500.0 in a fresh world. This block used to
+# allow fifty swings, on the guess that the boulder fits in them, and it does not: fifty black
+# metal swings at Pickaxes 100 filled its bar to 46%, damage=3028.6, every one landed, and it stood,
+# as it should with the bar short of full. The third run, the same day, allowed 140 and they fell
+# short too: 90 swings filled 3604.0 and fifty more 2014.1, 40.0 and 40.3 a swing, and the boulder
+# stood at 86%. Two thirds of the second run's 60.6, which is Attack.DoMeleeAttack dividing a
+# swing's damage when it strikes the ground as well as one chunk; malmr-bar.txt has the arithmetic
+# under HOW MANY SWINGS, and why the rate moves with what a swing's rays happen to cross.
+#
+# So it does what malmr-bar.txt does there, for the same rock and the same swing: no guessed rate,
+# and one `swing` step of up to 200, which Devkit 686ff58 allows, resting for stamina on its own and
+# passing when the boulder is gone part-way. That covers any rate down to 32.5 a swing, and its note
+# says how many swings the boulder took. The black metal pickaxe's 210 durability covers the 202
+# swings this file can make, one a swing, and Devkit hands every scenario a fresh one.
+#
+# A smaller rock would have been quicker, and the world-load survey now gives chunk counts
+# (Rock_3_frac is 5), but not what a chunk is worth, so a smaller rock would trade a measured total
+# for a guessed one. The big stone rocks (the mountain rocks, the Plains pillars, cliffs) run to
+# hundreds of chunks and are no use here at all.
+#
+# When this boulder does not break it stays where it stood, and `put` takes down only its own
+# prefab's earlier copies. In the third run the copper control of malmr-tin.txt, the next file, was
+# put straight onto it, 3.4 metres up, and its swing struck this boulder instead. Devkit's automatic
+# stage before malmr-tin.txt's first step now takes it down where this file ends, and malmr-tin.txt
+# stages again after its `biome`, but a boulder left here is still the first thing to look for when
+# a Malmr file after this one misses.
+#
+# Every swing is a real one, and a swing only counts once it has LANDED - see malmr-bar.txt. In
+# vein mode the only thing Malmr writes on the boulder's ZDO is the bar, so a swing that lands while
+# `hurt` reads no chunk below full health is a blow the bar took.
+#
+# NEEDS VANDI. Stone's boss half is seeded through Vandi's own kill record,
+# vandi_p_<playerid>_defeated_eikthyr at 2 (the one-star kill, the layout in Vandi's Kills.cs), and
+# the key is removed at the end. A character with real Vandi kills of Eikthyr in this world loses
+# them. Vandi's BossBiomes has defeated_eikthyr by default. Without Vandi `printed bosscount=vandi`
+# fails first.
+#
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Stone at 20 on defeated_eikthyr). The
+# ground is cleared and levelled round you before either boulder is put, for the reasons
+# malmr-bar.txt gives under FLAT GROUND: the 4.5 metres assume the boulder's foot is level with
+# yours. The `stage` does that, to the ground under your feet, and the game keeps every point within
+# 8 metres of its own height, so start not at a cliff edge and not in water. `biome Meadows` takes
+# you to the Meadows if you are not there, and leaves you where you stand if you are. Anywhere would
+# do, since stone vein mines in every biome, the Mistlands included. The stage takes down every
+# piece within thirty metres of you, what `put` left there and the world's own trees, rocks and
+# deposits included, so not beside a base, and the world's own are gone for good.
+#
+# FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block
+# 2 is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
+# hungry character only takes longer, and it fails the step by name when the bar stops coming back.
+#
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground and the stone block 2 dropped. No boulder is left: the second breaks, and its `put` took
+# the first down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit
+# empties the pack when the scenario ends and hands back its kit, so the pickaxe and any stone you
+# picked up go with it.
+#
+# What a broken build reads:
+#   - stone not a vein at all (the table before stone, or a classifier that never reads a drop as
+#     itself): the progress line says metal=none, and the first swing hurts a chunk.
+#   - the gate not reading stone's level or Eikthyr: open=no at Pickaxes 20, and the same.
+#   - a full bar that never breaks the boulder, or breaks only part of it: progress=none fails, and
+#     the `malmr progress` step before it says the percent and the chunks left. A break slowed by
+#     the frame budget still finishes within the `wait` for any rock this size; a rock that needed
+#     longer would read as still standing, which is why the wait before that line is five seconds.
+#
+# WHAT IT CANNOT SEE:
+#   - The bar's words, "Stone vein 45%". IMGUI, and no step reads it; by eye, against mockup A.
+#   - How many chunks the boulder is, and how long its break took. Verbose on writes "broke whole:
+#     N of N chunk(s) over F frame(s)" to the log, which is where to read both.
+#
+# The `logged` lines are a backstop, not the proof. Malmr says each of those warnings once per
+# session, so one already said before this run would not be said again.
+
+god
+ghost
+
+# ---- the fixture. Through zero first, for the reason malmr-unlock-levels.txt gives, then stone's
+# own level. A black metal pickaxe, whose tool tier is well above anything a plain rock asks for, so
+# no blow is refused as too hard.
+
+skill Pickaxes 0
+skill Pickaxes 20
+
+key vandi_p_$player_defeated_eikthyr 2
+wait 2
+keyis vandi_p_$player_defeated_eikthyr 2
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+biome Meadows
+
+# Any copper deposit another Malmr file left 4.5 metres in front of where it stood taken down
+# first: malmr-shut.txt and malmr-wear.txt each leave one, and `biome` leaves you where they ended.
+# `put` takes down only its own prefab's earlier copies, so a boulder put onto that spot lands on
+# the copper, which is what the first run did. The `stage` takes down what `put` left, with every
+# piece, drop, tree, rock and deposit round it, and then levels the ground for FLAT GROUND. It
+# replaces the `wipe 12` and `flatten 0 0 10` that stood here: those cleared and levelled less of
+# the same ground to the same height, so after the stage they would change nothing.
+#
+# This used to be `move 0 20`, and the fourth run, on 2026-09-29, showed what that costs.
+# malmr-tin.txt's identical move stood you 8.7 metres above the ground, on the first thing a ray
+# from 200 metres up met at the spot, most likely a tree in a Meadows forest patch; see NO `move`
+# there. This file's own move that run was into the same kind of forest and happened to find the
+# ground. Staying where you are keeps you on it: `biome` lands you at the height the world
+# generated, and the file before left you standing.
+#
+# `landed` first, in case `biome` moved you only a moment ago.
+
+landed
+stage
+
+console malmr
+printed bosscount=vandi yes
+printed Stone unlock=20 open=yes boss=defeated_eikthyr kills=2/2 missing=none yes
+
+console malmr vein on
+printed malmr vein=on yes
+
+# ---- 1. into the bar, at Pickaxes 20. A fresh boulder, its bar empty. One swing lands and not one
+# chunk is below full health, and the bar is off zero. owner=self says this machine owns the
+# boulder, so the blow took the on-the-spot road through the owner's handler.
+
+put rock4_forest_frac 4.5
+console malmr progress rock4_forest_frac
+printed prefab=rock4_forest_frac metal=Stone open=yes yes
+printed handonly=no yes
+printed damage=0.0 yes
+
+swing rock4_forest_frac 1
+hurt rock4_forest_frac 0
+
+console malmr progress rock4_forest_frac
+printed prefab=rock4_forest_frac yes
+printed damage=0.0 no
+printed owner=self yes
+printed stale=no yes
+
+# ---- 2. the whole boulder. Pickaxes 100, so the bar fills in the fewest swings. The ground and the
+# pack are cleared of stone first, so whatever `found` counts came out of this boulder.
+
+skill Pickaxes 100
+
+sweep
+strip Stone
+dropped Stone 0
+carrying Stone 0
+
+put rock4_forest_frac 4.5
+console malmr progress rock4_forest_frac
+printed prefab=rock4_forest_frac metal=Stone open=yes yes
+printed damage=0.0 yes
+
+# One swing on its own, and it went into the bar.
+
+swing rock4_forest_frac 1
+hurt rock4_forest_frac 0
+
+# The rest in one step, up to two hundred more: see WHICH BOULDER. `swing` rests for stamina on its
+# own, and stops early and passes when the boulder is gone. Gone is then asked of `malmr progress`,
+# which looks ten metres out, and you have not moved, so progress=none can only mean it broke.
+
+swing rock4_forest_frac 200
+wait 5
+
+console malmr progress rock4_forest_frac
+printed progress=none yes
+
+# The stone. A boulder that broke without dropping anything reads 0 here, however green the lines
+# above are.
+
+found Stone 1+ 20
+
+logged did not break whole no
+logged could not finish breaking no
+logged could not be sent no
+logged could not be counted no
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_eikthyr
+skill Pickaxes back

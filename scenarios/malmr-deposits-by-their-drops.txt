@@ -1,0 +1,144 @@
+# Malmr: every deposit in the default table is recognised by what it drops, and nothing else is.
+#
+# The metal of a deposit is read from the running game: its drop table, and what every
+# Smelter in the scene turns each drop into. None of that can be read offline, so this file is
+# where the classification is actually proved. It is also the file most likely to fail for a
+# reason that is not a bug, so read the notes on each block before trusting a failure.
+#
+# Runs against the DEFAULT config (Stone, Copper, Iron, Silver, Eitr, Flametal and Gold in Unlocks,
+# and no * entry), in any world, singleplayer. Stand anywhere: `malmr` lists every deposit prefab
+# ZNetScene holds, whether or not one is standing near you. Changes nothing and leaves nothing.
+#
+# What it reads: `malmr` prints "<prefab>=<Entry> chunks=<n>" for each deposit that counts as
+# a vein, a "not veins:" line with the rest, and one "Smelting stations here turn:" line with
+# every station and its conversions as "<station>: A>B, C>D; <next station>: ...". The same
+# block goes to the log once per world load.
+#
+# What a broken build reads: a classifier that stopped reading the drops prints every deposit under
+# "not veins", so every "=<Entry> yes" line fails. The old defaults (Tin at 40, * at 90) cannot be
+# caught on a tin rock any more, because in 1.0 no tin rock is a deposit Malmr reads - see the last
+# block. And the rule before stone, which tried every drop heaviest first whether it was ore or
+# not, would print a copper deposit whose stone weighs more than its ore as =Stone, which the ore
+# lines catch. A classifier that never reads a drop as itself prints every boulder
+# under "not veins", and the stone block fails.
+#
+# THE TRAP: the deposit and station names below come off the game's asset manifest, which
+# lists what is on disk and not what loads. A deposit here as MineRock5 is usually the *_frac*
+# prefab, because the whole rock is a Destructible that spawns the fractured one when it
+# breaks. If an assertion fails with "nothing containing", look at the printed list for the
+# name the world really uses before touching any code - that is a wrong name in this file, not
+# a wrong metal.
+#
+# The stone boulders are the likeliest to trip it, because there are many of them and every name
+# is off the manifest. A "=Stone" line can fail two ways, and they need different fixes. The name
+# is not printed at all: wrong name, as above. The name IS printed, in the "not veins:" line: the
+# rock is in the world and drops something besides stone, which by the rule makes it not a stone
+# vein. The world-load log block lists what every not-vein drops, so read that line there. If it is
+# stone and some other raw material, the rule is doing its job and the line here is what is wrong.
+# If it is stone alone, the classifier is wrong.
+
+console malmr
+
+# ---- the stations. If these fail, every deposit below fails with them, and the reason is
+# that no Smelter was found at all. Softtissue>Eitr is the eitr refinery's line, and it is the
+# one the giant brains hang on: naming Eitr in Unlocks is what makes a brain a vein.
+
+printed CopperOre>Copper yes
+printed TinOre>Tin yes
+printed IronScrap>Iron yes
+printed SilverOre>Silver yes
+printed Softtissue>Eitr yes
+
+# ---- which stations are furnaces. Only matters to somebody who adds a * entry back, since only
+# a furnace's inputs can fall to it, but the label is still printed and still has to be right.
+# A station counts when it makes an entry named in Unlocks, or burns the same fuel as one that
+# does. The smelter and the blast furnace make named metals. The charcoal kiln burns nothing
+# (its rip reads m_maxFuel = 0) and makes coal, which is not named, so it is not one. The eitr
+# refinery is not asserted either way: it makes Eitr, which is named for the brains, so by the
+# rule it now counts, and that is the rule working rather than a fact worth pinning.
+
+printed smelter (not a furnace no
+printed blastfurnace (not a furnace no
+printed charcoal_kiln (not a furnace yes
+
+# ---- Black Forest and Swamp.
+
+printed rock4_copper_frac=Copper yes
+printed mudpile_frac=Iron yes
+
+# ---- Mountains. Silver veins are mostly buried, and a full bar breaks the buried chunks too.
+
+printed silvervein_frac=Silver yes
+
+# ---- Mistlands. The giant brains, as Eitr: a brain drops soft tissue, and the refinery turns
+# soft tissue into Eitr. The least certain name in this file - giant_brain is the whole brain
+# and giant_brain_frac the fractured one - so if this fails with "nothing containing", read the
+# printed list for whichever of the two it really is.
+
+printed giant_brain_frac=Eitr yes
+
+# ---- Ashlands and the Deep North. The least certain two. Flametal passes on either the old
+# name or the Ashlands one, because a trailing New is ignored when names are compared.
+#
+# The Ashlands' flametal is LeviathanLava, the lava leviathan, and MineRock_Meteorite still carries
+# the new ore too. This file asked for FlametalRockstand_frac until the first run on 2026-09-28,
+# which printed that name under "not veins:", and the world-load log block says why: it drops Coal
+# and nothing else. The name came off the manifest, THE TRAP above, and the run's own list showed
+# LeviathanLava=Flametal and MineRock_Meteorite=Flametal, both from FlametalOreNew at the blast
+# furnace. The rock stand is kept as a not-vein, since a coal rock read as flametal is a mistake
+# the classifier could make.
+#
+# Gold is the prefab name of the metal the game shows as Bloodgold. That much is read off a 1.0
+# session already: Yoke's item list has Gold as "Bloodgold" and GoldOre as "Petrified Tissue",
+# and no item called BloodGold at all, so the BloodGold names in the manifest are meshes and
+# materials. What is not known is whether goldvein drops GoldOre and whether whatever smelts
+# it is a Smelter. If not, the log block says "Gold: no deposit here resolves to it" and the
+# fix is one line in Deposits.
+
+printed LeviathanLava=Flametal yes
+printed MineRock_Meteorite=Flametal yes
+printed FlametalRockstand_frac yes
+printed FlametalRockstand_frac= no
+printed goldvein_frac=Gold yes
+
+# ---- ore beside stone. Ore deposits can drop stone as well as their ore, and where the stone
+# weighs more the old rule would have made them stone veins. Each is still its metal. Every prefab
+# prints one line, so =Iron here also means not =Stone. The Black Forest, Swamp and Mountains lines
+# above already say it for one prefab of each metal; these are the second iron and silver prefabs,
+# the same rule over another drop table. Both names are off the manifest, so a "nothing containing"
+# here is THE TRAP, not the rule.
+
+printed mudpile2_frac=Iron yes
+printed rock3_silver_frac=Silver yes
+
+# ---- stone. The plain rocks and boulders, whose every drop is stone: one or two a biome, plus the
+# small MineRock_Stone. Stone is the one default named as the dropped item itself, since nothing
+# smelts it. A deposit answers to it only when it has no ore at all and nothing but stone (or
+# other named things) among its drops. These are the least certain names in this file, see the
+# second half of THE TRAP. rock4_forest_frac is the one malmr-stone.txt swings at, and the one
+# malmr-mistlands.txt puts in the Mistlands, so of these it is the one that matters most.
+
+printed Rock_3_frac=Stone yes
+printed rock4_forest_frac=Stone yes
+printed rock4_coast_frac=Stone yes
+printed rock1_mountain_frac=Stone yes
+printed rock4_heath_frac=Stone yes
+printed rock_mistlands1_frac=Stone yes
+printed MineRock_Stone=Stone yes
+
+# ---- tin and obsidian are not deposits Malmr can touch at all. The list above holds every
+# ZNetScene prefab carrying a MineRock5 or a MineRock, vein or not, and the first run on 2026-09-28
+# printed neither MineRock_Tin nor MineRock_Obsidian anywhere in it. Devkit's `hurt` said the same
+# of a MineRock_Tin put down in malmr-tin.txt: "not a MineRock5 or a MineRock". So in 1.0 both are
+# some other kind of breakable, and Malmr's only ways into a blow are MineRock5.Damage and
+# MineRock.Damage. A blow on either rock never reaches Malmr, whatever the table says, which keeps
+# tin out (Robbin's "tin doesnt need vein mining") without the classifier being asked.
+#
+# This file used to assert each name printed and then "name=" not printed, which is the right test
+# for a rock that is a deposit. Here the "printed yes" half cannot hold, and "no" is now the fact
+# worth pinning: if a game update ever turns either rock back into a MineRock, these two fail, and
+# that is the moment to put back the "name= no" check, because the classifier is then what keeps
+# tin out.
+
+printed MineRock_Tin no
+printed MineRock_Obsidian no

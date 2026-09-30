@@ -1,0 +1,278 @@
+# Malmr: each metal opens at its own Pickaxes level AND once its biome's boss has been beaten,
+# counted through Vandi when Vandi is installed. Open or shut, nothing in between.
+#
+# Runs against the DEFAULT config. Every number asserted below is the default Unlocks table
+# (Stone 20, Copper 30, Iron 40, Silver 50, Eitr 60 for the giant brains, Flametal 70, Gold 80,
+# and nothing else), the default Bosses line (Stone on defeated_eikthyr, Copper on
+# defeated_gdking, Iron on defeated_bonemass, Silver on defeated_dragon, Eitr on defeated_queen,
+# Flametal and Gold on defeated_fader), the default Mistlands line (Eitr, Stone), the default
+# Names line (Eitr is "Giant brain") and BossKills 2. A cfg that has been edited fails
+# here honestly, so read the cfg first if the first assertion is off by a clean amount.
+#
+# NEEDS VANDI, and takes the Vandi road. The testprofile has Vandi, so that is the road proved
+# here: the first `printed` checks bosscount=vandi, and without Vandi loaded every kills=2/2 below
+# would read kills=0/1 and fail. The other road is by hand - see the note at the bottom.
+#
+# SINGLEPLAYER, or anywhere the host runs the defaults. On a server Core swaps the host's table
+# in, and `malmr` prints what is in force rather than what is in your own file. Stand anywhere.
+#
+# A TEST WORLD. The boss half is seeded by writing Vandi's own kill record for this character -
+# the six keys below, vandi_p_<playerid>_<bosskey> with the count as the value, lowercase, the
+# layout in Vandi's Kills.cs - and the scenario owns them for the length of the run. It removes
+# them at the end, because Devkit can set and remove a global key but cannot put back a value it
+# did not write. A character with real Vandi kills in this world loses them.
+#
+# Malmr never reads that key itself; it asks VandiApi. So if Vandi ever changes the layout, this
+# file is what goes stale, and it goes stale loudly: every metal reads kills=0/2, the keyis lines
+# still pass, and the first open=yes fails.
+#
+# Any character. The level compared is the one earned, the big number on the skills page, so a
+# bonus on top changes nothing here. If the character has one, `malmr` says so on a line of its
+# own, and every assertion still holds.
+#
+# What it reads: `malmr` prints "malmr enabled=yes pickaxes=<earned level> vein=on|off
+# bosskills=2 bosscount=vandi|game", a "mistlands=<entries>" line, and for every Unlocks entry
+# "<Entry> unlock=<level> open=yes|no boss=<key> kills=<have>/<need> missing=<what>", where
+# missing is none, level, boss, both or off, followed in brackets by what the screen calls it.
+# That is the same Gate the swing asks, with the same level and the same count.
+#
+# The unlock message is checked with `centre`, which reads the centre of the screen and then
+# clears it, so each check answers only for what was shown since the one before. The message is
+# "<Things> open to you now: Pickaxes <n> and <Boss> beaten at one star through Vandi." and then
+# "Tap Left Alt with a pickaxe out to mine a whole deposit". `skill` goes through CheatRaiseSkill,
+# which skips Player.OnSkillLevelup, but Malmr also looks once a second for a metal that has just
+# opened - the look that catches a boss kill - so the message shows after `skill` too, within a
+# second. Every `centre` after a change is preceded by a wait of two for that reason.
+#
+# What a broken build reads, per block:
+#   - the old defaults (tin at 40, * at 90, copper at 50): "Tin unlock=" and "* unlock=" are
+#     printed, and Copper reads unlock=50.
+#   - the table before stone: no "Stone unlock=" line at all, and the stone blocks fail first.
+#   - stone not paired with Eikthyr: Stone prints boss=none and opens on the level alone, which
+#     the last block catches with one kill of Eikthyr.
+#   - Vandi not detected, or the game road taken by mistake: bosscount=game, kills=x/1, and the
+#     message says "beaten by you" instead of "at one star through Vandi".
+#   - Names ignored: the brains are announced as "Refined eitr veins", not "Giant brains".
+#   - the Queen not paired with the brains: Eitr prints boss=none and opens on the level alone.
+#   - an announcement on every change instead of only shut to open: "open to you now" shows up
+#     after the silent shuts.
+#
+# WHAT IT CANNOT SEE, so that a pass is not read as more than it is:
+#
+#   - The swing. Nothing here fills a bar or breaks a deposit. The `malmr vein` lines at the end
+#     only prove the switch and the progress verb answer. malmr-bar.txt swings.
+#   - A real boss kill. The count is seeded, not earned. This proves Malmr reads the count Vandi
+#     keeps for the local player and gates on it; that Vandi writes that count when a boss dies
+#     is Vandi's own scenario's job.
+#   - The Mistlands rule, which is about where a deposit stands: malmr-mistlands.txt.
+#   - The road without Vandi. See the note at the bottom.
+#
+# It moves Pickaxes and puts it back at the end with `skill Pickaxes back`, removes the six
+# Vandi keys, and leaves vein mode off.
+
+# ---- through zero first. `skill` adds (target - current) to the level, and from a fractional
+# level like 23.46 that sum can land on 28.9999, which the game floors to 28 - so would the mod,
+# and the first assertion would fail on float rounding in the setup rather than on anything
+# Malmr did. x + (-x) is exactly zero, and whole numbers from there on stay whole.
+
+skill Pickaxes 0
+
+# ---- every boss at two kills, the one-star kill, so the level blocks below test the level
+# alone. keyis proves each key holds what was written, so a failure further down is Malmr's and
+# not the fixture's.
+
+key vandi_p_$player_defeated_eikthyr 2
+key vandi_p_$player_defeated_gdking 2
+key vandi_p_$player_defeated_bonemass 2
+key vandi_p_$player_defeated_dragon 2
+key vandi_p_$player_defeated_queen 2
+key vandi_p_$player_defeated_fader 2
+wait 2
+keyis vandi_p_$player_defeated_eikthyr 2
+keyis vandi_p_$player_defeated_gdking 2
+keyis vandi_p_$player_defeated_bonemass 2
+keyis vandi_p_$player_defeated_dragon 2
+keyis vandi_p_$player_defeated_queen 2
+keyis vandi_p_$player_defeated_fader 2
+
+# ---- which road. With Vandi loaded the boss is counted through it; the Mistlands line is at
+# its default, the brains and stone. The whole line, because `printed` matches a substring and
+# mistlands=Eitr alone would pass on the old default too.
+
+console malmr
+printed bosscount=vandi yes
+printed mistlands=Eitr,Stone yes
+
+# Clears the centre and nothing else. No message says this text, so the step passes whatever is
+# there; what it buys is that a message found by a later `centre` was shown during this run.
+
+centre nothing malmr ever says no
+
+# ---- one below stone. Nothing is open, it is the level that is missing, and the table holds
+# only what Robbin listed: no tin, no catch-all, no obsidian. The "no" lines are safe
+# to trust because the `yes` lines above them prove the report printed.
+
+skill Pickaxes 19
+console malmr
+printed pickaxes=19 yes
+printed Stone unlock=20 open=no boss=defeated_eikthyr kills=2/2 missing=level yes
+printed Copper unlock=30 open=no boss=defeated_gdking kills=2/2 missing=level yes
+printed Tin unlock= no
+printed * unlock= no
+printed Obsidian unlock= no
+
+# ---- stone opens at 20, and copper does not. "Stone veins" is what the console calls the
+# entry, the same noun the bar puts in "Stone vein 45%".
+
+skill Pickaxes 20
+console malmr
+printed Stone unlock=20 open=yes boss=defeated_eikthyr kills=2/2 missing=none yes
+printed Stone veins yes
+printed Copper unlock=30 open=no boss=defeated_gdking kills=2/2 missing=level yes
+wait 2
+centre Stone veins open to you now yes
+
+# ---- one below copper. Stone stays open, copper still waits on the level, and nothing new is
+# announced.
+
+skill Pickaxes 29
+console malmr
+printed pickaxes=29 yes
+printed Stone unlock=20 open=yes yes
+printed Copper unlock=30 open=no boss=defeated_gdking kills=2/2 missing=level yes
+wait 2
+centre open to you now no
+
+# ---- copper opens, iron does not, and the message says so.
+
+skill Pickaxes 30
+console malmr
+printed Copper unlock=30 open=yes boss=defeated_gdking kills=2/2 missing=none yes
+printed Iron unlock=40 open=no boss=defeated_bonemass kills=2/2 missing=level yes
+wait 2
+centre Copper veins open to you now yes
+
+# ---- one below the brains. Iron and silver open, and the message says which road counted the
+# boss. The brains wait on the level, with the Queen as their boss.
+
+skill Pickaxes 59
+console malmr
+printed Iron unlock=40 open=yes boss=defeated_bonemass kills=2/2 missing=none yes
+printed Silver unlock=50 open=yes boss=defeated_dragon kills=2/2 missing=none yes
+printed Eitr unlock=60 open=no boss=defeated_queen kills=2/2 missing=level yes
+wait 2
+centre beaten at one star through Vandi yes
+
+# ---- the brains at 60, under their own name on screen and in the console.
+
+skill Pickaxes 60
+console malmr
+printed Eitr unlock=60 open=yes boss=defeated_queen kills=2/2 missing=none yes
+printed Giant brains yes
+wait 2
+centre Giant brains open to you now yes
+
+# ---- the boss half, on the Queen. One kill is the Queen as the game ships her; Malmr waits for
+# the second, the one-star kill. Only her entry shuts: silver, on Moder, stays open beside it.
+
+key vandi_p_$player_defeated_queen 1
+wait 2
+keyis vandi_p_$player_defeated_queen 1
+console malmr
+printed Eitr unlock=60 open=no boss=defeated_queen kills=1/2 missing=boss yes
+printed Silver unlock=50 open=yes yes
+
+# Shutting is silent.
+
+centre open to you now no
+
+# The second kill lands, and the message comes on the kill, because the kill was the half that
+# landed last.
+
+key vandi_p_$player_defeated_queen 2
+wait 2
+console malmr
+printed Eitr unlock=60 open=yes boss=defeated_queen kills=2/2 missing=none yes
+centre Giant brains open to you now yes
+
+# ---- one below the top. Flametal opens; bloodgold still waits on the level. The message is
+# checked by its level rather than its name, because which of the two flametal items names it
+# in this game version is asset data.
+
+skill Pickaxes 79
+console malmr
+printed Flametal unlock=70 open=yes boss=defeated_fader kills=2/2 missing=none yes
+printed Gold unlock=80 open=no boss=defeated_fader kills=2/2 missing=level yes
+wait 2
+centre open to you now: Pickaxes 70 yes
+
+# ---- the top of the table.
+
+skill Pickaxes 80
+console malmr
+printed Gold unlock=80 open=yes boss=defeated_fader kills=2/2 missing=none yes
+wait 2
+centre open to you now: Pickaxes 80 yes
+
+# ---- neither half. Below copper's level with one kill of the Elder, the console says both are
+# missing. Going down from 80 shuts everything above stone, silently. And the boss half on stone:
+# one kill of Eikthyr shuts it at a level that is past its line, so Eikthyr is what it waits for.
+
+skill Pickaxes 29
+key vandi_p_$player_defeated_gdking 1
+key vandi_p_$player_defeated_eikthyr 1
+wait 2
+keyis vandi_p_$player_defeated_gdking 1
+keyis vandi_p_$player_defeated_eikthyr 1
+console malmr
+printed Copper unlock=30 open=no boss=defeated_gdking kills=1/2 missing=both yes
+printed Stone unlock=20 open=no boss=defeated_eikthyr kills=1/2 missing=boss yes
+centre open to you now no
+
+# ---- the switch, as the key would flip it, and the header following it. Nothing is swung, so
+# this proves only that the verb and the report agree.
+
+console malmr vein on
+printed malmr vein=on yes
+console malmr
+printed vein=on yes
+console malmr vein off
+printed malmr vein=off yes
+console malmr
+printed vein=off yes
+
+# ---- the progress verb answers. What it says depends on whether a deposit stands within ten
+# metres of wherever this runs, so only reach=10 is asserted, which both answers carry and the
+# echo of the typed command does not.
+
+console malmr progress
+printed reach=10 yes
+
+# ---- put everything back. The keys go entirely, see the note at the top.
+
+unkey vandi_p_$player_defeated_eikthyr
+unkey vandi_p_$player_defeated_gdking
+unkey vandi_p_$player_defeated_bonemass
+unkey vandi_p_$player_defeated_dragon
+unkey vandi_p_$player_defeated_queen
+unkey vandi_p_$player_defeated_fader
+skill Pickaxes back
+
+# ---- THE ROAD WITHOUT VANDI, by hand. A scenario cannot take it: Vandi is loaded or it is not,
+# and the game's kill record lives in the character file, which no Devkit step writes.
+#
+#   1. Quit the game. Move testprofile\BepInEx\plugins\Vandi out of the profile (somewhere
+#      outside BepInEx), and start the testprofile again.
+#      Expect in LogOutput.log: "Vandi is not installed, so a metal's boss counts once this
+#      character has killed it".
+#   2. Load a world with a character that has never killed the Elder. One that last killed it
+#      before the game's Call to Arms update reads the same, because the kill record starts
+#      there. Type `malmr`.
+#      Expect: bosscount=game, and "Copper unlock=30 ... boss=defeated_gdking kills=0/1".
+#   3. Put Pickaxes at 30: a two-line scenario of `skill Pickaxes 0` and `skill Pickaxes 30`
+#      does it without the cheat mark. Type `malmr` again.
+#      Expect: Copper open=no missing=boss, and no message in the middle of the screen.
+#   4. Summon the Elder and kill it, landing at least one hit yourself.
+#      Expect, within a second of the death: "Copper veins open to you now: Pickaxes 30 and
+#      The Elder beaten by you." and the tap line. `malmr` then reads kills=1/1 open=yes.
+#   5. Put the Vandi folder back afterwards.

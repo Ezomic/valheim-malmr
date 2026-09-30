@@ -1,0 +1,159 @@
+# Malmr: a metal that is shut to you is mined by hand even with vein mining on, and its bar does not
+# move. Copper is shut two ways here, one half of its unlock missing each time: the level (Pickaxes
+# 29, the Elder killed twice) and the boss (Pickaxes 30, the Elder killed once). Then both halves
+# are met and the same swing goes into the bar, which is the control.
+#
+# The control is not optional. With vein mining broken outright every swing would go to the chunks,
+# and both shut blocks would pass without Malmr deciding anything. The open block at the end is the
+# same prefab, the same pickaxe and the same switch, and it reads `hurt` 0, so the two before it
+# read `hurt` 1+ because the gate said no.
+#
+# Each block asks twice. `console malmr` shows what the gate says (missing=level, missing=boss,
+# missing=none), and `malmr progress` shows the same gate for the deposit in front of you (open=).
+# Then one real swing shows what the swing did about it: `hurt` says whether a chunk took the blow,
+# and damage= says whether the bar did. The swing asks the gate on this machine, with the level you
+# have earned and Vandi's count for you, so this is the rule the player meets.
+#
+# NEEDS VANDI, like malmr-bar.txt: the boss half is seeded through Vandi's own kill record,
+# vandi_p_<playerid>_defeated_gdking, and the key is removed at the end. A character with real Vandi
+# kills of the Elder in this world loses them. Without Vandi every `printed ... kills=` line fails,
+# because the game's own tally reads kills=0/1.
+#
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking, BossKills
+# 2). Each deposit is put 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES,
+# which assumes its foot is level with yours. In the first run, at 3, the level block's deposit took
+# no blow, and the two after it stood on the one before, which is the Devkit trouble malmr-bar.txt
+# describes there too. `biome Meadows` takes you to the Meadows if you are not there, and leaves you
+# where you stand if you are. The `stage` after it clears and levels thirty metres round you wherever
+# that is, for the reasons malmr-bar.txt gives under FLAT GROUND; this file used to ask for open,
+# flat ground in words and level nothing. The stage destroys the world's own trees, rocks and
+# deposits there for good, which is one more reason for a test world.
+#
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground, the ore the two hand swings knocked loose, and the third deposit 4.5 metres in front of
+# you with one blow in its bar. The `put`s took the first two down, and the next scenario's stage,
+# or the next run's first `put`, takes the third. Pickaxes is put back, the Vandi key is removed and
+# vein mining ends off. Devkit empties the pack when a run ends and hands back its kit.
+#
+# What a broken build reads:
+#   - a gate the swing does not ask, or one that reads only the boss: the level block's swing goes
+#     into the bar, so its `hurt 1+` fails and its damage is above 0.0.
+#   - a gate that reads only the level: the same in the boss block.
+#   - a shut blow that still reaches the bar as well as the chunk: `hurt 1+` passes, and the second
+#     damage=0.0 of that block fails.
+#   - vein mining broken outright: the open block reads `hurt` 1 or more.
+#
+# WHAT IT CANNOT SEE: the line a shut deposit puts at the top left, once per deposit. MessageHud is
+# not under the HUD root that Devkit's `onscreen` reads, so it is by eye. During the level block,
+# watch for "Copper veins need Pickaxes 30", and during the boss block for "Copper veins need The
+# Elder beaten at one star through Vandi". Nothing shows there in the open block. The middle of the
+# screen does say copper veins are open when the second kill goes on the record, which is the unlock
+# message and malmr-unlock-levels.txt's to check.
+#
+# Each block swings once. A swing raises Pickaxes only after every one of its blows has been dealt,
+# so the level block's one swing is decided at 29 even if it happens to finish a level.
+
+god
+ghost
+
+# ---- the fixture. Through zero first, for the reason malmr-unlock-levels.txt gives, then one below
+# copper. A black metal pickaxe, whose tool tier is well above copper's, so a shut swing knocks rock
+# off rather than being refused as too hard.
+
+skill Pickaxes 0
+skill Pickaxes 29
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+biome Meadows
+
+# Cleared and level ground where `biome` left you, so each deposit's foot is level with yours: see
+# SINGLEPLAYER above.
+
+stage
+
+console malmr vein on
+printed malmr vein=on yes
+
+# ---- shut by the level. The Elder is beaten at one star, Pickaxes is one short.
+
+console malmr
+printed bosscount=vandi yes
+printed pickaxes=29 yes
+printed Copper unlock=30 open=no boss=defeated_gdking kills=2/2 missing=level yes
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=no yes
+printed handonly=no yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 1+
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 yes
+
+# ---- shut by the boss. Pickaxes is at the line, and the Elder has only been killed once, which is
+# the Elder as the game ships him. Malmr waits for the one-star kill.
+
+skill Pickaxes 30
+key vandi_p_$player_defeated_gdking 1
+wait 2
+keyis vandi_p_$player_defeated_gdking 1
+
+console malmr
+printed pickaxes=30 yes
+printed Copper unlock=30 open=no boss=defeated_gdking kills=1/2 missing=boss yes
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=no yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 1+
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 yes
+
+# ---- both halves met, the control. The second kill goes on the record, copper opens, and the same
+# swing on a fresh deposit hurts nothing and fills the bar.
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+
+console malmr
+printed Copper unlock=30 open=yes boss=defeated_gdking kills=2/2 missing=none yes
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 no
+
+# A backstop, for the reason malmr-bar.txt gives: each is said once per session.
+
+logged could not be sent no
+logged could not be counted no
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_gdking
+skill Pickaxes back

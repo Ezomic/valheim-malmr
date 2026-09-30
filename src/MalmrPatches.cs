@@ -1,65 +1,99 @@
+using System;
 using HarmonyLib;
+using UnityEngine;
 
 namespace Malmr
 {
     /// <summary>
-    /// The mod's Harmony patches. One class named in the plugin's PatchAll, so nothing goes
-    /// live by being written.
+    /// Where a blow meets a deposit: the public Damage each deposit shape offers, which Attack
+    /// calls once per chunk a swing struck and which turns the chunk into an area index and a
+    /// message to the owner. Prefixes, so the HitData is seen exactly as the swing built it and
+    /// the blow can go into the bar instead - see Vein.
     ///
-    /// Two rules that this file exists to hold in view.
-    ///
-    /// Ride vanilla systems rather than hand-rolling them. The suite's mods do their work by
-    /// reading the game's own tables - Smelter.m_conversion, the Hammer's piece table - and
-    /// by going through Player.PlacePiece so validity stays the game's problem. Keeping new
-    /// features on that seam is what makes them survive a game update; a custom subclass or
-    /// a patch on movement trades that away.
-    ///
-    /// Never guess an API. Read it, with
-    /// <c>ilspycmd -t &lt;Type&gt; -r "&lt;ManagedDir&gt;" "&lt;ManagedDir&gt;\assembly_valheim.dll"</c>,
-    /// or take the numbers off a devkit rip. A wrong method name is a Harmony patch that
-    /// throws once at load and then quietly never runs.
+    /// Until 2026-09-26 these only recorded what a swing struck, and a bracket around Attack took
+    /// the extra chunks once the swing was over. The bar needs no bracket. Every fact it needs is
+    /// on the blow, and the swing's own costs are charged by Attack whether or not the deposit's
+    /// Damage runs.
     /// </summary>
-    internal static class MalmrPatches
+    internal static class DamagePatches
     {
-        /// <summary>
-        /// A patch that does nothing, kept so the wiring is proved rather than assumed. It
-        /// is the first thing to check when a mod loads and appears to do nothing at all: if
-        /// this line is absent from the log, the problem is the patch not applying, not the
-        /// logic behind it.
-        /// </summary>
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
-        private static void OnSpawned(Player __instance)
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MineRock5), nameof(MineRock5.Damage))]
+        private static bool Vein5(MineRock5 __instance, HitData hit)
         {
-            // Every player object in the scene runs this, not only yours. Anything meant for
-            // the person at the keyboard needs this line.
-            if (__instance != Player.m_localPlayer) return;
-            if (!MalmrConfig.Enabled.Value || !MalmrConfig.Verbose.Value) return;
-
-            MalmrPlugin.Log.LogInfo("Player spawned - patches are live.");
+            return Vein.Intercept(__instance, hit);
         }
 
-        // Traps worth having in front of you while writing the real ones. All of these were
-        // paid for once already:
-        //
-        //   Character.OnDeath runs on the OWNING CLIENT ONLY. Its own !IsOwner() early
-        //   return is dead code, so the block above it looks like it runs everywhere and
-        //   does not. Anything per-player at a kill has to be done by the owner for
-        //   everybody, e.g. through Player.GetPlayersInRange.
-        //
-        //   SEMan.Internal_AddStatusEffect refreshes an already-running effect in place and
-        //   returns without reaching the public AddStatusEffect overload. Patching only the
-        //   public one misses every refresh.
-        //
-        //   Player.ConsumeItem removes the item whatever EatFood returned. Refuse food in
-        //   CanConsumeItem, which is the gate that path respects; refusing later destroys it.
-        //
-        //   The first ObjectDB.Awake of a session fires against a stub with no items. Gate
-        //   anything that reads the item database on m_items.Count > 0, and hook
-        //   ObjectDB.CopyOtherDB as well - that is the path a client takes on joining a
-        //   server.
-        //
-        //   Writing to a container or ZDO you do not own is silently discarded. Call
-        //   nview.ClaimOwnership() first, which is what vanilla's Take All does.
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MineRock), nameof(MineRock.Damage))]
+        private static bool VeinSmall(MineRock __instance, HitData hit)
+        {
+            return Vein.Intercept(__instance, hit);
+        }
+    }
+
+    /// <summary>
+    /// Every deposit learns Malmr_Vein1 where it learns its own messages: MineRock5 in Awake,
+    /// MineRock in Start. Postfixes, so the deposit's own registration has run and a failure of
+    /// Malmr's can only cost the bar. See Owner.Listen.
+    /// </summary>
+    internal static class ListenPatches
+    {
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(MineRock5), "Awake")]
+        private static void Vein5(MineRock5 __instance)
+        {
+            Guard("MineRock5.Awake", __instance);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(MineRock), "Start")]
+        private static void VeinSmall(MineRock __instance)
+        {
+            Guard("MineRock.Start", __instance);
+        }
+
+        private static bool _warned;
+
+        private static void Guard(string where, Component rock)
+        {
+            try
+            {
+                Owner.Listen(rock);
+            }
+            catch (Exception error)
+            {
+                if (_warned) return;
+                _warned = true;
+                MalmrPlugin.Log.LogWarning("Could not register vein mining on a deposit in " + where
+                    + ", so this machine cannot fill the bar of a deposit it owns. Said once per "
+                    + "session: " + error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The level-up half of the unlock message. The message itself, and the boss-kill half, are
+    /// Opened's - see there for why the message follows the metal's state rather than this event.
+    ///
+    /// On Player.OnSkillLevelup, which Skills.RaiseSkill calls once for every level gained,
+    /// after the level has moved and right before it shows vanilla's own "skill improved" line.
+    /// Calling Opened from here rather than waiting for its once-a-second look is what puts a
+    /// metal opened by the level beside the level-up it is about, on the swing that earned it.
+    /// The level Opened reads is the earned one, the same the swing reads (Vein.EarnedLevel):
+    /// the first version unlocked on the buffed level and announced on this one, which put the
+    /// two a standing bonus apart - two levels, for anyone with Rist's Quick study capstone.
+    /// </summary>
+    internal static class Announce
+    {
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Player), nameof(Player.OnSkillLevelup))]
+        private static void LevelUp(Player __instance, Skills.SkillType skill)
+        {
+            if (__instance == null || __instance != Player.m_localPlayer) return;
+            if (skill != Skills.SkillType.Pickaxes) return;
+
+            Opened.Check();
+        }
     }
 }

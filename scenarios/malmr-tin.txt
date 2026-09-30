@@ -1,0 +1,176 @@
+# Malmr: tin is never vein mined. With vein mining on and copper open, a pickaxe blow on a tin rock
+# lands on the rock the ordinary way, while the same blow on copper goes into copper's bar.
+#
+# Tin was left out of the Unlocks table on purpose, Robbin's call of 2026-09-26 ("tin doesnt need
+# vein mining"), and with no * entry nothing else catches it.
+#
+# IN 1.0 A TIN ROCK IS NOT A DEPOSIT MALMR READS AT ALL. The first run, on 2026-09-28, put a
+# MineRock_Tin down and Devkit's `hurt` answered "not a MineRock5 or a MineRock", and Malmr's own
+# deposit list, which names every prefab carrying one of the two, has never named it (see
+# malmr-deposits-by-their-drops.txt). Malmr's only ways into a blow are MineRock5.Damage and
+# MineRock.Damage, so a blow on a tin rock never reaches it, whatever the table says. The tin half
+# therefore asks two things: `malmr progress MineRock_Tin` finds no deposit of that name, and one
+# real swing lands - the rock's own ZDO changed, which is the ordinary blow. It used to read
+# metal=none open=no and count a hurt chunk, which is the right test for a tin rock that is a
+# MineRock, and `hurt` cannot count one that is not. If progress=none starts failing, a game update
+# has made tin a MineRock again, and those checks belong back here.
+#
+# Pickaxes 100 and not 30, so that any tin entry a broken build still carried would be open, and
+# Eikthyr seeded so that stone is open as well. The old defaults had Tin at 40 and * at 90, and a
+# rock whose tin fell through to its stone would be a stone vein at 20. Neither can reach a tin rock
+# that is not a MineRock, but both would be open the day it is one again.
+#
+# THE CONTROL comes first: a copper deposit, the same pickaxe, the same switch, one swing, and no
+# chunk hurt. It stands 4.5 metres out, for the reason malmr-bar.txt gives under WHY 4.5 METRES.
+# Then `wipe` takes the copper down and `malmr progress` checks that it is gone, so no swing can
+# reach both, and the tin rock is put on the same levelled ground, 1.25 metres out.
+#
+# WHY 1.25 METRES, since the fifth run. `put` measures to the rock's pivot, and what the blow has to
+# reach is the nearest face of its collider, Rock_4 (1), which is the tin rock's own: Devkit measures
+# the target's colliders and nothing else, so nothing stood in the way. Put 2 metres out, that face
+# read 1.5, 1.6 and 1.6 metres from the swing's origin in the second, third and fourth runs, and
+# each swing landed. In the fifth, on 2026-09-29, it read 2.1 against the antler pickaxe's 1.8, and
+# the swing landed nothing. Same prefab, same distance, turned the same way, so what changed is how
+# high you stood against the rock's foot. In the third and fourth runs malmr-wear.txt's `biome`,
+# before anything moved you, found you at 73 and 48 with the tin's foot at 72.9 and 48.0: level with
+# you, to the half metre that report rounds to. In the fifth it found you at 49, here and in
+# malmr-wear.txt alike, over ground `stage` had levelled to 48.25, with the tin's foot at 48.2, so
+# the rock stood between a quarter of a metre and a metre and a third below you. Why you stood above
+# the levelled ground is not in the log. A rock lower against the blow is further from it along the
+# swing, which fits 2.1 against 1.6. The blow starts above the rock, so bringing it 0.75 metres
+# closer takes less than 0.75 off, and how much less depends on how far below the blow the face
+# sits. Holding the face where it was, the swing still reaches it unless the face is more than about
+# 1.75 metres below where the blow starts, and closer in the nearest face moves up the rock, which
+# only shortens it; 1.4 metres below would read about 1.6, where the landed runs were. That is
+# inferred from these readings, not measured. The `swing` note gives the distance whether or not it
+# lands, so the next run says what it really is: over 1.8 wants the rock closer still, and a `put`
+# note saying you stand inside the rock wants it further out. No `put` in five runs has said that
+# of the tin at 2 or 3 metres.
+#
+# BEFORE EITHER, `stage` takes down whatever a `put` left round you, with every piece, drop, tree,
+# rock and deposit, and levels the ground where you stand. The clearing is for the file before this
+# one: malmr-stone.txt ends where it stood, and a boulder it failed to break stands 4.5 metres in
+# front of you. `put` takes down only its own prefab's earlier copies, so in the third run, on
+# 2026-09-28, this file's copper was put straight onto that boulder, 3.4 metres up (the boulder at
+# 68.5, the copper at 71.9, the same spot on the map), and the control's one swing changed nothing
+# on the copper: "0 landed", then damage=0.0, which read like vein mining broken. The levelling is
+# malmr-bar.txt's FLAT GROUND, so the copper's foot is level with yours and the swing reaches it.
+# The stage replaces the `wipe 12` and `flatten 0 0 10` that did both before it.
+#
+# NO `move`, since the fourth run. This file used to step 20 metres to the right to get clear of
+# that boulder, and 12 more before the tin. But `move` stands you on the first thing a ray from 200
+# metres up meets at the spot, trees and rocks included, and on 2026-09-29 the 20 metres ended 8.7
+# metres above the ground, at about (-1942, 52.8, -4289). Not a leftover: `biome` had just taken you
+# 64 metres west, more than 50 metres from anything a `put` made that run, and malmr-stone.txt's
+# boulder had broken. The spot is inside a Meadows forest patch by the world's own forest mask, so
+# most likely a tree; the log does not name it. `flatten` refused ("you are 8.7m above the ground
+# under you"), `put` stood the copper on the ground below you, and the control's swing ended 6.4
+# metres from its nearest face: 0 landed, damage=0.0, and nothing about Malmr in any of it. `biome`
+# lands you at the height the world generated, and standing still keeps you where the file before
+# levelled, so both keep you on the ground, and `stage` does what the moves were there for.
+#
+# NEEDS VANDI for the control, like malmr-bar.txt: copper's and stone's boss halves are seeded
+# through Vandi's own kill record, vandi_p_<playerid>_defeated_gdking and _defeated_eikthyr at 2,
+# and both keys are removed at the end. A character with real Vandi kills of the Elder or Eikthyr
+# in this world loses them.
+#
+# SINGLEPLAYER, in a TEST WORLD, with the default config. Not at a cliff edge and not in water: the
+# stage levels to the ground under your feet, and the game keeps every point within 8 metres of its
+# own height. `biome Meadows` takes you to the Meadows if you are not there, and leaves you where you
+# stand if you are. The `stage` takes down every piece within thirty metres of you, what `put` left
+# there and the world's own trees, rocks and deposits included, so not beside a base, and the
+# world's own are gone for good.
+#
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground, and a tin rock with one blow in it 1.25 metres in front of where you end. The copper is gone
+# already. The tin rock stays until a `wipe`, a `stage` or a later `put MineRock_Tin`, which is why
+# malmr-wear.txt opens with a `stage`. Pickaxes is put back, the Vandi keys are removed and vein
+# mining ends off. Devkit empties the pack when the scenario ends and hands back its kit.
+#
+# What a broken build reads:
+#   - tin read as a deposit at all: `malmr progress MineRock_Tin` prints a line instead of
+#     progress=none.
+#   - vein mining broken outright: the copper control reads `hurt` 1 or more.
+#
+# An ANTLER pickaxe, not the black metal one the other files use: the one a player first mines copper
+# and tin with. If the copper `swing` fails naming the tool tiers, the antler pickaxe is below
+# copper's, and PickaxeBronze is the next one up. If the tin `swing` fails with nothing changed, read
+# its distance first. `swing` reads a Destructible's tier as well now, and in the fifth run said the
+# tin rock needs tier 0 and the antler pickaxe is tier 0, so a tin swing that changes nothing is
+# out of reach, not too weak.
+
+god
+ghost
+
+# ---- the fixture. Through zero first, for the reason malmr-unlock-levels.txt gives, then the top of
+# the skill. The antler pickaxe, for the reason in the header.
+
+skill Pickaxes 0
+skill Pickaxes 100
+
+key vandi_p_$player_defeated_gdking 2
+key vandi_p_$player_defeated_eikthyr 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+keyis vandi_p_$player_defeated_eikthyr 2
+
+give PickaxeAntler:1
+tool PickaxeAntler
+
+biome Meadows
+
+# Whatever malmr-stone.txt's `put` left in front of you taken down, and the ground levelled where
+# you stand. See BEFORE EITHER, and NO `move` for why you stay put. `landed` in case `biome` moved
+# you a moment ago.
+
+landed
+stage
+
+# Copper is open, and the table has no tin in it at all. The "no" is safe to trust because the lines
+# above it prove the report printed.
+
+console malmr
+printed bosscount=vandi yes
+printed Copper unlock=30 open=yes yes
+printed Stone unlock=20 open=yes yes
+printed Tin unlock= no
+
+console malmr vein on
+printed malmr vein=on yes
+
+# ---- the control. Copper vein mines here: one swing lands and no chunk is hurt.
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 no
+
+# ---- tin. The copper taken down first, and checked gone, so the one swing below cannot reach it.
+# Then a tin rock 1.25 metres ahead on the same levelled ground, for the reason under WHY 1.25
+# METRES. Malmr has no deposit of that name to read, and the one swing lands on the rock itself.
+# This used to be `move 0 12`: see NO `move`.
+
+wipe 12
+console malmr progress rock4_copper_frac
+printed progress=none yes
+
+put MineRock_Tin 1.25
+console malmr progress MineRock_Tin
+printed progress=none yes
+
+swing MineRock_Tin 1
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_gdking
+unkey vandi_p_$player_defeated_eikthyr
+skill Pickaxes back

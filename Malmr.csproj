@@ -18,7 +18,7 @@
     <Authors>Robbin Thijssen</Authors>
     <Company>Thijssen Software</Company>
     <Product>Malmr</Product>
-    <Description>Vein mining, unlocked metal by metal as your Pickaxes skill grows.</Description>
+    <Description>Tap Alt with a pickaxe and your blows fill a bar until the whole ore deposit breaks at once. Opens metal by metal, on your Pickaxes skill and the biome's boss beaten.</Description>
     <Copyright>Copyright (c) 2026 Robbin Thijssen</Copyright>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -55,6 +55,15 @@
     <Reference Include="assembly_utils"><HintPath>$(ManagedDir)\assembly_utils.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(ManagedDir)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- Collider and its bounds live here, not in CoreModule. A deposit's chunks are the
+         colliders MineRock5 and MineRock keep as their hit areas, and a blow names one. -->
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(ManagedDir)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- GUI and GUIStyle, for the vein bar and its marker. IMGUI keeps the mod one DLL. -->
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(ManagedDir)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- FontStyle, which the bar's label is set in, lives here rather than in IMGUIModule. -->
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(ManagedDir)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- Localization, for naming a metal in the unlock message in the player's own language. -->
+    <Reference Include="assembly_guiutils"><HintPath>$(ManagedDir)\assembly_guiutils.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx"><HintPath>$(BepInExCore)\BepInEx.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(BepInExCore)\0Harmony.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
@@ -64,6 +73,15 @@
          to plugins\Core, and a second copy landing beside this one would be two assemblies
          sharing one BepInPlugin GUID, which is a plugin that silently does not load. -->
     <ProjectReference Include="..\core\Core.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <!-- Vandi keeps the one-star boss kill count a metal waits for when it is installed, read
+         through its VandiApi. A soft dependency since 2026-09-26 (see MalmrPlugin): compiled
+         against here, never required at run time, and only VandiBridge.cs names a Vandi type.
+         Private=false for the same reason as Core: Vandi deploys its own DLL to plugins\Vandi,
+         and a second copy beside this one would be two assemblies sharing one BepInPlugin
+         GUID - and would also make Vandi load on a machine that chose not to install it. -->
+    <ProjectReference Include="..\vandi\Vandi.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

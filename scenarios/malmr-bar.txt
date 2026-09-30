@@ -1,0 +1,295 @@
+# Malmr: with copper open to you, the vein switch decides where a pickaxe blow goes. Off, the blow
+# knocks rock off the chunk it struck, as it always has. On, it goes into the deposit's bar and
+# every chunk stays whole. Enough blows into the bar take the whole deposit down at once.
+#
+# Three blocks, each on its own deposit that `put` stands 4.5 metres in front of you. Each `put`
+# takes the one before it down, so no two deposits ever stand at once.
+#
+# WHY 4.5 METRES. `put` measures to the deposit's pivot, and a rock4 deposit is broad: 3 metres, what
+# this file used first, stood it around you. In the first run, on 2026-09-28, every copper deposit
+# put 3 metres out at the height of your feet took no blow at all - three of three, in the Meadows,
+# the Black Forest and the Mistlands - and nor did one put 2.7 metres out below you on a slope. Each
+# time Devkit put your eye inside the box of its chunks. The only one that took blows from 3 metres
+# (malmr-wear.txt) had you 2.5 metres above its foot on a steeper slope, eye above its box, swinging
+# down onto a top that must be wide to be within reach there. 4.5 is inferred from that run, not
+# measured. If the swings still miss, read the Devkit notes, not Malmr's: since Devkit 1b48353 the
+# `put` note says outright when you are standing inside what it made, and a missed `swing` gives
+# the distance from the blow's origin to the nearest face beside the pickaxe's reach. In the second
+# and third runs the `put` note said you stood inside the deposit on nearly every `put`, here, in
+# malmr-stone.txt and in malmr-mistlands.txt, and every swing at them landed anyway, so 4.5 stays.
+#
+# NOT distance= on the `malmr progress` line. That is from your feet to the nearest chunk's BOX
+# (Deposits.Distance), and a rock4 deposit's 130 overlapping boxes reach well past its faces, so it
+# reads 0.0 at 4.5 metres whether you stand in the rock or not. The second run read 0.0 with no
+# "standing inside" note and the nearest face 1.3 metres from the blow; the third run's
+# malmr-wear.txt read 0.0 with the nearest face 2.0 metres off, out of the pickaxe's 1.8. This file
+# used to call it "0.0 when you are standing in it", which sent the third run's reading of the logs
+# the wrong way.
+#
+# FLAT GROUND, since the third run. Every deposit's foot has to be level with yours. The file used to
+# ask for flat ground in words and take whatever the file before it left you on, and what a swing
+# puts into the bar turned out to depend on that (see HOW MANY SWINGS), as does whether it reaches
+# at all: the third run's malmr-wear.txt stood 3.4 metres above its deposit's foot and missed. From
+# the third run `flatten 0 0 10` levelled ten metres round you. Now a `stage` after `biome` does it:
+# every piece, drop, tree, rock and deposit within thirty metres taken down, and the ground levelled
+# to the height under your feet. Devkit's automatic stage before the first step is not enough on its
+# own, because it stages where the file before left you, and `biome` may have moved you since.
+#
+# The first run also stood every deposit after the first ON the one before it, 3 metres up: Devkit's
+# `put` found no earlier copy to take down, because it looked for them by GameObject name, and a
+# live MineRock5 renames its GameObject in Awake. Devkit 1b48353 fixed that: it finds them by the
+# ZDO's prefab and takes them down before it measures the ground. A Devkit older than that still
+# stands blocks 2 and 3 on a deposit floating on the last one, and they fail for that.
+#
+#   1. By hand. Vein mining off, Pickaxes 30, the Elder killed twice through Vandi. One swing
+#      leaves at least one chunk below full health, and the bar stays at damage=0.0.
+#   2. Into the bar. The same fixture with vein mining on. The bar is empty before the first
+#      swing and off zero after it, and after each of two swings no chunk is hurt.
+#   3. The whole deposit. Pickaxes 100, which makes every blow as hard as it gets. One swing is
+#      checked on its own to have gone into the bar, then up to 200 more in a single `swing` step
+#      (see HOW MANY SWINGS). After them the deposit is gone, and copper ore came out of it: at
+#      least one, on the ground and in the pack counted together (see WHAT IT CANNOT SEE for why
+#      together).
+#
+# HOW MANY SWINGS. rock4_copper_frac is 130 chunks of 50, so 6500 in a fresh world, and Pickaxes
+# 100 rolls every blow at 0.85 to 1.0 of the tool's damage (Skills.GetRandomSkillFactor). What one
+# black metal swing puts into the bar has been measured three times, and it is not one number:
+#   - the second run, on 2026-09-28: fifty swings, damage=3004.3, so 60.1 a swing.
+#   - the third run, the same day: 1, 49 and 40 swings, 4085.3, then fifty more, 2259.9. That is
+#     45.4 and 45.2 a swing, and after 140 the bar stood at 97% with the deposit whole, as it should
+#     be short of full. The budget ran out, not the mod.
+#   - the third run's malmr-stone.txt, the same rock4 shape: 40.0 and 40.3 a swing.
+# The reason is Attack.DoMeleeAttack (read with ilspycmd). A pickaxe on a deposit counts every chunk
+# collider its rays strike as one thing struck, and the ground as one more, and when there is more
+# than one, each takes its damage divided by 0.75 times how many there were. The ground takes
+# nothing and still counts: one chunk and the ground is 60.3 / 1.5 = 40.2, the stone run to the
+# decimal. Two chunks and no ground is 80 between them, two chunks and the ground 54. So the rate is
+# set by what the swing's rays happen to cross, which the ground, where you stand and how the rock
+# sits all move, and the third run's `put` notes had you standing inside the deposit's outer chunks
+# every time. A swing by hand divides the same way, so the bar still takes exactly what the same
+# swings would have dealt: this is the game, not Malmr.
+#
+# So block 3 does not guess a rate. Since Devkit 686ff58 one `swing` step takes up to 300 swings,
+# stops to let the stamina bar fill instead of failing when it runs dry, and passes when the deposit
+# is gone part-way. Before that it took fifty, and a `swing` whose deposit is already gone fails
+# before it starts, so the second and third runs split the deposit into fifty-swing steps that had to
+# put the break in the last one: 140 fell short at 45 a swing, and 130 then 180 would have broken it
+# a step early at the second run's 60. One step of 200 covers any rate down to 32.5 a swing, below
+# the 40.2 of one chunk and the ground. Its note says how many swings the deposit took ("swung N of
+# 200 ... gone after that"), and 6500 over N is the rate.
+#
+# The black metal pickaxe is 210 durability and loses one a swing however many chunks it strikes
+# (DoMeleeAttack takes it once per swing that struck anything, after all of its hits), so the 204
+# swings this file can make leave it whole. Devkit empties the pack at the end of EVERY scenario,
+# not only of a Run all (Report calls TidyPack), and `give` makes a fresh pickaxe, so nothing another
+# file did to one reaches this one.
+#
+# Blocks 1 and 2 stand exactly on copper's line, Pickaxes 30 with two kills, because that is the
+# least a player needs and the place an off-by-one would show.
+#
+# Every swing is a real one: Devkit's `swing` calls Humanoid.StartAttack as the attack key does. A
+# swing only counts once it has LANDED, which means the deposit's ZDO was written. In vein mode the
+# only thing Malmr writes there is the bar, so a swing that lands while `hurt` reads no chunk below
+# full health is a blow the bar took. That is how block 2 sees its second swing raise the bar
+# without a number to compare it to: the swing landed, and no chunk moved.
+#
+# NEEDS VANDI. Copper's boss half is seeded through Vandi's own kill record,
+# vandi_p_<playerid>_defeated_gdking at 2 (the one-star kill, the layout in Vandi's Kills.cs), and
+# the key is removed at the end. A character with real Vandi kills of the Elder in this world loses
+# them. Without Vandi `printed bosscount=vandi` fails first, and copper reads shut, because the
+# game's own tally would want a real kill.
+#
+# SINGLEPLAYER, in a TEST WORLD, with the default config (Copper at 30 on defeated_gdking). A test
+# world also because the stage destroys the world's own trees, rocks and deposits round you for good.
+# Not at a cliff edge and not in water: the stage levels to the ground under your feet, and the game
+# keeps every point within 8 metres of its own height, so the 4.5 metres, which assume the deposit's
+# foot is level with yours, still want ground the stage can level. `biome Meadows` takes you to the
+# Meadows if you are not there, and leaves you where you stand if you are. Anywhere but the
+# Mistlands would do, since only there is copper left to the hand.
+#
+# FEED THE CHARACTER FIRST with Devkit's food button. God mode does not stop stamina use, and block 3
+# is up to 200 swings in one step. `swing` stops and lets the bar fill whenever it runs dry, so a
+# hungry character only takes longer, and the note counts the stops. It fails the step by name when
+# the bar stops coming back: encumbered, or something draining it.
+#
+# It LEAVES BEHIND god and ghost mode on (Devkit cannot switch them off again), the cleared, levelled
+# ground and the ore block 3 dropped. No deposit is left: the third breaks, and the `put`s took the
+# first two down. Pickaxes is put back, the Vandi key is removed and vein mining ends off. Devkit
+# empties the pack when the scenario ends and hands back its kit, so the pickaxe and any ore you
+# picked up go with it.
+#
+# What a broken build reads, block by block:
+#   - 1: a build that sends blows to the bar whatever the switch says reads `hurt` 0, and damage
+#     above 0.0.
+#   - 2: a build that lets the blow through to the chunk reads `hurt` 1 or more. A build whose owner
+#     never counts the blow writes nothing, so `swing` fails with "none of them changed".
+#   - every block: a build that reads a deposit's name off its GameObject answers
+#     "malmr progress=none" to every `malmr progress rock4_copper_frac`, standing right at one,
+#     because a live MineRock5 renames its GameObject in Awake. That was the first run - see
+#     Deposits.PrefabName.
+#   - 3: a full bar that never breaks the deposit, or breaks only part of it, leaves it standing,
+#     so `malmr progress` prints its line and progress=none fails. The note carries its percent and
+#     how many chunks are left. A build that mined it out by hand instead is caught earlier, by the
+#     `hurt 0` after the first swing, since 200 hand swings at Pickaxes 100 could also empty it.
+#
+# WHAT IT CANNOT SEE:
+#   - How MUCH ore came out. The drop table rolls, so the check is at least one, not a number. And
+#     it is asked of the ground and the pack together with Devkit's `found`, because ore that lands
+#     within two metres of you flies into your pack: `dropped` alone would fail the day every piece
+#     landed in reach, `carrying` alone the day none did. The ground and the pack are cleared of
+#     copper ore before block 3, so whatever `found` counts came out of that deposit.
+#   - The bar and the gold Vein marker. They are IMGUI and no step reads them, so they are checked
+#     by eye against mockup A.
+#   - A pickaxe too weak for the rock. The bar then adds nothing and writes nothing, which `swing`
+#     cannot tell from a miss, so it fails and names the tool tiers. The black metal pickaxe is well
+#     above copper's for that reason.
+#   - Two players on one deposit. That needs two clients.
+#   - The key itself. The run switches vein mining only from the console, because no step can
+#     press a key or take the window's focus away. See THE KEY, BY HAND below.
+#
+# THE KEY, BY HAND, after the run or on its own. Any world, a pickaxe in hand. `malmr` in the
+# console prints vein=on or vein=off, and each step starts from `malmr vein off`.
+#   1. Tap Left Alt once, quickly. Expected: a moment after you let go, the gold Vein shows above
+#      the crosshair and `malmr` reads vein=on. Tap it again: Vein goes, and vein=off.
+#   2. Alt+Tab to another window and Alt+Tab straight back. Expected: no Vein, and vein=off. Do it
+#      three times: quickly both ways; holding Alt on the switcher for a second both ways; and out
+#      by Alt+Tab, back by clicking the game's window.
+#   3. Hold Left Alt, press and let go of W, then let go of Alt, all inside half a second. Expected:
+#      no Vein, and vein=off. Then the same with E.
+#   4. Tap Left Alt twice, as fast as you can. Expected: no Vein a moment later, and vein=off. Two
+#      taps are two switches, however close together; a Vein here means the second tap swallowed
+#      the first.
+# A Vein after step 2 is the bug of the first run, on 2026-09-28: Alt+Tab switched vein mining on
+# and it stayed on for the rest of the session. See VeinMode for the rule that closes it.
+#
+# If block 3 runs out of swings with the deposit still standing, the `swing` note reads "swung 200 of
+# 200", and the failing `malmr progress` line gives the percent and damage=, which over 201 swings is
+# the rate. A bar at 100% over a standing deposit is a break that never finished. A bar short of full
+# is the bar counting less than each blow dealt, since swings that reach the rock average 40 or more
+# (see HOW MANY SWINGS) unless their rays also cross something else, a bush or another rock.
+#
+# The `logged` lines are a backstop, not the proof. Malmr says each of those warnings once per
+# session, so one already said before this run would not be said again.
+
+god
+ghost
+
+# ---- the fixture. Through zero first, for the reason malmr-unlock-levels.txt gives, then copper's
+# own level. A black metal pickaxe, whose tool tier is well above copper's, so no blow is refused as
+# too hard.
+
+skill Pickaxes 0
+skill Pickaxes 30
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+biome Meadows
+
+# Cleared, flat ground under every deposit this file puts, for the reasons under FLAT GROUND. The
+# stage replaces the `flatten 0 0 10` that stood here: that levelled less of the same ground to the
+# same height, so after the stage it would change nothing.
+
+landed
+stage
+
+console malmr
+printed bosscount=vandi yes
+printed Copper unlock=30 open=yes boss=defeated_gdking kills=2/2 missing=none yes
+
+# ---- 1. by hand. Vein mining off, and the same swing a player makes without Malmr. At least one
+# chunk comes out below full health, and nothing went into the bar.
+
+console malmr vein off
+printed malmr vein=off yes
+
+put rock4_copper_frac 4.5
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 1+
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+# ---- 2. into the bar. A fresh deposit with vein mining on, and its bar starts empty. One swing
+# lands and not one chunk is below full health, and the bar is off zero. owner=self says this
+# machine owns the deposit, so the blow took the on-the-spot road through the owner's handler
+# rather than the network. The second swing lands too and still hurts nothing.
+#
+# Two swings and not more. A pickaxe strikes every chunk its arc reaches and each one is a blow into
+# the bar, but two swings at Pickaxes 30 are nowhere near a copper deposit's worth.
+
+console malmr vein on
+printed malmr vein=on yes
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed handonly=no yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac yes
+printed damage=0.0 no
+printed owner=self yes
+printed stale=no yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+# ---- 3. the whole deposit. Pickaxes 100, so the bar fills in the fewest swings. The ground and the
+# pack are cleared of copper ore first. Block 1 knocked some loose, and without this `found` could count
+# that instead.
+
+skill Pickaxes 100
+
+sweep
+strip CopperOre
+dropped CopperOre 0
+carrying CopperOre 0
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+# One swing on its own, and it went into the bar.
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+# The rest in one step, up to two hundred more, which cover any rate the game can deal here: see HOW
+# MANY SWINGS in the header. `swing` rests for stamina on its own, and stops early and passes when
+# the deposit is gone. Gone is then asked of `malmr progress`, which looks ten metres out, and you
+# have not moved, so progress=none can only mean it broke. The five seconds before it are for a
+# break still coming down a few chunks a frame when the last swing ends, malmr-stone.txt's reason.
+
+swing rock4_copper_frac 200
+wait 5
+
+console malmr progress rock4_copper_frac
+printed progress=none yes
+
+# The ore. A deposit that broke without dropping anything reads 0 here, however green the lines
+# above are - which is why this is the last word on block 3 rather than the eye check it used to be.
+
+found CopperOre 1+ 20
+
+logged did not break whole no
+logged could not finish breaking no
+logged could not be sent no
+logged could not be counted no
+
+# ---- put back what can be put back.
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_gdking
+skill Pickaxes back
