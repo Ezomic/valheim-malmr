@@ -148,9 +148,10 @@ The unlock message, the top left message and the `malmr` command all say which o
 "at one star through Vandi", or "beaten by you" without it.
 
 Bloodgold waits for Fader, the same as flametal, because Vandi and Utangard both give the Deep
-North to Fader. The Deep North does have a boss of its own in 1.0, and its key has not been read
-yet. The log lists every boss in the world with its key when a world loads, so once somebody has
-loaded a 1.0 world the Frozen King can go into Vandi's `BossBiomes` and into `Bosses` here.
+North to Fader, and Vandi does not count the Frozen King. His defeat keys have been read off his
+prefabs, but which one the end of his fight actually sets has not been seen yet, so neither mod
+names him by default. The log lists every boss in the world with its key when a world loads, and
+once that is settled he can go into Vandi's `BossBiomes` and into `Bosses` here.
 
 If `Bosses` names a boss nothing in the world sets, or one Vandi does not count, its metals can
 never open. The log says so on world load and so does the `malmr` command.
@@ -250,12 +251,13 @@ runs, but nothing checks that everybody has it and each player plays by their ow
 
 ## What has not been tested
 
-None of it has run in game yet. That covers the bar filling, the whole deposit breaking and where
-its ore lands, the key, the marker and the bar's look, the bar surviving a logout, and two players
-on one rock. The deposit list, whether the giant brains, the Ashlands flametal and the Deep North
-bloodgold deposits are recognised, which rocks drop nothing but stone and so count as stone veins,
-how long the biggest of them take to come down, the Mistlands rule, and both ways of counting the
-boss also still have to be seen in a real session.
+Eight Devkit scenarios in `scenarios/` passed in singleplayer on 2026-09-29: the unlock levels,
+the bar filling and the whole deposit breaking, which deposits count as which metal, the Mistlands
+rule, a shut metal, stone, tin, and the pickaxe wearing the same into the bar as by hand. The Left
+Alt tap, and Alt+Tab not switching it, were checked by hand. All of that ran with Vandi installed.
+
+Not run yet: two players on one deposit, a bar kept across a logout, and counting the boss without
+Vandi, from the game's own kill record.
 
 ## Bugs and ideas
 
