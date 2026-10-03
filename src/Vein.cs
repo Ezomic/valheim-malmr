@@ -60,6 +60,11 @@ namespace Malmr
             {
                 // A failure here must cost the bar, never the blow. Falling through to vanilla
                 // means the swing still breaks rock the ordinary way.
+                if (MalmrConfig.Verbose.Value)
+                    MalmrPlugin.Log.LogInfo("A blow on " + (rock == null ? "a deposit" : rock.name)
+                        + " went to vanilla because the check threw: " + error.GetType().Name
+                        + ": " + error.Message);
+
                 if (!_warned)
                 {
                     _warned = true;
@@ -73,26 +78,35 @@ namespace Malmr
 
         private static bool Divert(Component rock, HitData hit)
         {
-            if (!MalmrConfig.Enabled.Value || !VeinMode.On) return false;
-            if (rock == null || hit == null) return false;
-            if (hit.m_hitCollider == null || hit.m_radius > 0f) return false;
-            if (hit.m_skill != Skills.SkillType.Pickaxes) return false;
+            if (!MalmrConfig.Enabled.Value) return Vanilla(rock, "Enabled is off");
+            if (!VeinMode.On) return Vanilla(rock, "vein mining is off");
+            if (rock == null || hit == null) return Vanilla(rock, "no deposit or no hit");
+            if (hit.m_hitCollider == null || hit.m_radius > 0f)
+                return Vanilla(rock, "the blow names no chunk or has a radius (collider "
+                    + (hit.m_hitCollider == null ? "null" : "set") + ", radius " + hit.m_radius + ")");
+            if (hit.m_skill != Skills.SkillType.Pickaxes) return Vanilla(rock, "the blow is " + hit.m_skill + ", not Pickaxes");
 
             Player player = Player.m_localPlayer;
-            if (player == null || hit.m_attacker != player.GetZDOID()) return false;
+            if (player == null || hit.m_attacker != player.GetZDOID()) return Vanilla(rock, "the attacker is not the local player");
 
             ZNetView nview;
-            if (!rock.TryGetComponent(out nview)) return false;
+            if (!rock.TryGetComponent(out nview)) return Vanilla(rock, "the deposit has no ZNetView");
 
             // A deposit whose ZDO is gone, swallowed rather than handed on. It happens inside the
             // swing that fills a bar: the owner breaks the deposit on the spot, and the same
             // swing's next chunk arrives at a rock that no longer exists. Vanilla's MineRock5
             // returns at once there, but MineRock.Damage does not check and throws on the null
             // ZDO, which would abort the rest of the swing - the wear and the skill with it.
-            if (!nview.IsValid()) return true;
+            if (!nview.IsValid())
+            {
+                if (MalmrConfig.Verbose.Value)
+                    MalmrPlugin.Log.LogInfo("A blow on " + rock.name + " was dropped: its ZDO is gone.");
+                return true;
+            }
 
             Deposits.Kind kind = Deposits.Of(rock);
-            if (kind == null || kind.Entry == null) return false;
+            if (kind == null || kind.Entry == null)
+                return Vanilla(rock, "the deposit counts as no vein (" + (kind == null ? "no kind" : kind.Why) + ")");
 
             // Where it stands before what you have earned: a copper vein in the Mistlands is
             // mined by hand however open copper is, and "you need Pickaxes 30" would be the
@@ -101,7 +115,7 @@ namespace Malmr
             {
                 Tell(nview, kind, Deposits.Nouns(kind.Metal) + " in the Mistlands are mined by hand",
                      "is mined by hand in the Mistlands (the Mistlands line)");
-                return false;
+                return Vanilla(rock, "Mistlands rule, mined by hand");
             }
 
             // The earned level, not the buffed one the blow was rolled with - see EarnedLevel. A
@@ -118,7 +132,7 @@ namespace Malmr
                         : nouns + " need " + gate.Needs(),
                      "is shut for vein mining: "
                      + (gate.Entry == kind.Entry ? "" : gate.Entry + ": ") + gate.Why());
-                return false;
+                return Vanilla(rock, "the " + gate.Entry + " gate is shut: " + gate.Why());
             }
 
             // The chunk as the deposit numbers it, which is what the owner indexes by. Both
@@ -126,7 +140,8 @@ namespace Malmr
             // is still active, and Areas(true) is that list at any later time - dead chunks are
             // only deactivated, never removed.
             int area = Array.IndexOf(Deposits.Areas(rock, true), hit.m_hitCollider);
-            if (area < 0) return false;
+            if (area < 0)
+                return Vanilla(rock, "the struck collider is not among the deposit's " + Deposits.Areas(rock, true).Length + " chunks");
 
             Focus.Struck(rock, hit.m_point);
 
@@ -150,6 +165,23 @@ namespace Malmr
             if (verbose != null) MalmrPlugin.Log.LogInfo(verbose);
 
             return true;
+        }
+
+        /// <summary>
+        /// The blow goes to vanilla, and with Verbose on the log says which test sent it there.
+        /// Until LHM-60 every one of these was silent, so a first blow that mined the ordinary way
+        /// could not be told from the others by anything on disk. One line per blow, only with
+        /// Verbose.
+        /// </summary>
+        private static bool Vanilla(Component rock, string why)
+        {
+            if (MalmrConfig.Verbose.Value)
+            {
+                string where = rock == null ? "a deposit" : Deposits.PrefabName(rock);
+                MalmrPlugin.Log.LogInfo("A blow on " + where + " went to vanilla: " + why + ".");
+            }
+
+            return false;
         }
 
         // ---------------------------------------------------------------- the shut metal

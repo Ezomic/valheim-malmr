@@ -307,7 +307,8 @@ namespace Malmr
             Verbose = cfg.Bind("Display", "Verbose", false,
                 "Write a line to BepInEx/LogOutput.log for every vein mining blow this machine "
                 + "handles as the deposit's owner (what it added and where the deposit stands), "
-                + "for every deposit that breaks whole, and for every blow this machine sends. "
+                + "for every deposit that breaks whole, for every blow this machine sends, and for every "
+                + "blow it lets through to vanilla, naming the test that sent it there. "
                 + "The table of every deposit and what it resolved to is written once per world "
                 + "whatever this says.");
         }
