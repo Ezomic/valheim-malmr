@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+LHM-60, the first blow on a deposit mining the ordinary way. Not yet found by reading: the swing's
+path was traced and nothing in it depends on being the first blow. With `Verbose` on, every blow
+that goes to vanilla now writes one line naming the test that sent it there ("A blow on
+rock4_copper_frac went to vanilla: vein mining is off."), and a check that throws writes its
+error each time, not only the first. New Devkit scenario `malmr-first-blow.txt` strikes three
+fresh deposits and fails if the first blow on any of them did not go into the bar.
+
 ## 1.0.0 - 2026-09-30
 
 First release.
