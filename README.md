@@ -205,6 +205,10 @@ before the mod has loaded, which is the usual reason people think it is broken.
 
 ## Settings
 
+With [Core](https://github.com/Ezomic/valheim-core) installed, `VeinToggleKey` is also on the Settings page of the
+compendium. Left Alt is shared by Malmr, Jafna and Taum by default, and that page says so and names what each of
+them does with it.
+
 The file is `BepInEx/config/ezomic.valheim.malmr.cfg`. Every setting has a comment above it with
 the reasoning, so the file explains itself. The ones worth knowing about:
 

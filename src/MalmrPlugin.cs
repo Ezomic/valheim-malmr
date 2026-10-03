@@ -280,6 +280,20 @@ namespace Malmr
             // line. A host reaching across to rebind somebody's key or turn their logging on is
             // not a thing anybody asked for.
             Suite.Local(MalmrConfig.VeinToggleKey, MalmrConfig.AnnounceUnlocks, MalmrConfig.Verbose);
+
+            try { ListOnSettingsScreen(); }
+            catch (System.Exception e) { Log.LogInfo("Core has no settings screen to list on, so these settings are in the .cfg only: " + e.Message); }
+        }
+
+        /// <summary>
+        /// The settings this mod lists on Core's settings screen (LHM-51). Never inlined and called
+        /// inside a try, so an older Core that has no such screen costs the listing and nothing
+        /// else, and the JIT only meets the type on a machine that has it.
+        /// </summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private void ListOnSettingsScreen()
+        {
+            SettingsPanel.Add(MalmrConfig.VeinToggleKey, "Vein toggle", SettingsGroup.Hotkeys, "while mining a deposit");
         }
 
         private void OnDestroy()

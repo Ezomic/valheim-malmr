@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+The vein toggle key is on Core's Settings page (LHM-51), the page in the compendium that lists a
+player's own settings and rebinds a key by pressing it, with the situation it acts in ("while mining a
+deposit") so a rebind onto Jafna's or Taum's key is explained. Without Core nothing changes. Built, not run
+in game.
+
+
 LHM-60, the first blow on a deposit mining the ordinary way. Not yet found by reading: the swing's
 path was traced and nothing in it depends on being the first blow. With `Verbose` on, every blow
 that goes to vanilla now writes one line naming the test that sent it there ("A blow on
