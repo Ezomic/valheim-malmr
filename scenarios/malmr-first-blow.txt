@@ -1,0 +1,101 @@
+# Malmr, LHM-60: the FIRST blow on a deposit nobody has touched goes into the bar. Robbin reported on
+# 2026-10-01 that with vein mining on, the first hit on a deposit mined the ordinary way and only
+# the later ones filled the bar. malmr-bar.txt block 2 swings at a fresh deposit too, but it also
+# does a lot besides, and nothing there says a failure is about the first blow. This file does one
+# thing: for each of three deposits `put` just now, nothing else having touched it, the first swing
+# must leave every chunk whole and move the bar off zero.
+#
+# What a broken build reads: a first blow that went to vanilla knocks rock off the chunk it struck,
+# so `hurt` reads 1 or more and the bar stays at damage=0.0. Both lines fail, and the `hurt` note
+# lists the chunks.
+#
+# Three deposits and not one, each `put` taking the one before it down, so that a cause tied to the
+# first deposit of a session (a cache filled by the first blow, say) and one tied to every fresh
+# deposit read differently: the first fails alone, or all three do.
+#
+# WHAT IT CANNOT SEE, and why the bug may still be there when this passes:
+#   - The deposit is `put`, not loaded with the world. Devkit's `put` instantiates it and its
+#     Awake runs at once, with the player standing beside it. A deposit a player walks up to was
+#     made when its zone loaded, and ownership may not have settled when the first blow lands.
+#   - The key. The vein switch is set from the console, not by a Left Alt tap, so a tap whose
+#     switch has not settled by the first blow (VeinMode waits FocusSettleSeconds after the
+#     release) is not covered. By hand: tap Alt, swing at once, and see whether the bar moves.
+#   - A deposit owned by another machine. This is singleplayer.
+# If this passes and the bug is still there in play, set Verbose = true in the Malmr cfg, strike a
+# fresh deposit and read LogOutput.log: every blow that goes to vanilla now names the test that
+# sent it ("A blow on <deposit> went to vanilla: ...").
+#
+# NEEDS VANDI for copper's boss half, the way malmr-bar.txt does: the one-star kill is seeded under
+# vandi_p_<playerid>_defeated_gdking at 2, and removed at the end. SINGLEPLAYER, in a TEST WORLD
+# (the stage destroys what stands within thirty metres). Feed the character first. It leaves god and
+# ghost mode on and the ground levelled; Pickaxes is put back, the key removed, vein mining off.
+
+god
+ghost
+
+skill Pickaxes 0
+skill Pickaxes 30
+
+key vandi_p_$player_defeated_gdking 2
+wait 2
+keyis vandi_p_$player_defeated_gdking 2
+
+give PickaxeBlackMetal:1
+tool PickaxeBlackMetal
+
+biome Meadows
+
+landed
+stage
+
+console malmr vein on
+printed malmr vein=on yes
+
+# ---- the first deposit
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed prefab=rock4_copper_frac metal=Copper open=yes yes
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed damage=0.0 no
+
+# ---- a second fresh deposit, the first taken down by the put
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed damage=0.0 no
+
+# ---- a third
+
+put rock4_copper_frac 4.5
+console malmr progress rock4_copper_frac
+printed damage=0.0 yes
+
+swing rock4_copper_frac 1
+hurt rock4_copper_frac 0
+
+console malmr progress rock4_copper_frac
+printed damage=0.0 no
+
+# A backstop that only means something with Verbose on in the cfg: no blow in this run went to
+# vanilla.
+
+logged went to vanilla no
+logged could not be sent no
+logged could not be counted no
+
+console malmr vein off
+printed malmr vein=off yes
+unkey vandi_p_$player_defeated_gdking
+skill Pickaxes back
