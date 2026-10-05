@@ -1,13 +1,21 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 - 2026-10-05
 
-LHM-60, the first blow on a deposit mining the ordinary way. Not yet found by reading: the swing's
-path was traced and nothing in it depends on being the first blow. With `Verbose` on, every blow
-that goes to vanilla now writes one line naming the test that sent it there ("A blow on
-rock4_copper_frac went to vanilla: vein mining is off."), and a check that throws writes its
-error each time, not only the first. New Devkit scenario `malmr-first-blow.txt` strikes three
-fresh deposits and fails if the first blow on any of them did not go into the bar.
+### Added
+
+- With `Verbose` on, every blow that goes to vanilla writes one line naming the test that sent it
+  there, for example "A blow on rock4_copper_frac went to vanilla: vein mining is off." A check
+  that throws now writes its error each time, not only the first. Deposits are named by prefab
+  in these lines, since `MineRock5` renames its own GameObject to `___MineRock5`. With `Verbose`
+  off none of this is built per blow.
+- New Devkit scenario `malmr-first-blow` strikes three fresh deposits and fails if the first
+  blow on any of them did not go into the bar.
+
+Nothing here changes how mining works. Some players see the first blow on a deposit mine the
+ordinary way, now and then. Reading the code did not find why, and nothing on that path depends
+on being the first blow. If it happens, turn `Verbose` on and the log says which test sent it
+to vanilla.
 
 ## 1.0.0 - 2026-09-30
 
